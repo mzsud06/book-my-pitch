@@ -3,543 +3,306 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BookMyPitch — Book Football Pitches in East London</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>BookMyPitch — Fill the team. Book the pitch.</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
 :root{
-  --black:#080808;
-  --white:#F7F5F0;
-  --green:#B8F000;
-  --green-dim:#94C400;
-  --surface:#111;
-  --surface2:#1C1C1C;
-  --border:rgba(255,255,255,0.07);
-  --muted:#666;
-  --text:#F7F5F0;
-  --peak:#FF4D00;
-  --offpeak:#B8F000;
-  --weekend:#00B4FF;
-  --radius:10px;
+  --black:#080808;--white:#F7F4EE;--green:#C8F400;--green-dim:#A8D000;
+  --surface:#111;--surface2:#191919;--surface3:#222;
+  --border:rgba(255,255,255,0.07);--muted:#5A5A5A;--text:#F7F4EE;
+  --red:#FF4444;--amber:#FFB800;--r:10px;
 }
-
 body{font-family:'Archivo',sans-serif;background:var(--black);color:var(--text);min-height:100vh;overflow-x:hidden}
+.view{display:none}.view.active{display:block}
 
-/* VIEWS */
-.view{display:none}
-.view.active{display:block}
-
-/* NAV */
-nav{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:1rem 2rem;
-  border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:200;
-  background:rgba(8,8,8,0.97);
-  backdrop-filter:blur(20px);
-}
-
-.logo{
-  font-family:'Archivo Black',sans-serif;
-  font-size:20px;letter-spacing:-0.5px;
-  cursor:pointer;
-}
+nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:300;background:rgba(8,8,8,0.96);backdrop-filter:blur(20px)}
+.logo{font-family:'Archivo Black',sans-serif;font-size:18px;letter-spacing:-.5px;cursor:pointer;user-select:none}
 .logo span{color:var(--green)}
+.nav-r{display:flex;gap:8px;align-items:center}
+.btn{font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;padding:.5rem 1.1rem;border-radius:6px;border:none;cursor:pointer;transition:all .15s}
+.btn-g{background:var(--green);color:var(--black)}.btn-g:hover{background:var(--green-dim);transform:translateY(-1px)}
+.btn-gh{background:transparent;color:var(--muted);border:1px solid var(--border)}.btn-gh:hover{color:var(--text);border-color:rgba(255,255,255,.18)}
+.btn-lg{padding:.75rem 1.75rem;font-size:15px}
+.btn-full{width:100%;padding:.85rem;font-size:15px;border-radius:var(--r)}
 
-.nav-right{display:flex;gap:10px;align-items:center}
+/* HOME */
+.hero{max-width:1100px;margin:0 auto;padding:5rem 1.5rem 3rem;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:1.25rem;display:flex;align-items:center;gap:8px}
+.eyebrow::before{content:'';width:20px;height:1px;background:var(--green)}
+h1{font-family:'Archivo Black',sans-serif;font-size:clamp(42px,5vw,68px);line-height:.93;letter-spacing:-2px;margin-bottom:1.25rem}
+h1 em{font-style:normal;color:var(--green);display:block}
+.hero-sub{font-size:15px;color:var(--muted);line-height:1.75;max-width:400px;margin-bottom:2rem;font-weight:300}
+.hero-ctas{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:2.5rem}
+.trust{display:flex;gap:2rem;padding-top:2rem;border-top:1px solid var(--border)}
+.trust-item .n{font-family:'Archivo Black',sans-serif;font-size:28px;color:var(--green);line-height:1}
+.trust-item .l{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
 
-.btn{
-  font-family:'Archivo',sans-serif;font-weight:600;font-size:13px;
-  padding:.5rem 1.1rem;border-radius:6px;border:none;cursor:pointer;
-  transition:all .15s;
-}
-.btn-green{background:var(--green);color:var(--black)}
-.btn-green:hover{background:var(--green-dim);transform:translateY(-1px)}
-.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
-.btn-ghost:hover{color:var(--text);border-color:rgba(255,255,255,0.2)}
-.btn-white{background:var(--white);color:var(--black)}
-.btn-white:hover{background:#e8e6e1;transform:translateY(-1px)}
+.slot-cards{display:flex;flex-direction:column;gap:10px}
+.slot-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .18s,border-color .18s}
+.slot-card:hover{transform:translateY(-2px);border-color:rgba(200,244,0,.2)}
+.sc-top{padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center}
+.sc-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px;margin-bottom:6px;display:inline-block}
+.peak-label{background:rgba(255,68,68,.15);color:#FF6B6B}
+.offpeak-label{background:rgba(200,244,0,.12);color:var(--green)}
+.weekend-label{background:rgba(0,180,255,.12);color:#00B4FF}
+.sc-time{font-family:'Archivo Black',sans-serif;font-size:20px;letter-spacing:-.5px}
+.sc-pp{font-family:'Archivo Black',sans-serif;font-size:22px;color:var(--green);letter-spacing:-.5px}
+.sc-pp-label{font-size:11px;color:var(--muted);margin-top:1px;text-align:right}
+.sc-bar-area{padding:0 1.25rem 1rem}
+.fill-bar-wrap{background:var(--surface2);border-radius:100px;height:6px;overflow:hidden;margin-bottom:6px}
+.fill-bar{height:100%;border-radius:100px;background:var(--green)}
+.fill-bar.amber{background:var(--amber)}
+.sc-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.sc-meta .hot{color:var(--amber);font-weight:600}
 
-/* =================== HOME PAGE =================== */
-.hero{
-  max-width:1200px;margin:0 auto;
-  padding:6rem 2rem 4rem;
-  display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;
-}
+.how{max-width:1100px;margin:0 auto;padding:4rem 1.5rem}
+.sec-label{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:.75rem}
+.sec-title{font-family:'Archivo Black',sans-serif;font-size:clamp(28px,3.5vw,42px);letter-spacing:-1px;margin-bottom:2.5rem}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.step{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem}
+.step-n{font-family:'Archivo Black',sans-serif;font-size:36px;color:rgba(200,244,0,.12);line-height:1;margin-bottom:.75rem}
+.step-t{font-weight:600;font-size:14px;margin-bottom:.4rem}
+.step-d{font-size:13px;color:var(--muted);line-height:1.65;font-weight:300}
 
-.hero-eyebrow{
-  display:inline-flex;align-items:center;gap:8px;
-  font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--green);margin-bottom:1.5rem;
-}
-.hero-eyebrow::before{content:'';width:24px;height:1px;background:var(--green)}
+.venue-strip{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4rem 1.5rem}
+.venue-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+.perks{display:flex;flex-direction:column;gap:8px;margin-top:1.5rem}
+.perk{display:flex;gap:12px;background:var(--surface2);border-radius:var(--r);padding:.9rem 1.1rem;align-items:flex-start}
+.perk-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.perk-t{font-weight:600;font-size:14px;margin-bottom:2px}
+.perk-d{font-size:13px;color:var(--muted);line-height:1.5}
+.dash-mini{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:1.25rem}
+.dm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.dm-title{font-family:'Archivo Black',sans-serif;font-size:15px}
+.dm-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
+.dm-stat{background:var(--surface);border-radius:8px;padding:.65rem;text-align:center}
+.dm-stat-n{font-family:'Archivo Black',sans-serif;font-size:20px;color:var(--green)}
+.dm-stat-l{font-size:10px;color:var(--muted);margin-top:2px}
+.dm-row{display:flex;justify-content:space-between;align-items:center;padding:.55rem 0;border-bottom:1px solid var(--border);font-size:13px}
+.dm-row:last-child{border-bottom:none}
+.dm-name{font-weight:500}.dm-time{font-size:11px;color:var(--muted)}
+.dm-paid{color:var(--green);font-weight:600;font-size:12px}
 
-h1{
-  font-family:'Archivo Black',sans-serif;
-  font-size:clamp(44px,5vw,72px);
-  line-height:.95;letter-spacing:-2px;
-  margin-bottom:1.5rem;
-}
-h1 .accent{color:var(--green);display:block}
+footer{text-align:center;padding:3rem 1.5rem;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+footer strong{color:var(--green)}
 
-.hero-sub{
-  font-size:16px;color:var(--muted);line-height:1.7;
-  max-width:420px;margin-bottom:2.5rem;font-weight:300;
-}
-
-.hero-ctas{display:flex;gap:10px;flex-wrap:wrap}
-
-.hero-stats{
-  display:flex;gap:2.5rem;margin-top:3rem;
-  padding-top:2rem;border-top:1px solid var(--border);
-}
-.stat-n{font-family:'Archivo Black',sans-serif;font-size:32px;color:var(--green);line-height:1}
-.stat-l{font-size:11px;color:var(--muted);margin-top:4px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
-
-/* PITCH PREVIEW CARD */
-.pitch-preview{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:16px;overflow:hidden;
-  position:relative;
-}
-
-.pitch-img{
-  height:220px;
-  background:linear-gradient(160deg,#0d2b0d,#1a4a1a,#0a1a0a);
-  position:relative;overflow:hidden;
-  display:flex;align-items:center;justify-content:center;
-}
-
-.pitch-img-overlay{
-  position:absolute;inset:0;
-  background:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="%230d2b0d"/><rect x="30" y="20" width="340" height="200" stroke="%23B8F000" stroke-width="1.5" fill="none" rx="2" opacity="0.3"/><line x1="200" y1="20" x2="200" y2="220" stroke="%23B8F000" stroke-width="1" opacity="0.3"/><circle cx="200" cy="120" r="35" stroke="%23B8F000" stroke-width="1" fill="none" opacity="0.3"/><circle cx="200" cy="120" r="3" fill="%23B8F000" opacity="0.5"/><rect x="30" y="90" width="55" height="60" stroke="%23B8F000" stroke-width="1" fill="none" opacity="0.3"/><rect x="315" y="90" width="55" height="60" stroke="%23B8F000" stroke-width="1" fill="none" opacity="0.3"/></svg>') center/cover;
-}
-
-.globe-banner{
-  position:absolute;top:16px;left:16px;
-  background:var(--green);color:var(--black);
-  font-family:'Archivo Black',sans-serif;
-  font-size:11px;letter-spacing:.08em;text-transform:uppercase;
-  padding:5px 10px;border-radius:4px;
-}
-
-.avail-badge{
-  position:absolute;top:16px;right:16px;
-  background:rgba(8,8,8,0.85);border:1px solid rgba(184,240,0,0.3);
-  color:var(--green);font-size:11px;font-weight:600;
-  padding:5px 10px;border-radius:100px;
-  display:flex;align-items:center;gap:5px;
-}
-.avail-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
-.pitch-card-info{padding:1.25rem}
-.pitch-card-name{font-family:'Archivo Black',sans-serif;font-size:18px;margin-bottom:3px}
-.pitch-card-addr{font-size:12px;color:var(--muted);margin-bottom:1rem}
-
-.slot-mini{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:.6rem .85rem;border-radius:8px;border:1px solid transparent;
-  margin-bottom:6px;cursor:pointer;transition:transform .15s;
-}
-.slot-mini:hover{transform:translateX(3px)}
-.slot-mini:last-child{margin-bottom:0}
-.slot-mini.peak{background:rgba(255,77,0,.08);border-color:rgba(255,77,0,.2)}
-.slot-mini.offpeak{background:rgba(184,240,0,.06);border-color:rgba(184,240,0,.15)}
-.slot-mini.weekend{background:rgba(0,180,255,.08);border-color:rgba(0,180,255,.2)}
-.slot-mini-left{display:flex;align-items:center;gap:8px}
-.slot-dot{width:7px;height:7px;border-radius:50%}
-.peak .slot-dot{background:var(--peak)}
-.offpeak .slot-dot{background:var(--offpeak)}
-.weekend .slot-dot{background:var(--weekend)}
-.slot-mini-time{font-size:13px;font-weight:500}
-.slot-mini-label{font-size:11px;color:var(--muted)}
-.slot-mini-price{font-family:'Archivo Black',sans-serif;font-size:18px}
-.peak .slot-mini-price{color:var(--peak)}
-.offpeak .slot-mini-price{color:var(--offpeak)}
-.weekend .slot-mini-price{color:var(--weekend)}
-
-/* HOW IT WORKS */
-.how{max-width:1200px;margin:0 auto;padding:5rem 2rem}
-.section-label{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:1rem}
-.section-title{font-family:'Archivo Black',sans-serif;font-size:clamp(32px,4vw,48px);letter-spacing:-1px;margin-bottom:3rem}
-
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
-.step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:2rem}
-.step-num{
-  font-family:'Archivo Black',sans-serif;font-size:48px;
-  color:rgba(184,240,0,.15);line-height:1;margin-bottom:1rem;
-}
-.step-title{font-weight:600;font-size:16px;margin-bottom:.5rem}
-.step-desc{font-size:14px;color:var(--muted);line-height:1.7;font-weight:300}
-
-/* FOR VENUES */
-.venues-section{
-  background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-  padding:5rem 2rem;
-}
-.venues-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center}
-.venues-list{display:flex;flex-direction:column;gap:10px;margin-top:2rem}
-.venue-benefit{
-  display:flex;align-items:flex-start;gap:12px;
-  background:var(--surface2);border-radius:var(--radius);padding:1rem 1.25rem;
-}
-.vb-icon{
-  width:32px;height:32px;border-radius:6px;background:rgba(184,240,0,.1);
-  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
-}
-.vb-title{font-weight:600;font-size:14px;margin-bottom:3px}
-.vb-desc{font-size:13px;color:var(--muted);line-height:1.5}
-
-.dashboard-preview{
-  background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;
-}
-.dp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
-.dp-title{font-family:'Archivo Black',sans-serif;font-size:16px}
-.dp-date{font-size:12px;color:var(--muted)}
-.dp-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem}
-.dp-stat{background:var(--surface);border-radius:8px;padding:.75rem;text-align:center}
-.dp-stat-n{font-family:'Archivo Black',sans-serif;font-size:22px;color:var(--green)}
-.dp-stat-l{font-size:11px;color:var(--muted);margin-top:2px}
-.booking-row{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:.65rem 0;border-bottom:1px solid var(--border);font-size:13px;
-}
-.booking-row:last-child{border-bottom:none}
-.br-name{font-weight:500}
-.br-time{color:var(--muted);font-size:12px}
-.br-paid{color:var(--green);font-size:12px;font-weight:600}
-
-/* =================== BOOKING PAGE =================== */
-.booking-page{max-width:1100px;margin:0 auto;padding:2.5rem 2rem}
-
-.pitch-hero{
-  border-radius:16px;overflow:hidden;margin-bottom:2rem;
-  height:260px;
-  background:linear-gradient(160deg,#0d2b0d,#1a4a1a,#0a1a0a);
-  position:relative;display:flex;align-items:flex-end;
-}
-
-.pitch-hero-bg{
-  position:absolute;inset:0;
-  background:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 260"><rect width="1100" height="260" fill="%230d2b0d"/><rect x="40" y="20" width="1020" height="220" stroke="%23B8F000" stroke-width="2" fill="none" rx="2" opacity="0.2"/><line x1="550" y1="20" x2="550" y2="240" stroke="%23B8F000" stroke-width="1.5" opacity="0.2"/><circle cx="550" cy="130" r="60" stroke="%23B8F000" stroke-width="1.5" fill="none" opacity="0.2"/><circle cx="550" cy="130" r="4" fill="%23B8F000" opacity="0.4"/><rect x="40" y="90" width="90" height="80" stroke="%23B8F000" stroke-width="1.5" fill="none" opacity="0.2"/><rect x="970" y="90" width="90" height="80" stroke="%23B8F000" stroke-width="1.5" fill="none" opacity="0.2"/><rect x="40" y="108" width="40" height="44" stroke="%23B8F000" stroke-width="1" fill="none" opacity="0.15"/><rect x="1020" y="108" width="40" height="44" stroke="%23B8F000" stroke-width="1" fill="none" opacity="0.15"/></svg>') center/cover;
-}
-
-.pitch-hero-overlay{
-  position:absolute;inset:0;
-  background:linear-gradient(to top,rgba(8,8,8,.9) 0%,transparent 60%);
-}
-
-.pitch-hero-info{position:relative;z-index:1;padding:1.5rem 2rem;width:100%}
-.pitch-hero-name{font-family:'Archivo Black',sans-serif;font-size:28px;letter-spacing:-1px}
-.pitch-hero-addr{font-size:14px;color:rgba(247,245,240,.6);margin-top:4px}
-.pitch-hero-tags{display:flex;gap:8px;margin-top:10px}
-.tag{
-  font-size:11px;font-weight:600;padding:4px 10px;border-radius:100px;
-  background:rgba(184,240,0,.15);border:1px solid rgba(184,240,0,.25);color:var(--green);
-}
-
-.booking-layout{display:grid;grid-template-columns:1fr 360px;gap:2rem;align-items:start}
-
-/* day picker */
-.day-row{display:flex;gap:8px;margin-bottom:1.5rem;overflow-x:auto;padding-bottom:4px}
-.day-btn{
-  flex-shrink:0;padding:.5rem .9rem;border-radius:8px;
-  border:1px solid var(--border);background:transparent;
-  color:var(--muted);font-family:'Archivo',sans-serif;font-size:13px;font-weight:500;
-  cursor:pointer;transition:all .15s;text-align:center;
-}
-.day-btn:hover{border-color:rgba(255,255,255,.2);color:var(--text)}
+/* SLOTS PAGE */
+.page{max-width:680px;margin:0 auto;padding:2rem 1.5rem}
+.page-title{font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-1px;margin-bottom:.25rem}
+.page-sub{font-size:14px;color:var(--muted);margin-bottom:2rem}
+.day-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:1.5rem}
+.day-btn{flex-shrink:0;padding:.5rem .9rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Archivo',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center}
+.day-btn:hover{border-color:rgba(255,255,255,.18);color:var(--text)}
 .day-btn.active{background:var(--green);color:var(--black);border-color:var(--green);font-weight:700}
-.day-n{display:block;font-size:13px}
-.day-d{display:block;font-size:11px;opacity:.7;margin-top:1px}
+.day-n{display:block;font-size:13px}.day-d{display:block;font-size:11px;opacity:.7;margin-top:1px}
 
-/* legend */
-.legend{display:flex;gap:1.25rem;margin-bottom:1.25rem}
-.leg-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
-.leg-dot{width:7px;height:7px;border-radius:50%}
+.slot-list{display:flex;flex-direction:column;gap:10px}
+.slot-pick{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.25rem;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
+.slot-pick::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.slot-pick.peak::before{background:#FF6B6B}
+.slot-pick.offpeak::before{background:var(--green)}
+.slot-pick.weekend::before{background:#00B4FF}
+.slot-pick:hover:not(.taken){border-color:rgba(200,244,0,.25);transform:translateY(-1px)}
+.slot-pick.taken{opacity:.45;cursor:not-allowed}
+.sp-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem}
+.sp-time{font-family:'Archivo Black',sans-serif;font-size:18px;letter-spacing:-.3px;margin-top:4px}
+.sp-pp{font-family:'Archivo Black',sans-serif;font-size:20px;color:var(--green)}
+.sp-pplabel{font-size:11px;color:var(--muted);margin-top:1px;text-align:right}
+.sp-bar-wrap{background:var(--surface2);border-radius:100px;height:5px;overflow:hidden;margin-bottom:6px}
+.sp-bar{height:100%;border-radius:100px;background:var(--green)}
+.sp-bar.amber{background:var(--amber)}.sp-bar.full-bar{background:var(--red)}
+.sp-bottom{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.sp-count{font-weight:600}
+.sp-count.amber{color:var(--amber)}.sp-count.red{color:var(--red)}
+.sp-rival{color:var(--amber);font-weight:600}
+.sp-taken-label{color:var(--red);font-weight:600}
 
-/* sessions */
-.sessions{display:flex;flex-direction:column;gap:8px}
+/* JOIN PAGE */
+.join-page{max-width:460px;margin:0 auto;padding:2rem 1.5rem}
+.session-summary{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.25rem}
+.ss-pitch{font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.ss-time{font-family:'Archivo Black',sans-serif;font-size:22px;letter-spacing:-.5px;margin-bottom:2px}
+.ss-date{font-size:13px;color:var(--muted);margin-bottom:1rem}
+.players-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:.75rem}
+.player-slot{height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.player-slot.filled{background:rgba(200,244,0,.12);border:1px solid rgba(200,244,0,.25);color:var(--green)}
+.player-slot.you{background:var(--green);color:var(--black)}
+.player-slot.empty{background:var(--surface2);border:1px dashed rgba(255,255,255,.07);color:var(--muted)}
+.ss-status{font-size:13px;color:var(--muted);text-align:center}
+.ss-status strong{color:var(--text)}
 
-.sess{
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:1.1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;
-  cursor:pointer;transition:all .18s;position:relative;overflow:hidden;
-}
-.sess::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
-.sess.peak::before{background:var(--peak)}
-.sess.offpeak::before{background:var(--offpeak)}
-.sess.weekend::before{background:var(--weekend)}
-.sess:hover:not(.full){border-color:rgba(255,255,255,.15);transform:translateY(-1px);background:var(--surface2)}
-.sess.selected{border-color:var(--green);background:rgba(184,240,0,.04)}
-.sess.full{opacity:.4;cursor:not-allowed}
+.rival-alert{background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2);border-radius:8px;padding:.75rem 1rem;margin-bottom:1.25rem;font-size:13px;color:var(--amber);display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+.no-charge-note{display:flex;gap:8px;align-items:flex-start;background:rgba(200,244,0,.05);border:1px solid rgba(200,244,0,.12);border-radius:8px;padding:.85rem 1rem;margin-bottom:1.25rem;font-size:13px;color:rgba(200,244,0,.75);line-height:1.5}
+.no-charge-note strong{color:var(--green)}
 
-.sess-time{font-size:17px;font-weight:600;letter-spacing:-.3px}
-.sess-meta{font-size:12px;color:var(--muted);margin-top:2px}
-.sess-right{text-align:right}
-.sess-price{font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-.5px}
-.sess.peak .sess-price{color:var(--peak)}
-.sess.offpeak .sess-price{color:var(--offpeak)}
-.sess.weekend .sess-price{color:var(--weekend)}
-.sess-spots{font-size:12px;color:var(--muted);margin-top:2px}
-.sess-spots.low{color:var(--peak)}
-.full-tag{font-size:11px;font-weight:600;color:var(--muted);background:var(--surface2);padding:4px 10px;border-radius:4px}
+.cost-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.25rem;margin-bottom:1.25rem}
+.cost-row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:7px}
+.cost-row.total{color:var(--text);font-weight:600;font-size:15px;margin-top:6px;padding-top:8px;border-top:1px solid var(--border);margin-bottom:0}
+.cost-row.total .amount{font-family:'Archivo Black',sans-serif;font-size:20px;color:var(--green);letter-spacing:-.3px}
+.cost-note{font-size:11px;color:var(--muted);margin-top:.5rem;line-height:1.5}
 
-/* booking panel */
-.panel{
-  background:var(--surface);border:1px solid var(--border);border-radius:16px;
-  padding:1.5rem;position:sticky;top:80px;
-}
-.panel-title{font-family:'Archivo Black',sans-serif;font-size:20px;letter-spacing:-.5px;margin-bottom:1.25rem}
+.form-g{margin-bottom:10px}
+.form-l{font-size:11px;color:var(--muted);margin-bottom:5px;display:block;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.form-i{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.65rem .9rem;color:var(--text);font-family:'Archivo',sans-serif;font-size:14px;outline:none;transition:border-color .15s}
+.form-i:focus{border-color:rgba(200,244,0,.4)}
+.form-i::placeholder{color:#2a2a2a}
+.card-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.25rem}
 
-.selected-display{
-  background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);
-  padding:1rem;margin-bottom:1.25rem;
-}
-.sd-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;font-weight:600}
-.sd-time{font-size:19px;font-weight:700;letter-spacing:-.3px}
-.sd-detail{font-size:12px;color:var(--muted);margin-top:3px}
+/* CONFIRM PAGE */
+.confirm-page{max-width:460px;margin:0 auto;padding:3rem 1.5rem;text-align:center}
+.confirm-icon{width:64px;height:64px;background:rgba(200,244,0,.1);border:1px solid rgba(200,244,0,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 1.5rem}
+.confirm-title{font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-1px;margin-bottom:.5rem}
+.confirm-sub{font-size:15px;color:var(--muted);line-height:1.6;margin-bottom:2rem}
+.confirm-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;text-align:left}
+.cc-row{display:flex;justify-content:space-between;font-size:14px;padding:.5rem 0;border-bottom:1px solid var(--border)}
+.cc-row:last-child{border-bottom:none}
+.cc-label{color:var(--muted)}.cc-val{font-weight:600}
+.prog-label{font-size:13px;color:var(--muted);margin-bottom:.5rem;text-align:left}
+.prog-bar-wrap{background:var(--surface2);border-radius:100px;height:8px;overflow:hidden;margin-bottom:.5rem}
+.prog-bar{height:100%;border-radius:100px;background:var(--green)}
+.prog-note{font-size:12px;color:var(--muted);text-align:left;margin-bottom:1.5rem}
+.share-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:1rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:10px}
+.share-url{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copy-btn{background:var(--green);color:var(--black);border:none;font-family:'Archivo',sans-serif;font-weight:700;font-size:12px;padding:.45rem .85rem;border-radius:6px;cursor:pointer;flex-shrink:0}
+.copy-btn:hover{background:var(--green-dim)}
 
-.type-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.25rem}
-.type-opt{
-  padding:.65rem;border-radius:8px;border:1px solid var(--border);
-  background:transparent;color:var(--muted);
-  font-family:'Archivo',sans-serif;font-size:13px;font-weight:600;
-  cursor:pointer;transition:all .15s;text-align:center;
-}
-.type-opt:hover{border-color:rgba(255,255,255,.2);color:var(--text)}
-.type-opt.active{border-color:var(--green);color:var(--green);background:rgba(184,240,0,.07)}
-
-.price-breakdown{border-top:1px solid var(--border);padding-top:1rem;margin-bottom:1.25rem}
-.pr{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:7px}
-.pr.total{
-  color:var(--text);font-weight:600;font-size:14px;
-  margin-top:6px;padding-top:8px;border-top:1px solid var(--border);margin-bottom:0;
-}
-.pr.total .amount{font-family:'Archivo Black',sans-serif;font-size:22px;color:var(--green);letter-spacing:-.5px}
-
-.form-group{margin-bottom:10px}
-.form-label{font-size:11px;color:var(--muted);margin-bottom:5px;display:block;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
-.form-input{
-  width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;
-  padding:.65rem .9rem;color:var(--text);font-family:'Archivo',sans-serif;font-size:14px;
-  outline:none;transition:border-color .15s;
-}
-.form-input:focus{border-color:rgba(184,240,0,.4)}
-.form-input::placeholder{color:#333}
-
-.btn-book{
-  width:100%;background:var(--green);color:var(--black);border:none;
-  padding:.9rem;border-radius:var(--radius);
-  font-family:'Archivo Black',sans-serif;font-size:18px;letter-spacing:.5px;
-  cursor:pointer;transition:all .15s;margin-top:6px;
-}
-.btn-book:hover{background:var(--green-dim);transform:translateY(-1px)}
-
-.secure{text-align:center;font-size:11px;color:var(--muted);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px}
-
-/* =================== DASHBOARD =================== */
-.dash-page{max-width:1100px;margin:0 auto;padding:2.5rem 2rem}
-.dash-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem}
-.dash-title{font-family:'Archivo Black',sans-serif;font-size:28px;letter-spacing:-1px}
+/* DASHBOARD */
+.dash-page{max-width:1000px;margin:0 auto;padding:2rem 1.5rem}
+.dash-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.75rem}
+.dash-title{font-family:'Archivo Black',sans-serif;font-size:24px;letter-spacing:-1px}
 .dash-sub{font-size:13px;color:var(--muted);margin-top:3px}
-
-.dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2rem}
-.ds{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
-.ds-n{font-family:'Archivo Black',sans-serif;font-size:28px;color:var(--green);letter-spacing:-.5px}
-.ds-l{font-size:12px;color:var(--muted);margin-top:4px;font-weight:500}
-
-.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
-.dash-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
-.dc-title{font-weight:700;font-size:15px;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center}
-.dc-tag{font-size:11px;font-weight:500;color:var(--muted)}
-
-.booking-item{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:.75rem 0;border-bottom:1px solid var(--border);
-}
-.booking-item:last-child{border-bottom:none}
-.bi-left{}
-.bi-name{font-size:14px;font-weight:600}
-.bi-meta{font-size:12px;color:var(--muted);margin-top:2px}
-.bi-right{text-align:right}
-.bi-amount{font-size:14px;font-weight:700;color:var(--green)}
-.bi-status{font-size:11px;color:var(--muted);margin-top:2px}
-
-.slot-row{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:.65rem 0;border-bottom:1px solid var(--border);
-}
-.slot-row:last-child{border-bottom:none}
-.sr-time{font-size:14px;font-weight:600}
-.sr-type{font-size:11px;color:var(--muted);margin-top:2px}
-.sr-bar-wrap{flex:1;margin:0 1rem;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
-.sr-bar{height:100%;border-radius:3px;background:var(--green);transition:width .5s}
-.sr-count{font-size:12px;color:var(--muted);white-space:nowrap}
-
-.revenue-bars{display:flex;align-items:flex-end;gap:6px;height:100px;margin-top:.75rem}
-.rev-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
-.rev-bar{width:100%;background:rgba(184,240,0,.15);border-radius:4px 4px 0 0;transition:height .5s;position:relative}
-.rev-bar.this{background:var(--green)}
-.rev-bar-label{font-size:10px;color:var(--muted)}
-
-.footer-small{
-  text-align:center;padding:3rem 2rem;
-  border-top:1px solid var(--border);
-  font-size:13px;color:var(--muted);
-}
-.footer-small strong{color:var(--green)}
+.dash-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+.dstat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem}
+.dstat-n{font-family:'Archivo Black',sans-serif;font-size:26px;color:var(--green);letter-spacing:-.5px}
+.dstat-l{font-size:11px;color:var(--muted);margin-top:3px}
+.dash-cols{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.dcol{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem}
+.dcol-title{font-weight:700;font-size:14px;margin-bottom:1rem;display:flex;justify-content:space-between}
+.dcol-tag{font-size:11px;color:var(--muted);font-weight:400}
+.booking-r{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid var(--border)}
+.booking-r:last-child{border-bottom:none}
+.br-name{font-size:13px;font-weight:600}
+.br-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.br-amt{font-size:13px;font-weight:700;color:var(--green);text-align:right}
+.br-s{font-size:11px;color:var(--muted);margin-top:2px;text-align:right}
+.occ-row{display:flex;align-items:center;gap:10px;padding:.55rem 0;border-bottom:1px solid var(--border)}
+.occ-row:last-child{border-bottom:none}
+.occ-info{min-width:90px}
+.occ-time{font-size:13px;font-weight:600}
+.occ-type{font-size:11px;color:var(--muted)}
+.occ-bar-wrap{flex:1;height:5px;background:var(--surface2);border-radius:100px;overflow:hidden}
+.occ-bar{height:100%;border-radius:100px;background:var(--green)}
+.occ-count{font-size:11px;color:var(--muted);white-space:nowrap;min-width:40px;text-align:right}
 </style>
 </head>
 <body>
 
 <nav>
-  <div class="logo" onclick="showView('home')">Book<span>MyPitch</span>.uk</div>
-  <div class="nav-right">
-    <button class="btn btn-ghost" onclick="showView('dashboard')">Owner Login</button>
-    <button class="btn btn-green" onclick="showView('booking')">Book a Pitch</button>
+  <div class="logo" onclick="go('home')">Book<span>My</span>Pitch<span>.uk</span></div>
+  <div class="nav-r">
+    <button class="btn btn-gh" onclick="go('dashboard')">Owner login</button>
+    <button class="btn btn-g" onclick="go('slots')">Find a slot →</button>
   </div>
 </nav>
 
-<!-- =================== HOME =================== -->
+<!-- HOME -->
 <div class="view active" id="view-home">
   <section class="hero">
     <div>
-      <div class="hero-eyebrow">East London's pitch booking platform</div>
-      <h1>Stop messaging.<br><span class="accent">Just book.</span></h1>
-      <p class="hero-sub">Find and book local football pitches in seconds. Pick your slot, pay online, show up and play. No WhatsApp chaos, no bank transfers.</p>
+      <div class="eyebrow">Globe Pitch · Bethnal Green</div>
+      <h1>Fill the team.<br><em>Book the pitch.</em></h1>
+      <p class="hero-sub">Pick a slot, share the link with your mates, and when 10 players join — everyone pays automatically and the pitch is yours. No bank transfers. No chasing.</p>
       <div class="hero-ctas">
-        <button class="btn btn-green" style="padding:.75rem 1.75rem;font-size:15px" onclick="showView('booking')">Book Globe Pitch →</button>
-        <button class="btn btn-ghost" style="padding:.75rem 1.25rem;font-size:15px" onclick="showView('dashboard')">I run a pitch</button>
+        <button class="btn btn-g btn-lg" onclick="go('slots')">Find a slot →</button>
+        <button class="btn btn-gh btn-lg" onclick="go('dashboard')">I run a pitch</button>
       </div>
-      <div class="hero-stats">
-        <div><div class="stat-n">4G</div><div class="stat-l">All-weather</div></div>
-        <div><div class="stat-n">5v5</div><div class="stat-l">Format</div></div>
-        <div><div class="stat-n">E2</div><div class="stat-l">Bethnal Green</div></div>
+      <div class="trust">
+        <div class="trust-item"><div class="n">10</div><div class="l">players needed</div></div>
+        <div class="trust-item"><div class="n">£0</div><div class="l">charged until full</div></div>
+        <div class="trust-item"><div class="n">4G</div><div class="l">all-weather</div></div>
       </div>
     </div>
-
-    <div class="pitch-preview">
-      <div class="pitch-img">
-        <div class="pitch-img-overlay"></div>
-        <div class="globe-banner">Globe Pitch</div>
-        <div class="avail-badge">Slots available</div>
+    <div class="slot-cards">
+      <div class="slot-card" onclick="go('slots')">
+        <div class="sc-top">
+          <div><div class="sc-label peak-label">Peak · Every day</div><div class="sc-time">18:30 – 19:30</div></div>
+          <div><div class="sc-pp">£5.30</div><div class="sc-pp-label">per player</div></div>
+        </div>
+        <div class="sc-bar-area">
+          <div class="fill-bar-wrap"><div class="fill-bar amber" style="width:80%"></div></div>
+          <div class="sc-meta"><span class="hot">⚡ Another group racing for this</span><span>8/10</span></div>
+        </div>
       </div>
-      <div class="pitch-card-info">
-        <div class="pitch-card-name">Globe Football Pitch</div>
-        <div class="pitch-card-addr">110 Globe Rd, Bethnal Green, E1 4DZ</div>
-        <div class="slot-mini offpeak" onclick="showView('booking')">
-          <div class="slot-mini-left"><div class="slot-dot"></div><div><div class="slot-mini-time">15:30 – 18:30</div><div class="slot-mini-label">Off-peak · Mon–Fri</div></div></div>
-          <div class="slot-mini-price">£25</div>
+      <div class="slot-card" onclick="go('slots')">
+        <div class="sc-top">
+          <div><div class="sc-label offpeak-label">Off-peak · Mon–Fri</div><div class="sc-time">16:30 – 17:30</div></div>
+          <div><div class="sc-pp">£3.30</div><div class="sc-pp-label">per player</div></div>
         </div>
-        <div class="slot-mini peak" onclick="showView('booking')">
-          <div class="slot-mini-left"><div class="slot-dot"></div><div><div class="slot-mini-time">18:30 – 21:30</div><div class="slot-mini-label">Peak · Every day</div></div></div>
-          <div class="slot-mini-price">£45</div>
+        <div class="sc-bar-area">
+          <div class="fill-bar-wrap"><div class="fill-bar" style="width:40%"></div></div>
+          <div class="sc-meta"><span>4/10 players joined</span><span style="color:var(--muted)">Filling up</span></div>
         </div>
-        <div class="slot-mini weekend" onclick="showView('booking')">
-          <div class="slot-mini-left"><div class="slot-dot"></div><div><div class="slot-mini-time">09:30 – 18:30</div><div class="slot-mini-label">Weekend</div></div></div>
-          <div class="slot-mini-price">£35</div>
+      </div>
+      <div class="slot-card" onclick="go('slots')">
+        <div class="sc-top">
+          <div><div class="sc-label weekend-label">Weekend</div><div class="sc-time">11:00 – 12:00</div></div>
+          <div><div class="sc-pp">£4.30</div><div class="sc-pp-label">per player</div></div>
+        </div>
+        <div class="sc-bar-area">
+          <div class="fill-bar-wrap"><div class="fill-bar" style="width:20%"></div></div>
+          <div class="sc-meta"><span>2/10 players joined</span><span style="color:var(--muted)">Be the organiser</span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- HOW IT WORKS -->
   <section class="how">
-    <div class="section-label">How it works</div>
-    <div class="section-title">Three steps to kickoff</div>
+    <div class="sec-label">How it works</div>
+    <div class="sec-title">Four steps to kickoff</div>
     <div class="steps">
-      <div class="step">
-        <div class="step-num">01</div>
-        <div class="step-title">Pick your slot</div>
-        <div class="step-desc">Browse available times at Globe Pitch. See exactly what's free in real time — peak, off-peak and weekend slots.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">02</div>
-        <div class="step-title">Pay online</div>
-        <div class="step-desc">Secure payment via Stripe. One-off session or lock in a 12-week block. No bank transfers, no chasing people.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">03</div>
-        <div class="step-title">Show up & play</div>
-        <div class="step-desc">You'll get a confirmation with everything you need. The pitch is yours. Just turn up and run.</div>
-      </div>
+      <div class="step"><div class="step-n">01</div><div class="step-t">Pick a slot</div><div class="step-d">Browse available times at Globe Pitch. See exactly how many players have already joined each slot.</div></div>
+      <div class="step"><div class="step-n">02</div><div class="step-t">Share the link</div><div class="step-d">You get a unique link for your session. Drop it in the group chat — takes 5 seconds.</div></div>
+      <div class="step"><div class="step-n">03</div><div class="step-t">Mates join</div><div class="step-d">Friends click the link, add their card details. Nobody gets charged yet — zero commitment until you're full.</div></div>
+      <div class="step"><div class="step-n">04</div><div class="step-t">10 players = booked</div><div class="step-d">The moment the 10th player joins, everyone pays their share automatically and the pitch is confirmed.</div></div>
     </div>
   </section>
 
-  <!-- FOR VENUES -->
-  <section class="venues-section">
-    <div class="venues-inner">
+  <section class="venue-strip">
+    <div class="venue-inner">
       <div>
-        <div class="section-label">For pitch owners</div>
-        <div class="section-title">Ditch the WhatsApp. Get paid faster.</div>
-        <div class="venues-list">
-          <div class="venue-benefit">
-            <div class="vb-icon">💸</div>
-            <div><div class="vb-title">Instant payments</div><div class="vb-desc">Money hits your account automatically. No more chasing bank transfers or holding slots for people who ghost.</div></div>
-          </div>
-          <div class="venue-benefit">
-            <div class="vb-icon">📊</div>
-            <div><div class="vb-title">Full dashboard</div><div class="vb-desc">See every booking, every slot, every payment in one place. Know exactly what's coming in each week.</div></div>
-          </div>
-          <div class="venue-benefit">
-            <div class="vb-icon">🔁</div>
-            <div><div class="vb-title">Block bookings handled</div><div class="vb-desc">12-week blocks managed automatically. Players pay, you get notified. Zero admin.</div></div>
-          </div>
-          <div class="venue-benefit">
-            <div class="vb-icon">🆓</div>
-            <div><div class="vb-title">Free to list</div><div class="vb-desc">No upfront cost. We take a small booking fee per player — only when you earn do we earn.</div></div>
-          </div>
+        <div class="sec-label">For pitch owners</div>
+        <div class="sec-title">Your pitch, always full.</div>
+        <div class="perks">
+          <div class="perk"><div class="perk-icon">💸</div><div><div class="perk-t">Get paid automatically</div><div class="perk-d">Money hits your account the moment a session fills. No bank transfers, no chasing.</div></div></div>
+          <div class="perk"><div class="perk-icon">📊</div><div><div class="perk-t">See every booking live</div><div class="perk-d">Dashboard shows all bookings, revenue, and which slots are filling in real time.</div></div></div>
+          <div class="perk"><div class="perk-icon">🆓</div><div><div class="perk-t">Free to list</div><div class="perk-d">No monthly fee. Players pay a small booking fee on top — you keep every penny of pitch hire.</div></div></div>
         </div>
-        <button class="btn btn-green" style="margin-top:1.5rem;padding:.75rem 1.5rem;font-size:14px" onclick="showView('dashboard')">See owner dashboard →</button>
+        <button class="btn btn-g" style="margin-top:1.25rem;padding:.7rem 1.4rem" onclick="go('dashboard')">See the owner dashboard →</button>
       </div>
-
-      <div class="dashboard-preview">
-        <div class="dp-header">
-          <div class="dp-title">Globe Pitch</div>
-          <div class="dp-date">This week</div>
+      <div class="dash-mini">
+        <div class="dm-head"><div class="dm-title">Globe Pitch</div><div style="font-size:12px;color:var(--muted)">Live</div></div>
+        <div class="dm-stats">
+          <div class="dm-stat"><div class="dm-stat-n">28</div><div class="dm-stat-l">Bookings</div></div>
+          <div class="dm-stat"><div class="dm-stat-n">£840</div><div class="dm-stat-l">This week</div></div>
+          <div class="dm-stat"><div class="dm-stat-n">94%</div><div class="dm-stat-l">Full rate</div></div>
         </div>
-        <div class="dp-stats">
-          <div class="dp-stat"><div class="dp-stat-n">28</div><div class="dp-stat-l">Bookings</div></div>
-          <div class="dp-stat"><div class="dp-stat-n">£840</div><div class="dp-stat-l">Revenue</div></div>
-          <div class="dp-stat"><div class="dp-stat-n">94%</div><div class="dp-stat-l">Full rate</div></div>
-        </div>
-        <div class="booking-row"><div><div class="br-name">Marcus T.</div><div class="br-time">Tue 20 May · 18:30</div></div><div class="br-paid">£45 paid</div></div>
-        <div class="booking-row"><div><div class="br-name">Liam K.</div><div class="br-time">Tue 20 May · 19:30</div></div><div class="br-paid">£45 paid</div></div>
-        <div class="booking-row"><div><div class="br-name">Omar S.</div><div class="br-time">Wed 21 May · 16:30</div></div><div class="br-paid">£25 paid</div></div>
-        <div class="booking-row"><div><div class="br-name">Jamal R. · Block</div><div class="br-time">Thu onwards · 12 wks</div></div><div class="br-paid">£540 paid</div></div>
+        <div class="dm-row"><div><div class="dm-name">18:30 Peak · confirmed</div><div class="dm-time">Tue 20 May · 10/10 players</div></div><div class="dm-paid">£45 ✓</div></div>
+        <div class="dm-row"><div><div class="dm-name">19:30 Peak · confirmed</div><div class="dm-time">Tue 20 May · 10/10 players</div></div><div class="dm-paid">£45 ✓</div></div>
+        <div class="dm-row"><div><div class="dm-name">16:30 Off-peak · confirmed</div><div class="dm-time">Wed 21 May · 10/10 players</div></div><div class="dm-paid">£25 ✓</div></div>
+        <div class="dm-row"><div><div class="dm-name">18:30 Peak · filling</div><div class="dm-time">Thu 22 May · 8/10 players</div></div><div style="font-size:12px;color:var(--amber);font-weight:600">Filling…</div></div>
       </div>
     </div>
   </section>
-
-  <footer class="footer-small">
-    <strong>BookMyPitch.uk</strong> · Tower Hamlets' pitch booking platform · Built in East London
-  </footer>
+  <footer><strong>BookMyPitch.uk</strong> · Globe Football Pitch · 110 Globe Rd, Bethnal Green E1 4DZ</footer>
 </div>
 
-<!-- =================== BOOKING PAGE =================== -->
-<div class="view" id="view-booking">
-  <div class="booking-page">
-    <div class="pitch-hero">
-      <div class="pitch-hero-bg"></div>
-      <div class="pitch-hero-overlay"></div>
-      <div class="pitch-hero-info">
-        <div class="pitch-hero-name">Globe Football Pitch</div>
-        <div class="pitch-hero-addr">110 Globe Road, Bethnal Green, London E1 4DZ</div>
-        <div class="pitch-hero-tags">
-          <span class="tag">4G Surface</span>
-          <span class="tag">5-a-side</span>
-          <span class="tag">Floodlit</span>
-          <span class="tag">Bethnal Green</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Day Picker -->
-    <div class="day-row">
+<!-- SLOTS PAGE -->
+<div class="view" id="view-slots">
+  <div class="page">
+    <div class="page-title">Globe Football Pitch</div>
+    <div class="page-sub">110 Globe Rd, Bethnal Green E1 4DZ · 4G · 5-a-side · Pick a slot to start filling your team</div>
+    <div class="day-scroll">
       <button class="day-btn" onclick="pickDay(this)"><span class="day-n">Mon</span><span class="day-d">19 May</span></button>
       <button class="day-btn active" onclick="pickDay(this)"><span class="day-n">Tue</span><span class="day-d">20 May</span></button>
       <button class="day-btn" onclick="pickDay(this)"><span class="day-n">Wed</span><span class="day-d">21 May</span></button>
@@ -548,242 +311,159 @@ h1 .accent{color:var(--green);display:block}
       <button class="day-btn" onclick="pickDay(this)"><span class="day-n">Sat</span><span class="day-d">24 May</span></button>
       <button class="day-btn" onclick="pickDay(this)"><span class="day-n">Sun</span><span class="day-d">25 May</span></button>
     </div>
-
-    <div class="legend">
-      <div class="leg-item"><div class="leg-dot" style="background:var(--offpeak)"></div>Off-peak £25</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--peak)"></div>Peak £45</div>
-      <div class="leg-item"><div class="leg-dot" style="background:var(--weekend)"></div>Weekend £35</div>
-    </div>
-
-    <div class="booking-layout">
-      <div class="sessions">
-        <div class="sess offpeak" onclick="pickSess(this,'15:30 – 16:30','Off-peak',25)">
-          <div><div class="sess-time">15:30 – 16:30</div><div class="sess-meta">Off-peak · Tue 20 May · 60 min</div></div>
-          <div class="sess-right"><div class="sess-price">£25</div><div class="sess-spots">10 spots left</div></div>
-        </div>
-        <div class="sess offpeak" onclick="pickSess(this,'16:30 – 17:30','Off-peak',25)">
-          <div><div class="sess-time">16:30 – 17:30</div><div class="sess-meta">Off-peak · Tue 20 May · 60 min</div></div>
-          <div class="sess-right"><div class="sess-price">£25</div><div class="sess-spots">6 spots left</div></div>
-        </div>
-        <div class="sess offpeak" onclick="pickSess(this,'17:30 – 18:30','Off-peak',25)">
-          <div><div class="sess-time">17:30 – 18:30</div><div class="sess-meta">Off-peak · Tue 20 May · 60 min</div></div>
-          <div class="sess-right"><div class="sess-price">£25</div><div class="sess-spots low">3 spots left</div></div>
-        </div>
-        <div class="sess peak selected" onclick="pickSess(this,'18:30 – 19:30','Peak',45)">
-          <div><div class="sess-time">18:30 – 19:30</div><div class="sess-meta">Peak · Tue 20 May · 60 min</div></div>
-          <div class="sess-right"><div class="sess-price">£45</div><div class="sess-spots low">2 spots left</div></div>
-        </div>
-        <div class="sess peak" onclick="pickSess(this,'19:30 – 20:30','Peak',45)">
-          <div><div class="sess-time">19:30 – 20:30</div><div class="sess-meta">Peak · Tue 20 May · 60 min</div></div>
-          <div class="sess-right"><div class="sess-price">£45</div><div class="sess-spots">10 spots left</div></div>
-        </div>
-        <div class="sess peak full">
-          <div><div class="sess-time">20:30 – 21:30</div><div class="sess-meta">Peak · Tue 20 May · 60 min</div></div>
-          <div class="sess-right"><span class="full-tag">Full</span></div>
-        </div>
+    <div class="slot-list">
+      <div class="slot-pick offpeak" onclick="go('join')">
+        <div class="sp-top"><div><div class="sc-label offpeak-label">Off-peak</div><div class="sp-time">15:30 – 16:30</div></div><div><div class="sp-pp">£3.30</div><div class="sp-pplabel">per player</div></div></div>
+        <div class="sp-bar-wrap"><div class="sp-bar" style="width:20%"></div></div>
+        <div class="sp-bottom"><span class="sp-count">2/10 players joined</span><span style="color:var(--muted);font-size:12px">Be the organiser</span></div>
       </div>
-
-      <!-- Panel -->
-      <div class="panel">
-        <div class="panel-title">Your booking</div>
-        <div class="selected-display">
-          <div class="sd-label">Selected slot</div>
-          <div class="sd-time" id="p-time">18:30 – 19:30</div>
-          <div class="sd-detail" id="p-detail">Peak · Tue 20 May · Globe Pitch</div>
-        </div>
-        <div style="margin-bottom:1.25rem">
-          <div class="form-label" style="margin-bottom:8px">Booking type</div>
-          <div class="type-opts">
-            <button class="type-opt active" onclick="setType(this,'single')">One-off</button>
-            <button class="type-opt" onclick="setType(this,'block')">Block · 12 wks</button>
-          </div>
-        </div>
-        <div class="price-breakdown">
-          <div class="pr"><span>Pitch hire</span><span id="p-hire">£45.00</span></div>
-          <div class="pr"><span>Booking fee</span><span id="p-fee">£0.70</span></div>
-          <div class="pr total"><span>Total</span><span class="amount" id="p-total">£45.70</span></div>
-        </div>
-        <div class="form-group"><label class="form-label">Your name</label><input class="form-input" placeholder="Full name"></div>
-        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" type="tel" placeholder="+44 7700 000000"></div>
-        <button class="btn-book">Pay & Confirm →</button>
-        <div class="secure">🔒 Secure payment via Stripe</div>
+      <div class="slot-pick offpeak" onclick="go('join')">
+        <div class="sp-top"><div><div class="sc-label offpeak-label">Off-peak</div><div class="sp-time">16:30 – 17:30</div></div><div><div class="sp-pp">£3.30</div><div class="sp-pplabel">per player</div></div></div>
+        <div class="sp-bar-wrap"><div class="sp-bar amber" style="width:40%"></div></div>
+        <div class="sp-bottom"><span class="sp-count">4/10 players joined</span><span style="color:var(--muted);font-size:12px">Filling up</span></div>
+      </div>
+      <div class="slot-pick offpeak" onclick="go('join')">
+        <div class="sp-top"><div><div class="sc-label offpeak-label">Off-peak</div><div class="sp-time">17:30 – 18:30</div></div><div><div class="sp-pp">£3.30</div><div class="sp-pplabel">per player</div></div></div>
+        <div class="sp-bar-wrap"><div class="sp-bar amber" style="width:60%"></div></div>
+        <div class="sp-bottom"><span class="sp-count amber">6/10 players joined</span><span class="sp-rival">⚡ Another group racing for this</span></div>
+      </div>
+      <div class="slot-pick peak" onclick="go('join')">
+        <div class="sp-top"><div><div class="sc-label peak-label">Peak</div><div class="sp-time">18:30 – 19:30</div></div><div><div class="sp-pp">£5.30</div><div class="sp-pplabel">per player</div></div></div>
+        <div class="sp-bar-wrap"><div class="sp-bar amber" style="width:80%"></div></div>
+        <div class="sp-bottom"><span class="sp-count amber">8/10 players joined</span><span class="sp-rival">⚡ Another group racing for this</span></div>
+      </div>
+      <div class="slot-pick peak" onclick="go('join')">
+        <div class="sp-top"><div><div class="sc-label peak-label">Peak</div><div class="sp-time">19:30 – 20:30</div></div><div><div class="sp-pp">£5.30</div><div class="sp-pplabel">per player</div></div></div>
+        <div class="sp-bar-wrap"><div class="sp-bar" style="width:10%"></div></div>
+        <div class="sp-bottom"><span class="sp-count">1/10 players joined</span><span style="color:var(--muted);font-size:12px">Just started</span></div>
+      </div>
+      <div class="slot-pick peak taken">
+        <div class="sp-top"><div><div class="sc-label peak-label">Peak</div><div class="sp-time">20:30 – 21:30</div></div><div><div class="sp-pp">£5.30</div><div class="sp-pplabel">per player</div></div></div>
+        <div class="sp-bar-wrap"><div class="sp-bar full-bar" style="width:100%"></div></div>
+        <div class="sp-bottom"><span class="sp-taken-label">Booked — slot taken</span></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- =================== DASHBOARD =================== -->
+<!-- JOIN PAGE -->
+<div class="view" id="view-join">
+  <div class="join-page">
+    <div class="page-title" style="margin-bottom:.25rem">Join the session</div>
+    <div class="page-sub">Your card won't be charged until all 10 players are in.</div>
+
+    <div class="session-summary">
+      <div class="ss-pitch">Globe Football Pitch · Bethnal Green</div>
+      <div class="ss-time">18:30 – 19:30</div>
+      <div class="ss-date">Tuesday 20 May · Peak slot · 5-a-side</div>
+      <div class="players-grid">
+        <div class="player-slot filled">M</div>
+        <div class="player-slot filled">J</div>
+        <div class="player-slot filled">L</div>
+        <div class="player-slot filled">O</div>
+        <div class="player-slot filled">T</div>
+        <div class="player-slot filled">A</div>
+        <div class="player-slot filled">K</div>
+        <div class="player-slot filled">R</div>
+        <div class="player-slot you">You</div>
+        <div class="player-slot empty">+1</div>
+      </div>
+      <div class="ss-status"><strong>9/10 players</strong> — just 1 more to confirm</div>
+    </div>
+
+    <div class="rival-alert">⚡ Another group is also trying to fill this slot. First to 10 gets it.</div>
+
+    <div class="no-charge-note">🔒 <span><strong>Nothing is charged now.</strong> Your card is only charged when the 10th player joins. If the session doesn't fill, you pay nothing.</span></div>
+
+    <div class="cost-box">
+      <div class="cost-row"><span>Pitch hire split (£45 ÷ 10)</span><span>£4.50</span></div>
+      <div class="cost-row"><span>Booking fee</span><span>50p</span></div>
+      <div class="cost-row"><span>Payment handling</span><span>30p</span></div>
+      <div class="cost-row total"><span>Total if confirmed</span><span class="amount">£5.30</span></div>
+      <div class="cost-note">You'll get a text the moment it's confirmed. Less than a coffee.</div>
+    </div>
+
+    <div class="form-g"><label class="form-l">Your name</label><input class="form-i" placeholder="First name"></div>
+    <div class="form-g"><label class="form-l">Phone number</label><input class="form-i" type="tel" placeholder="+44 7700 000000"></div>
+    <div class="form-g"><label class="form-l">Card number</label><input class="form-i" placeholder="1234 5678 9012 3456"></div>
+    <div class="card-row">
+      <div class="form-g" style="margin-bottom:0"><label class="form-l">Expiry</label><input class="form-i" placeholder="MM/YY"></div>
+      <div class="form-g" style="margin-bottom:0"><label class="form-l">CVV</label><input class="form-i" placeholder="123"></div>
+    </div>
+    <button class="btn btn-g btn-full" onclick="go('confirm')">Join — only £5.30 if confirmed</button>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:8px">🔒 Secured by Stripe · Card only charged when session is full</div>
+  </div>
+</div>
+
+<!-- CONFIRM PAGE -->
+<div class="view" id="view-confirm">
+  <div class="confirm-page">
+    <div class="confirm-icon">✓</div>
+    <div class="confirm-title">You're in!</div>
+    <div class="confirm-sub">One more player needed. Share the link and you're playing tonight. We'll text you the second it's confirmed.</div>
+    <div class="confirm-card">
+      <div class="cc-row"><span class="cc-label">Pitch</span><span class="cc-val">Globe Football Pitch</span></div>
+      <div class="cc-row"><span class="cc-label">Slot</span><span class="cc-val">18:30 – 19:30</span></div>
+      <div class="cc-row"><span class="cc-label">Date</span><span class="cc-val">Tuesday 20 May</span></div>
+      <div class="cc-row"><span class="cc-label">Your cost if confirmed</span><span class="cc-val" style="color:var(--green)">£5.30</span></div>
+      <div class="cc-row"><span class="cc-label">Status</span><span class="cc-val" style="color:var(--amber)">9/10 — waiting for last player</span></div>
+    </div>
+    <div class="prog-label">Session filling — 9/10 players</div>
+    <div class="prog-bar-wrap"><div class="prog-bar" style="width:90%"></div></div>
+    <div class="prog-note">Share the link to fill the last spot and lock in the pitch.</div>
+    <div class="share-box">
+      <div class="share-url">bookmypitch.uk/s/globe-1830-tue20</div>
+      <button class="copy-btn" onclick="this.textContent='Copied ✓'">Copy link</button>
+    </div>
+    <button class="btn btn-gh btn-full" onclick="go('slots')" style="font-size:14px">← Back to slots</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
 <div class="view" id="view-dashboard">
   <div class="dash-page">
-    <div class="dash-header">
-      <div>
-        <div class="dash-title">Globe Pitch Dashboard</div>
-        <div class="dash-sub">110 Globe Rd, Bethnal Green · Week of 19 May 2025</div>
-      </div>
-      <button class="btn btn-green">+ Add availability</button>
+    <div class="dash-head">
+      <div><div class="dash-title">Globe Pitch Dashboard</div><div class="dash-sub">110 Globe Rd, Bethnal Green · Week of 19 May</div></div>
+      <button class="btn btn-g">Manage availability</button>
     </div>
-
     <div class="dash-stats">
-      <div class="ds"><div class="ds-n">28</div><div class="ds-l">Bookings this week</div></div>
-      <div class="ds"><div class="ds-n">£840</div><div class="ds-l">Revenue this week</div></div>
-      <div class="ds"><div class="ds-n">£3,240</div><div class="ds-l">Revenue this month</div></div>
-      <div class="ds"><div class="ds-n">94%</div><div class="ds-l">Occupancy rate</div></div>
+      <div class="dstat"><div class="dstat-n">28</div><div class="dstat-l">Confirmed this week</div></div>
+      <div class="dstat"><div class="dstat-n">£840</div><div class="dstat-l">Revenue this week</div></div>
+      <div class="dstat"><div class="dstat-n">£3,240</div><div class="dstat-l">Revenue this month</div></div>
+      <div class="dstat"><div class="dstat-n">94%</div><div class="dstat-l">Slots filled</div></div>
     </div>
-
-    <div class="dash-grid">
-      <!-- Recent bookings -->
-      <div class="dash-card">
-        <div class="dc-title">Recent bookings <span class="dc-tag">Today</span></div>
-        <div class="booking-item">
-          <div class="bi-left"><div class="bi-name">Marcus Thompson</div><div class="bi-meta">Tue 20 May · 18:30 · Peak</div></div>
-          <div class="bi-right"><div class="bi-amount">£45.70</div><div class="bi-status">Paid ✓</div></div>
-        </div>
-        <div class="booking-item">
-          <div class="bi-left"><div class="bi-name">Liam Kavanagh</div><div class="bi-meta">Tue 20 May · 19:30 · Peak</div></div>
-          <div class="bi-right"><div class="bi-amount">£45.70</div><div class="bi-status">Paid ✓</div></div>
-        </div>
-        <div class="booking-item">
-          <div class="bi-left"><div class="bi-name">Omar Salim</div><div class="bi-meta">Wed 21 May · 16:30 · Off-peak</div></div>
-          <div class="bi-right"><div class="bi-amount">£25.70</div><div class="bi-status">Paid ✓</div></div>
-        </div>
-        <div class="booking-item">
-          <div class="bi-left"><div class="bi-name">Jamal Richards · 🔁 Block</div><div class="bi-meta">Thu 22 May onwards · 12 weeks</div></div>
-          <div class="bi-right"><div class="bi-amount">£540.00</div><div class="bi-status">Paid ✓</div></div>
-        </div>
-        <div class="booking-item">
-          <div class="bi-left"><div class="bi-name">Tariq Hassan</div><div class="bi-meta">Fri 23 May · 17:30 · Off-peak</div></div>
-          <div class="bi-right"><div class="bi-amount">£25.70</div><div class="bi-status">Paid ✓</div></div>
-        </div>
+    <div class="dash-cols">
+      <div class="dcol">
+        <div class="dcol-title">Confirmed bookings <span class="dcol-tag">All paid automatically ✓</span></div>
+        <div class="booking-r"><div><div class="br-name">18:30 Peak · 10 players</div><div class="br-meta">Tue 20 May</div></div><div><div class="br-amt">£45.00</div><div class="br-s">Paid ✓</div></div></div>
+        <div class="booking-r"><div><div class="br-name">19:30 Peak · 10 players</div><div class="br-meta">Tue 20 May</div></div><div><div class="br-amt">£45.00</div><div class="br-s">Paid ✓</div></div></div>
+        <div class="booking-r"><div><div class="br-name">16:30 Off-peak · 10 players</div><div class="br-meta">Wed 21 May</div></div><div><div class="br-amt">£25.00</div><div class="br-s">Paid ✓</div></div></div>
+        <div class="booking-r"><div><div class="br-name">18:30 Peak · 10 players</div><div class="br-meta">Thu 22 May</div></div><div><div class="br-amt">£45.00</div><div class="br-s">Paid ✓</div></div></div>
+        <div class="booking-r"><div><div class="br-name">17:30 Off-peak · 10 players</div><div class="br-meta">Fri 23 May</div></div><div><div class="br-amt">£25.00</div><div class="br-s">Paid ✓</div></div></div>
       </div>
-
-      <!-- Slot occupancy -->
-      <div class="dash-card">
-        <div class="dc-title">Slot occupancy <span class="dc-tag">This week</span></div>
-        <div class="slot-row">
-          <div><div class="sr-time">18:30 Peak</div><div class="sr-type">Mon–Sun</div></div>
-          <div class="sr-bar-wrap"><div class="sr-bar" style="width:95%"></div></div>
-          <div class="sr-count">7/7 days</div>
-        </div>
-        <div class="slot-row">
-          <div><div class="sr-time">19:30 Peak</div><div class="sr-type">Mon–Sun</div></div>
-          <div class="sr-bar-wrap"><div class="sr-bar" style="width:85%"></div></div>
-          <div class="sr-count">6/7 days</div>
-        </div>
-        <div class="slot-row">
-          <div><div class="sr-time">20:30 Peak</div><div class="sr-type">Mon–Sun</div></div>
-          <div class="sr-bar-wrap"><div class="sr-bar" style="width:71%"></div></div>
-          <div class="sr-count">5/7 days</div>
-        </div>
-        <div class="slot-row">
-          <div><div class="sr-time">17:30 Off-peak</div><div class="sr-type">Mon–Fri</div></div>
-          <div class="sr-bar-wrap"><div class="sr-bar" style="width:80%"></div></div>
-          <div class="sr-count">4/5 days</div>
-        </div>
-        <div class="slot-row">
-          <div><div class="sr-time">16:30 Off-peak</div><div class="sr-type">Mon–Fri</div></div>
-          <div class="sr-bar-wrap"><div class="sr-bar" style="width:60%"></div></div>
-          <div class="sr-count">3/5 days</div>
-        </div>
-        <div class="slot-row">
-          <div><div class="sr-time">15:30 Off-peak</div><div class="sr-type">Mon–Fri</div></div>
-          <div class="sr-bar-wrap"><div class="sr-bar" style="width:40%"></div></div>
-          <div class="sr-count">2/5 days</div>
-        </div>
-      </div>
-
-      <!-- Revenue chart -->
-      <div class="dash-card">
-        <div class="dc-title">Weekly revenue <span class="dc-tag">Last 7 weeks</span></div>
-        <div class="revenue-bars" id="rev-bars"></div>
-        <div style="display:flex;justify-content:space-between;margin-top:6px">
-          <span style="font-size:10px;color:var(--muted)">4 wks ago</span>
-          <span style="font-size:10px;color:var(--green);font-weight:600">This week £840</span>
-        </div>
-      </div>
-
-      <!-- Upcoming -->
-      <div class="dash-card">
-        <div class="dc-title">Upcoming <span class="dc-tag">Next 48hrs</span></div>
-        <div class="booking-item">
-          <div class="bi-left"><div class="bi-name">Tonight · 18:30</div><div class="bi-meta">Peak · Confirmed · 10 players</div></div>
-          <div class="bi-right"><div class="bi-amount">£45</div></div>
-        </div>
-        <div class="booking-item">
-          <div class="bi-left"><div class="bi-name">Tonight · 19:30</div><div class="bi-meta">Peak · Confirmed · 10 players</div></div>
-          <div class="bi-right"><div class="bi-amount">£45</div></div>
-        </div>
-        <div class="booking-item">
-          <div class="bi-left"><div class="bi-name">Tonight · 20:30</div><div class="bi-meta">Peak · 1 spot left</div></div>
-          <div class="bi-right"><div class="bi-amount">£45</div></div>
-        </div>
-        <div class="booking-item">
-          <div class="bi-left"><div class="bi-name">Tomorrow · 16:30</div><div class="bi-meta">Off-peak · Confirmed</div></div>
-          <div class="bi-right"><div class="bi-amount">£25</div></div>
-        </div>
-        <div class="booking-item">
-          <div class="bi-left"><div class="bi-name">Tomorrow · 18:30</div><div class="bi-meta">Peak · 3 spots left</div></div>
-          <div class="bi-right"><div class="bi-amount">£45</div></div>
-        </div>
+      <div class="dcol">
+        <div class="dcol-title">Slot occupancy <span class="dcol-tag">This week</span></div>
+        <div class="occ-row"><div class="occ-info"><div class="occ-time">18:30 Peak</div><div class="occ-type">Every day</div></div><div class="occ-bar-wrap"><div class="occ-bar" style="width:100%"></div></div><div class="occ-count">7/7</div></div>
+        <div class="occ-row"><div class="occ-info"><div class="occ-time">19:30 Peak</div><div class="occ-type">Every day</div></div><div class="occ-bar-wrap"><div class="occ-bar" style="width:86%"></div></div><div class="occ-count">6/7</div></div>
+        <div class="occ-row"><div class="occ-info"><div class="occ-time">20:30 Peak</div><div class="occ-type">Every day</div></div><div class="occ-bar-wrap"><div class="occ-bar" style="width:71%"></div></div><div class="occ-count">5/7</div></div>
+        <div class="occ-row"><div class="occ-info"><div class="occ-time">17:30 Off-peak</div><div class="occ-type">Mon–Fri</div></div><div class="occ-bar-wrap"><div class="occ-bar" style="width:80%"></div></div><div class="occ-count">4/5</div></div>
+        <div class="occ-row"><div class="occ-info"><div class="occ-time">16:30 Off-peak</div><div class="occ-type">Mon–Fri</div></div><div class="occ-bar-wrap"><div class="occ-bar" style="width:60%"></div></div><div class="occ-count">3/5</div></div>
+        <div class="occ-row"><div class="occ-info"><div class="occ-time">15:30 Off-peak</div><div class="occ-type">Mon–Fri</div></div><div class="occ-bar-wrap"><div class="occ-bar" style="width:40%"></div></div><div class="occ-count">2/5</div></div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-function showView(name){
+function go(view){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-'+name).classList.add('active');
+  document.getElementById('view-'+view).classList.add('active');
   window.scrollTo(0,0);
 }
-
 function pickDay(el){
   document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
 }
-
-let curPrice=45, curType='single';
-
-function pickSess(el,time,type,price){
-  if(el.classList.contains('full'))return;
-  document.querySelectorAll('.sess').forEach(s=>s.classList.remove('selected'));
-  el.classList.add('selected');
-  curPrice=price;
-  document.getElementById('p-time').textContent=time;
-  document.getElementById('p-detail').textContent=type+' · Tue 20 May · Globe Pitch';
-  updatePanel();
-}
-
-function setType(el,type){
-  document.querySelectorAll('.type-opt').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  curType=type;
-  updatePanel();
-}
-
-function updatePanel(){
-  const extra=curType==='single'?5:0;
-  const base=curPrice+extra;
-  const mult=curType==='block'?12:1;
-  const fee=0.70;
-  const total=(base*mult)+fee;
-  document.getElementById('p-hire').textContent='£'+base.toFixed(2)+(mult>1?' × 12':'');
-  document.getElementById('p-fee').textContent='£'+fee.toFixed(2);
-  document.getElementById('p-total').textContent='£'+total.toFixed(2);
-}
-
-// Revenue bars
-const revData=[520,610,480,700,650,780,840];
-const maxRev=Math.max(...revData);
-const container=document.getElementById('rev-bars');
-const days=['W1','W2','W3','W4','W5','W6','Now'];
-revData.forEach((v,i)=>{
-  const h=Math.round((v/maxRev)*85);
-  const isThis=i===revData.length-1;
-  container.innerHTML+=`<div class="rev-bar-wrap">
-    <div class="rev-bar${isThis?' this':''}" style="height:${h}px"></div>
-    <div class="rev-bar-label">${days[i]}</div>
-  </div>`;
-});
 </script>
 </body>
 </html>
