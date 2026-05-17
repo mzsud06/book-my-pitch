@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd bookmypitch-app && npm run build",
+  "outputDirectory": "bookmypitch-app/.next",
+  "installCommand": "cd bookmypitch-app && npm install",
+  "framework": "nextjs"
+}
