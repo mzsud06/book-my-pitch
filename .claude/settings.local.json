@@ -1,14 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(head *)",
-      "PowerShell(cmd /c \"dir /b \"\"C:\\\\Projects\\\\book-my-pitch\\\\bookmypitch-app\\\\node_modules\\\\next\"\"\")",
-      "PowerShell(cmd /c \"dir /b \"\"C:\\\\Projects\\\\book-my-pitch\\\\bookmypitch-app\\\\node_modules\\\\next\\\\dist\"\"\")",
-      "PowerShell(cmd /c \"dir /b \"\"C:\\\\Projects\\\\book-my-pitch\\\\bookmypitch-app\\\\node_modules\\\\next\\\\dist\\\\docs\"\"\")",
-      "PowerShell(cmd /c \"dir /b \"\"C:\\\\Projects\\\\book-my-pitch\\\\bookmypitch-app\\\\node_modules\\\\next\\\\dist\\\\docs\\\\01-app\"\"\")",
-      "PowerShell(cmd /c \"dir /b \"\"C:\\\\Projects\\\\book-my-pitch\\\\bookmypitch-app\\\\node_modules\\\\next\\\\dist\\\\docs\\\\01-app\\\\01-getting-started\"\"\")",
       "Bash(npm run *)",
-      "Bash(npx tsc *)"
+      "Bash(supabase --version)",
+      "Bash(npx supabase *)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('next:', p.dependencies.next, '\\\\n@supabase/ssr:', p.dependencies['@supabase/ssr'], '\\\\n@supabase/supabase-js:', p.dependencies['@supabase/supabase-js']\\)\")",
+      "Bash(xargs grep -l -i \"middleware\")",
+      "Bash(Get-ChildItem \"C:\\\\Projects\\\\book-my-pitch\\\\bookmypitch-app\\\\node_modules\\\\next\\\\dist\\\\docs\" -Recurse -Filter \"*.md\")",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(Format-List)"
     ]
   }
 }
