@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import Nav from '@/components/Nav'
 import JoinForm from '@/components/JoinForm'
 
 interface Props {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ organiser?: string }>
 }
 
 interface SlotData {
@@ -17,8 +19,10 @@ interface SlotData {
   max_players: number
 }
 
-export default async function JoinSessionPage({ params }: Props) {
+export default async function JoinSessionPage({ params, searchParams }: Props) {
   const { id } = await params
+  const { organiser } = await searchParams
+  const isOrganiser = organiser === '1'
   const supabase = await createClient()
 
   const { data: session } = await supabase
@@ -58,13 +62,15 @@ export default async function JoinSessionPage({ params }: Props) {
   return (
     <>
       <Nav />
-      <JoinForm
-        slot={slot as SlotData}
-        isOrganiser={false}
-        sessionId={id}
-        existingPlayerCount={playerCount}
-        hasRival={hasRival}
-      />
+      <Suspense fallback={<div style={{ padding: '4rem', textAlign: 'center', color: 'var(--muted)' }}>Loading…</div>}>
+        <JoinForm
+          slot={slot as SlotData}
+          isOrganiser={isOrganiser}
+          sessionId={id}
+          existingPlayerCount={playerCount}
+          hasRival={hasRival}
+        />
+      </Suspense>
     </>
   )
 }

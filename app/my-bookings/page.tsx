@@ -125,7 +125,7 @@ export default async function MyBookingsPage() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
                           <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '-0.3px' }}>
-                            {s.slots.start_time} – {s.slots.end_time}
+                            {s.slots.start_time.slice(0, 5)} – {s.slots.end_time.slice(0, 5)}
                           </div>
                           <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '2px' }}>
                             {s.slots.venues?.name ?? 'Globe Pitch'} · {formatDate(s.slots.date)}
@@ -167,7 +167,7 @@ export default async function MyBookingsPage() {
                   <Link key={p.id} href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
                     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.85rem 1.25rem', cursor: 'pointer' }}>
                       <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '15px', letterSpacing: '-0.3px' }}>
-                        {s.slots.start_time}
+                        {s.slots.start_time.slice(0, 5)} – {s.slots.end_time.slice(0, 5)}
                       </div>
                       <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '2px' }}>
                         {s.slots.venues?.name ?? 'Globe Pitch'} · {formatDate(s.slots.date)} · {s.status === 'confirmed' ? 'Played' : 'Not filled'}

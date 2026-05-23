@@ -41,6 +41,8 @@ export async function POST(req: NextRequest) {
     .from('players')
     .select('id, stripe_customer_id, stripe_payment_method_id, name')
     .eq('session_id', sessionId)
+    .not('stripe_payment_method_id', 'is', null)
+    .not('stripe_customer_id', 'is', null)
     .limit(10)
 
   if (!players || players.length < 10) {

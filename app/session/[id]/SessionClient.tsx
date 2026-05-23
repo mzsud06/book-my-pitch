@@ -62,6 +62,11 @@ function formatTime(ts: string): string {
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 
+/** Strip seconds off DB time strings like "18:30:00" → "18:30" */
+function sliceTime(t: string): string {
+  return t ? t.slice(0, 5) : t
+}
+
 export default function SessionClient({ session: initialSession, hasRival, initialMessages, justJoined, justCreated }: Props) {
   const supabase = createClient()
   const [session, setSession] = useState(initialSession)
@@ -76,7 +81,7 @@ export default function SessionClient({ session: initialSession, hasRival, initi
   const isFilling = session.status === 'filling'
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/session/${session.id}` : `/session/${session.id}`
 
-  // Build the full player list: organiser first, then joiners
+  // Build the full player list: organiser first (only if still set), then joiners
   const organiserEntry = session.organiser_name
     ? [{ id: 'organiser', name: session.organiser_name, joined_at: session.created_at }]
     : []
@@ -93,10 +98,28 @@ export default function SessionClient({ session: initialSession, hasRival, initi
     function refetchSession() {
       supabase
         .from('sessions')
-        .select('id, status, created_at, organiser_name, organiser_phone, slots(id, date, start_time, end_time, type, price, max_players, venues(id, name, address)), players(id, name, joined_at)')
+        .select(`
+          id, status, created_at, organiser_name, organiser_phone,
+          slots(id, date, start_time, end_time, type, price, max_players,
+            venues(id, name, address)
+          ),
+          players(id, name, joined_at)
+        `)
         .eq('id', session.id)
         .single()
-        .then(({ data }) => { if (data) setSession(data as unknown as Session) })
+        .then(({ data }) => {
+          if (!data) return
+          // Normalize nested arrays the same way the server page does
+          const rawSlots = (data as unknown as { slots: unknown }).slots
+          const s = Array.isArray(rawSlots) ? rawSlots[0] : rawSlots
+          const rawVenues = (s as { venues: unknown })?.venues
+          const v = Array.isArray(rawVenues) ? rawVenues[0] : rawVenues
+          setSession({
+            ...(data as unknown as Session),
+            slots: { ...(s as Session['slots']), venues: v as Session['slots']['venues'] },
+            players: Array.isArray(data.players) ? data.players as Player[] : [],
+          })
+        })
     }
 
     const channel = supabase
@@ -119,7 +142,8 @@ export default function SessionClient({ session: initialSession, hasRival, initi
   }
 
   function shareWhatsApp() {
-    const text = `Join my 5-a-side at ${slot.venues?.name ?? 'Globe Pitch'} — ${slot.start_time}–${slot.end_time} on ${formatDate(slot.date)}!\n${shareUrl}`
+    const venueName = slot.venues?.name ?? 'Globe Pitch'
+    const text = `Join my 5-a-side at ${venueName} — ${sliceTime(slot.start_time)}–${sliceTime(slot.end_time)} on ${formatDate(slot.date)}!\n${shareUrl}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
@@ -193,7 +217,7 @@ export default function SessionClient({ session: initialSession, hasRival, initi
           {slot.venues?.name ?? 'Globe Football Pitch'} · Bethnal Green
         </div>
         <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '22px', letterSpacing: '-0.5px', marginBottom: '2px' }}>
-          {slot.start_time} – {slot.end_time}
+          {sliceTime(slot.start_time)} – {sliceTime(slot.end_time)}
         </div>
         <div style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '1rem' }}>
           {formatDate(slot.date)} · {slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'} · 5-a-side
@@ -203,7 +227,6 @@ export default function SessionClient({ session: initialSession, hasRival, initi
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', marginBottom: '0.75rem' }}>
           {Array.from({ length: 10 }, (_, i) => {
             const player = allPlayers[i]
-            const isOrganiser = i === 0 && session.organiser_name && !session.players[0]?.id  // first slot = organiser
             const name = player ? formatPlayerName(player.name) : null
             return (
               <div
@@ -262,7 +285,7 @@ export default function SessionClient({ session: initialSession, hasRival, initi
             { label: 'Pitch', val: slot.venues?.name ?? 'Globe Football Pitch' },
             { label: 'Address', val: slot.venues?.address ?? '110 Globe Rd, Bethnal Green E1 4DZ' },
             { label: 'Date', val: formatDate(slot.date) },
-            { label: 'Time', val: `${slot.start_time} – ${slot.end_time}` },
+            { label: 'Time', val: `${sliceTime(slot.start_time)} – ${sliceTime(slot.end_time)}` },
             { label: 'Your cost', val: `£${perPlayerPounds}` },
             { label: 'Status', val: 'Confirmed ✓' },
           ].map((row, idx, arr) => (

@@ -78,7 +78,10 @@ export default function HomePage() {
                       <div style={{ height: '100%', borderRadius: '100px', background: card.barColor, width: `${card.fill}%` }} />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--muted)' }}>
-                      <span style={{ color: 'var(--amber)', fontWeight: 700 }}>⚡ Another group racing for this</span>
+                      {card.rival
+                        ? <span style={{ color: 'var(--amber)', fontWeight: 700 }}>⚡ Another group racing for this</span>
+                        : <span>{card.players}/10 players joined</span>
+                      }
                     </div>
                   </div>
                 </div>

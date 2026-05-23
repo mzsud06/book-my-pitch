@@ -42,6 +42,8 @@ export default function CreateSessionForm({ slot }: { slot: Slot }) {
 
   const perPlayer = (slot.price / 10).toFixed(2)
   const typeLabel = slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'
+  const startTime = slot.start_time.slice(0, 5)
+  const endTime = slot.end_time.slice(0, 5)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -62,7 +64,11 @@ export default function CreateSessionForm({ slot }: { slot: Slot }) {
       return
     }
 
-    router.push(`/session/${data.sessionId}?created=1`)
+    // Save name/phone so the join form can auto-fill them
+    sessionStorage.setItem('join_details', JSON.stringify({ name: name.trim(), phone: phone.trim() }))
+
+    // Redirect organiser through the payment flow so they are charged like everyone else
+    router.push(`/session/${data.sessionId}/join?organiser=1`)
   }
 
   return (
@@ -71,7 +77,7 @@ export default function CreateSessionForm({ slot }: { slot: Slot }) {
         Create your game
       </div>
       <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '28px', letterSpacing: '-1px', marginBottom: '0.25rem' }}>
-        {slot.start_time} – {slot.end_time}
+        {startTime} – {endTime}
       </div>
       <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '1.75rem' }}>
         {formatDate(slot.date)} · {typeLabel} · {slot.venue?.name ?? 'Globe Football Pitch'}
@@ -129,7 +135,7 @@ export default function CreateSessionForm({ slot }: { slot: Slot }) {
           <label style={labelStyle}>Your name</label>
           <input
             value={name} onChange={e => setName(e.target.value)}
-            placeholder="First name" required style={inputStyle}
+            placeholder="Full name" required style={inputStyle}
             onFocus={e => (e.target.style.borderColor = 'rgba(200,244,0,0.4)')}
             onBlur={e => (e.target.style.borderColor = 'var(--border)')}
           />

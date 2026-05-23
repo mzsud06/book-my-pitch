@@ -50,7 +50,7 @@ export default async function OwnerDashboardPage() {
   const { data: rawSessions } = await supabase
     .from('sessions')
     .select(`
-      id, status, created_at,
+      id, status, created_at, organiser_name,
       slots!inner(id, date, start_time, end_time, type, price, venue_id),
       players(id, name, joined_at),
       bookings(id, confirmed_at)
@@ -109,6 +109,7 @@ export default async function OwnerDashboardPage() {
       id: s.id,
       status: s.status,
       created_at: s.created_at,
+      organiser_name: (s as unknown as { organiser_name?: string | null }).organiser_name ?? null,
       slots: slot ?? { date: '', start_time: '', end_time: '', type: '', price: 0 },
       players,
       bookings,

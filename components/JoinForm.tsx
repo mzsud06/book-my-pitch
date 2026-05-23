@@ -33,6 +33,11 @@ function formatDate(dateStr: string): string {
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`
 }
 
+/** Strip seconds off a DB time string like "18:30:00" → "18:30" */
+function sliceTime(t: string): string {
+  return t ? t.slice(0, 5) : t
+}
+
 const inputStyle: React.CSSProperties = {
   width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
   borderRadius: '8px', padding: '0.65rem 0.9rem', color: 'var(--text)',
@@ -50,6 +55,7 @@ function PaymentStep({
   sessionId,
   isOrganiser,
   clientSecret,
+  customerId,
   name,
   phone,
   existingPlayerCount,
@@ -60,6 +66,7 @@ function PaymentStep({
   sessionId: string | null
   isOrganiser: boolean
   clientSecret: string
+  customerId: string
   name: string
   phone: string
   existingPlayerCount: number
@@ -111,6 +118,7 @@ function PaymentStep({
         name,
         phone,
         paymentMethodId: setupIntent.payment_method,
+        customerId, // Pass the pre-created customer so join route doesn't create a duplicate
       }),
     })
 
@@ -121,7 +129,13 @@ function PaymentStep({
       return
     }
 
-    router.push(`/session/${data.sessionId}?joined=1`)
+    // Clear saved details after successful join
+    sessionStorage.removeItem('join_details')
+
+    const dest = isOrganiser
+      ? `/session/${data.sessionId}?created=1`
+      : `/session/${data.sessionId}?joined=1`
+    router.push(dest)
   }
 
   return (
@@ -332,6 +346,7 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [clientSecret, setClientSecret] = useState('')
+  const [customerId, setCustomerId] = useState('')   // persisted from setup-intent
   const [loadingSetup, setLoadingSetup] = useState(false)
   const [setupError, setSetupError] = useState('')
 
@@ -339,9 +354,11 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
   useEffect(() => {
     const saved = sessionStorage.getItem('join_details')
     if (saved) {
-      const { name: n, phone: p } = JSON.parse(saved)
-      if (n) setName(n)
-      if (p) setPhone(p)
+      try {
+        const { name: n, phone: p } = JSON.parse(saved)
+        if (n) setName(n)
+        if (p) setPhone(p)
+      } catch { /* ignore malformed data */ }
     }
   }, [])
 
@@ -373,6 +390,12 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
   }
 
   async function initSetupIntent() {
+    // Reuse existing setup intent if we already have one
+    if (clientSecret) {
+      goToPayment()
+      return
+    }
+
     setLoadingSetup(true)
     setSetupError('')
     const res = await fetch('/api/setup-intent', {
@@ -387,6 +410,7 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
       return
     }
     setClientSecret(data.clientSecret)
+    setCustomerId(data.customerId)  // Store for the join API call
     setLoadingSetup(false)
     goToPayment()
   }
@@ -423,19 +447,42 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
     },
   }
 
-  // Player grid: first name + surname initial (Marcus T.)
+  // Player grid: filled = dot, next open = "you", rest = empty
   function fmtPlayer(idx: number) {
     return idx < existingPlayerCount ? '●' : `+${idx - existingPlayerCount + 1}`
   }
 
+  const startTime = sliceTime(slot.start_time)
+  const endTime = sliceTime(slot.end_time)
+
   return (
     <div style={{ maxWidth: '460px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-      <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', letterSpacing: '-1px', marginBottom: '0.25rem' }}>
-        Join the session
-      </div>
-      <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '1.25rem' }}>
-        Your card won&apos;t be charged until all 10 players are in.
-      </div>
+      {isOrganiser ? (
+        <>
+          <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', letterSpacing: '-1px', marginBottom: '0.25rem' }}>
+            Secure your spot
+          </div>
+          <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '1rem' }}>
+            Game created! Now add your payment details to lock in your place.
+          </div>
+          <div style={{
+            background: 'rgba(200,244,0,0.06)', border: '1px solid rgba(200,244,0,0.2)',
+            borderRadius: '10px', padding: '0.85rem 1rem', marginBottom: '1.25rem',
+            fontSize: '14px', color: 'var(--green)',
+          }}>
+            🎉 You&apos;re the organiser — share the link after joining to fill the team.
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', letterSpacing: '-1px', marginBottom: '0.25rem' }}>
+            Join the session
+          </div>
+          <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '1.25rem' }}>
+            Your card won&apos;t be charged until all 10 players are in.
+          </div>
+        </>
+      )}
 
       {/* Session summary */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem' }}>
@@ -443,7 +490,7 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
           Globe Football Pitch · Bethnal Green
         </div>
         <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '22px', letterSpacing: '-0.5px', marginBottom: '2px' }}>
-          {slot.start_time} – {slot.end_time}
+          {startTime} – {endTime}
         </div>
         <div style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '1rem' }}>
           {formatDate(slot.date)} · {slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'} · 5-a-side
@@ -477,7 +524,7 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
         <form onSubmit={handleDetailsContinue} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div>
             <label style={labelStyle}>Your name</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="First name" required style={inputStyle}
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="Full name" required style={inputStyle}
               onFocus={e => (e.target.style.borderColor = 'rgba(200,244,0,0.4)')}
               onBlur={e => (e.target.style.borderColor = 'var(--border)')} />
           </div>
@@ -520,6 +567,7 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
             sessionId={sessionId}
             isOrganiser={isOrganiser}
             clientSecret={clientSecret}
+            customerId={customerId}
             name={name}
             phone={phone}
             existingPlayerCount={existingPlayerCount}

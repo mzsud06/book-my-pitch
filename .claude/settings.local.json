@@ -8,7 +8,10 @@
       "Bash(xargs grep -l -i \"middleware\")",
       "Bash(Get-ChildItem \"C:\\\\Projects\\\\book-my-pitch\\\\bookmypitch-app\\\\node_modules\\\\next\\\\dist\\\\docs\" -Recurse -Filter \"*.md\")",
       "Bash(Select-Object Name, FullName)",
-      "Bash(Format-List)"
+      "Bash(Format-List)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Projects\\\\book-my-pitch\" -Recurse -Depth 3 | Where-Object { !$_.FullName.Contains\\(\"node_modules\"\\) -and !$_.FullName.Contains\\(\".git\"\\) -and !$_.FullName.Contains\\(\".next\"\\) } | Select-Object FullName | Format-List)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'Fix critical payment bugs, organiser flow, time display, mobile viewport *)"
     ]
   }
 }
