@@ -59,7 +59,10 @@ export default async function SlotsPage() {
       .upsert(slotInserts, { onConflict: 'venue_id,date,start_time', ignoreDuplicates: true })
   }
 
-  const [{ data: sessions }, { data: dbSlots }] = await Promise.all([
+  // Identify the logged-in user so we can highlight slots they've already joined.
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const [{ data: sessions }, { data: dbSlots }, myPlayersResult] = await Promise.all([
     supabase
       .from('sessions')
       .select(`
@@ -80,7 +83,25 @@ export default async function SlotsPage() {
       .eq('venue_id', venueId)
       .gte('date', todayStr)
       .lte('date', endStr),
+    // For logged-in users: find which sessions they've already joined so the
+    // slots page can show "You're in this game" on the relevant slot cards.
+    user
+      ? supabase
+          .from('players')
+          .select('session_id, sessions(slot_id, status)')
+          .eq('user_id', user.id)
+      : Promise.resolve({ data: null }),
   ])
+
+  // Build slot_id → session_id for the current user's active sessions.
+  const mySlotToSession: Record<string, string> = {}
+  type PlayerRow = { session_id: string; sessions: { slot_id: string; status: string } | { slot_id: string; status: string }[] | null }
+  ;(myPlayersResult.data as PlayerRow[] | null ?? []).forEach(p => {
+    const sess = Array.isArray(p.sessions) ? p.sessions[0] : p.sessions
+    if (sess && ['filling', 'confirmed'].includes(sess.status)) {
+      mySlotToSession[sess.slot_id] = p.session_id
+    }
+  })
 
   return (
     <>
@@ -89,6 +110,7 @@ export default async function SlotsPage() {
         initialSessions={(sessions ?? []) as unknown as SessionData[]}
         dbSlots={(dbSlots ?? []) as DbSlot[]}
         venueId={venueId}
+        mySlotToSession={mySlotToSession}
       />
     </>
   )

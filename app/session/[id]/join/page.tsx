@@ -25,6 +25,8 @@ export default async function JoinSessionPage({ params, searchParams }: Props) {
   const isOrganiser = organiser === '1'
   const supabase = await createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const { data: session } = await supabase
     .from('sessions')
     .select(`
@@ -37,6 +39,18 @@ export default async function JoinSessionPage({ params, searchParams }: Props) {
 
   if (!session) notFound()
   if (session.status === 'confirmed') redirect(`/session/${id}`)
+
+  // If the logged-in user is already a player in this session, send them straight
+  // back rather than letting them pay again.
+  if (user) {
+    const { data: alreadyIn } = await supabase
+      .from('players')
+      .select('id')
+      .eq('session_id', id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (alreadyIn) redirect(`/session/${id}?already=1`)
+  }
 
   const organiserCount = (session as unknown as { organiser_name: string | null }).organiser_name ? 1 : 0
   const playerCount = organiserCount + (Array.isArray(session.players) ? session.players.length : 0)
@@ -69,6 +83,7 @@ export default async function JoinSessionPage({ params, searchParams }: Props) {
           sessionId={id}
           existingPlayerCount={playerCount}
           hasRival={hasRival}
+          isLoggedIn={!!user}
         />
       </Suspense>
     </>

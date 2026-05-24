@@ -8,6 +8,7 @@ interface Player {
   id: string
   name: string
   joined_at: string
+  session_id: string
 }
 
 interface Message {
@@ -42,6 +43,7 @@ interface Props {
   initialMessages: Message[]
   justJoined: boolean
   justCreated: boolean
+  alreadyIn: boolean
 }
 
 function formatDate(dateStr: string): string {
@@ -67,7 +69,9 @@ function sliceTime(t: string): string {
   return t ? t.slice(0, 5) : t
 }
 
-export default function SessionClient({ session: initialSession, hasRival, initialMessages, justJoined, justCreated }: Props) {
+
+
+export default function SessionClient({ session: initialSession, hasRival, initialMessages, justJoined, justCreated, alreadyIn }: Props) {
   const supabase = createClient()
   const [session, setSession] = useState(initialSession)
   const [messages, setMessages] = useState(initialMessages)
@@ -75,17 +79,26 @@ export default function SessionClient({ session: initialSession, hasRival, initi
   const [copied, setCopied] = useState(false)
   const [sendingMsg, setSendingMsg] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  // Initialise with the relative path so SSR and first client render match,
+  // then update to the full URL after hydration to avoid a mismatch.
+  const [shareUrl, setShareUrl] = useState(`/session/${session.id}`)
+
+  useEffect(() => {
+    setShareUrl(`${window.location.origin}/session/${session.id}`)
+  }, [session.id])
 
   const slot = session.slots
   const isConfirmed = session.status === 'confirmed'
   const isFilling = session.status === 'filling'
-  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/session/${session.id}` : `/session/${session.id}`
 
-  // Build the full player list: organiser first (only if still set), then joiners
+  // Build the full player list: organiser first (only if still set), then joiners.
+  // Explicitly filter session.players to only this session's id — guards against
+  // any embedded or cached data bleeding in from other sessions for the same slot.
+  const thisSessionPlayers = session.players.filter(p => p.session_id === session.id)
   const organiserEntry = session.organiser_name
-    ? [{ id: 'organiser', name: session.organiser_name, joined_at: session.created_at }]
+    ? [{ id: 'organiser', name: session.organiser_name, joined_at: session.created_at, session_id: session.id }]
     : []
-  const allPlayers: Player[] = [...organiserEntry, ...session.players] as Player[]
+  const allPlayers: Player[] = [...organiserEntry, ...thisSessionPlayers]
   const playerCount = allPlayers.length
   const remaining = 10 - playerCount
   const fillPercent = (playerCount / 10) * 100
@@ -96,30 +109,35 @@ export default function SessionClient({ session: initialSession, hasRival, initi
 
   useEffect(() => {
     function refetchSession() {
-      supabase
-        .from('sessions')
-        .select(`
-          id, status, created_at, organiser_name, organiser_phone,
-          slots(id, date, start_time, end_time, type, price, max_players,
-            venues(id, name, address)
-          ),
-          players(id, name, joined_at)
-        `)
-        .eq('id', session.id)
-        .single()
-        .then(({ data }) => {
-          if (!data) return
-          // Normalize nested arrays the same way the server page does
-          const rawSlots = (data as unknown as { slots: unknown }).slots
-          const s = Array.isArray(rawSlots) ? rawSlots[0] : rawSlots
-          const rawVenues = (s as { venues: unknown })?.venues
-          const v = Array.isArray(rawVenues) ? rawVenues[0] : rawVenues
-          setSession({
-            ...(data as unknown as Session),
-            slots: { ...(s as Session['slots']), venues: v as Session['slots']['venues'] },
-            players: Array.isArray(data.players) ? data.players as Player[] : [],
-          })
+      Promise.all([
+        supabase
+          .from('sessions')
+          .select(`
+            id, status, created_at, organiser_name, organiser_phone,
+            slots(id, date, start_time, end_time, type, price, max_players,
+              venues(id, name, address)
+            )
+          `)
+          .eq('id', session.id)
+          .single(),
+        supabase
+          .from('players')
+          .select('id, name, joined_at, session_id')
+          .eq('session_id', session.id)
+          .order('joined_at', { ascending: true }),
+      ]).then(([{ data }, { data: rawPlayers }]) => {
+        if (!data) return
+        // Normalize nested arrays the same way the server page does
+        const rawSlots = (data as unknown as { slots: unknown }).slots
+        const s = Array.isArray(rawSlots) ? rawSlots[0] : rawSlots
+        const rawVenues = (s as { venues: unknown })?.venues
+        const v = Array.isArray(rawVenues) ? rawVenues[0] : rawVenues
+        setSession({
+          ...(data as unknown as Session),
+          slots: { ...(s as Session['slots']), venues: v as Session['slots']['venues'] },
+          players: ((rawPlayers ?? []) as Player[]).filter(p => p.session_id === session.id),
         })
+      })
     }
 
     const channel = supabase
@@ -182,6 +200,17 @@ export default function SessionClient({ session: initialSession, hasRival, initi
           <div style={{ fontSize: '16px', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
             All 10 players paid. Venue notified. See you on the pitch.
           </div>
+        </div>
+      )}
+
+      {/* "Already in this game" banner */}
+      {alreadyIn && (
+        <div style={{
+          background: 'rgba(200,244,0,0.06)', border: '1px solid rgba(200,244,0,0.2)',
+          borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1.25rem',
+          fontSize: '15px', color: 'var(--green)', fontWeight: 700,
+        }}>
+          👋 You&apos;re already in this game!
         </div>
       )}
 
@@ -304,32 +333,25 @@ export default function SessionClient({ session: initialSession, hasRival, initi
       {/* Share section — filling sessions */}
       {isFilling && (
         <>
-          {/* Join CTA */}
-          <Link href={`/session/${session.id}/join`} style={{ textDecoration: 'none' }}>
-            <button className="join-btn" style={{
-              width: '100%', padding: '0.9rem', fontSize: '15px', borderRadius: '10px', border: 'none',
-              cursor: 'pointer', background: 'var(--green)', color: 'var(--black)',
-              fontFamily: "'Archivo', sans-serif", fontWeight: 700, marginBottom: '1.25rem',
-              transition: 'all 0.15s',
-            }}>
-              Join this session — £{perPlayerPounds} if confirmed
-            </button>
-          </Link>
-
-          {/* Share card */}
+          {/* Share card — always shown first, before the Join CTA */}
           <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border)',
-            borderRadius: '14px', padding: '1.25rem', marginBottom: '1rem',
+            background: 'rgba(200,244,0,0.06)',
+            border: '1px solid rgba(200,244,0,0.3)',
+            borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem',
           }}>
-            <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.75rem' }}>
-              Share with your mates — {remaining} spot{remaining !== 1 ? 's' : ''} left
+            <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '-0.3px', marginBottom: '4px' }}>
+              📤 Share with your team
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '0.85rem', lineHeight: 1.5 }}>
+              {remaining} spot{remaining !== 1 ? 's' : ''} left — send this link to fill them. Anyone with the link can join.
             </div>
 
             {/* URL display */}
             <div style={{
               background: 'var(--surface2)', borderRadius: '8px', padding: '0.75rem 1rem',
-              fontSize: '13px', color: 'var(--muted)', wordBreak: 'break-all',
-              lineHeight: 1.5, marginBottom: '0.75rem',
+              fontSize: '13px', color: 'rgba(200,244,0,0.85)', wordBreak: 'break-all',
+              lineHeight: 1.5, marginBottom: '0.85rem', fontFamily: 'monospace',
+              border: '1px solid rgba(200,244,0,0.15)',
             }}>
               {shareUrl}
             </div>
@@ -340,19 +362,19 @@ export default function SessionClient({ session: initialSession, hasRival, initi
                 className="share-copy"
                 onClick={copyLink}
                 style={{
-                  flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none',
+                  flex: 1, padding: '0.8rem', borderRadius: '8px', border: 'none',
                   background: 'var(--green)', color: 'var(--black)',
                   fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: '14px',
                   cursor: 'pointer', transition: 'background 0.15s',
                 }}
               >
-                {copied ? '✓ Copied!' : 'Copy link'}
+                {copied ? '✓ Copied!' : '📋 Copy link'}
               </button>
               <button
                 className="share-wa"
                 onClick={shareWhatsApp}
                 style={{
-                  flex: 1, padding: '0.75rem', borderRadius: '8px', border: 'none',
+                  flex: 1, padding: '0.8rem', borderRadius: '8px', border: 'none',
                   background: '#25D366', color: '#fff',
                   fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: '14px',
                   cursor: 'pointer', transition: 'background 0.15s',
@@ -362,6 +384,19 @@ export default function SessionClient({ session: initialSession, hasRival, initi
               </button>
             </div>
           </div>
+
+          {/* Join CTA — for people who haven't joined yet */}
+          <Link href={`/session/${session.id}/join`} style={{ textDecoration: 'none' }}>
+            <button className="join-btn" style={{
+              width: '100%', padding: '0.9rem', fontSize: '15px', borderRadius: '10px',
+              border: '1px solid var(--border)',
+              cursor: 'pointer', background: 'var(--surface)', color: 'var(--text)',
+              fontFamily: "'Archivo', sans-serif", fontWeight: 700, marginBottom: '1.25rem',
+              transition: 'all 0.15s',
+            }}>
+              Join this session — £{perPlayerPounds} if confirmed
+            </button>
+          </Link>
         </>
       )}
 

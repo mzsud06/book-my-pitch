@@ -29,10 +29,14 @@ export interface DbSlot {
   start_time: string
 }
 
+const LS_KEY = 'bmp_player_details'
+
 interface Props {
   initialSessions: SessionData[]
   dbSlots: DbSlot[]
   venueId: string
+  /** slot_id → session_id for the logged-in user's active sessions (server-resolved). */
+  mySlotToSession: Record<string, string>
 }
 
 function formatDate(date: Date): string {
@@ -57,11 +61,13 @@ function startOfDay(date: Date): Date {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props) {
+export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotToSession }: Props) {
   const supabase = createClient()
   const [sessions, setSessions] = useState<SessionData[]>(initialSessions)
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
   const [weekOffset, setWeekOffset] = useState(0)
+  // Guest (not logged-in) users: slot_id → session_id resolved from localStorage phone.
+  const [guestSlotMap, setGuestSlotMap] = useState<Record<string, string>>({})
 
   // Build lookup: "date_startTime" → slotId
   // DB returns time as "HH:MM:SS"; slice to "HH:MM" to match SlotTemplate.startTime
@@ -92,6 +98,37 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
     return () => { supabase.removeChannel(channel) }
   }, [])
 
+  // For guests: read saved phone from localStorage and look up their sessions.
+  // Runs once on mount; mySlotToSession (server prop) takes priority for
+  // logged-in users so this only has a visible effect for unauthenticated visitors.
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(LS_KEY)
+      if (!stored) return
+      const { phone } = JSON.parse(stored) as { phone?: string }
+      if (!phone) return
+
+      type PlayerRow = { session_id: string; sessions: { slot_id: string; status: string } | { slot_id: string; status: string }[] | null }
+      supabase
+        .from('players')
+        .select('session_id, sessions(slot_id, status)')
+        .eq('phone', phone)
+        .then(({ data }) => {
+          const map: Record<string, string> = {}
+          ;(data as PlayerRow[] | null ?? []).forEach(p => {
+            const sess = Array.isArray(p.sessions) ? p.sessions[0] : p.sessions
+            if (sess && ['filling', 'confirmed'].includes(sess.status)) {
+              map[sess.slot_id] = p.session_id
+            }
+          })
+          setGuestSlotMap(map)
+        })
+    } catch { /* ignore parse / storage errors */ }
+  }, [])
+
+  // Merged map: server-side (logged-in) takes priority over localStorage (guest).
+  const myMap = { ...guestSlotMap, ...mySlotToSession }
+
   const dayStr = formatDate(selectedDate)
   const slotTemplates = getSlotsForDay(selectedDate)
 
@@ -107,27 +144,42 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
 
   function getSlotStatus(template: SlotTemplate) {
     const slotSessions = daySessionMap.get(template.startTime) ?? []
+    const slotId = slotIdMap.get(`${dayStr}_${template.startTime}`) ?? null
+
     const confirmed = slotSessions.find(s => s.status === 'confirmed')
     if (confirmed) {
-      return { status: 'booked' as const, hasRival: false, playerCount: 10, sessionId: confirmed.id, slotId: confirmed.slot_id }
+      // Don't expose the session ID — the booked state never links anywhere
+      return { status: 'booked' as const, hasRival: false, playerCount: 10, sessionId: null, slotId: confirmed.slot_id, isUserSession: false }
     }
-
-    const slotId = slotIdMap.get(`${dayStr}_${template.startTime}`) ?? null
 
     const filling = slotSessions.filter(s => s.status === 'filling')
     if (filling.length === 0) {
-      return { status: 'empty' as const, hasRival: false, playerCount: 0, sessionId: null, slotId }
+      return { status: 'empty' as const, hasRival: false, playerCount: 0, sessionId: null, slotId, isUserSession: false }
     }
 
     const hasRival = filling.length > 1
-    const best = filling.reduce((a, b) => {
-      const ac = totalCount(a)
-      const bc = totalCount(b)
-      return ac >= bc ? a : b
-    })
-    const playerCount = hasRival ? 0 : totalCount(best)
 
-    return { status: 'filling' as const, hasRival, playerCount, sessionId: best.id, slotId: best.slot_id }
+    // Check if the current user is already in one of the filling sessions.
+    const userSessionId = slotId ? myMap[slotId] : null
+    if (userSessionId) {
+      const userSess = filling.find(s => s.id === userSessionId) ?? filling[0]
+      return { status: 'filling' as const, hasRival, playerCount: totalCount(userSess), sessionId: userSessionId, slotId, isUserSession: true }
+    }
+
+    const best = filling.reduce((a, b) => totalCount(a) >= totalCount(b) ? a : b)
+    const bestCount = totalCount(best)
+
+    // Only surface the rival warning if the leading session has enough momentum.
+    // A group with fewer than 5 players is unlikely to fill, so we treat the
+    // slot as open and show "Create game →" instead of discouraging new starters.
+    const RIVAL_THRESHOLD = 5
+    if (bestCount < RIVAL_THRESHOLD) {
+      return { status: 'empty' as const, hasRival: false, playerCount: 0, sessionId: null, slotId, isUserSession: false }
+    }
+
+    // Never expose rival session details — return no count and no session ID.
+    // The only thing the slots page needs to know is that competition exists.
+    return { status: 'filling' as const, hasRival, playerCount: 0, sessionId: null, slotId, isUserSession: false }
   }
 
   function totalCount(s: SessionData): number {
@@ -218,31 +270,33 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
           const typeColor = template.type === 'peak' ? '#FF6B6B' : template.type === 'weekend' ? '#00B4FF' : 'var(--green)'
           const typeBg = template.type === 'peak' ? 'rgba(255,68,68,0.15)' : template.type === 'weekend' ? 'rgba(0,180,255,0.12)' : 'rgba(200,244,0,0.12)'
           const perPlayerPitch = (template.priceGBP / 10).toFixed(2)
+          const isUserSession = info.isUserSession
 
+          // The slots page never links to an existing session — the only action
+          // is "Create game →" which starts the creation flow.  If the user
+          // already belongs to a session for this slot the card shows a status
+          // indicator but is not clickable (they must use their shared link to
+          // return to that session).
           let href: string | undefined
-          if (!booked) {
-            if (filling && info.sessionId) {
-              href = `/session/${info.sessionId}`
-            } else if (info.slotId) {
-              href = `/slots/${info.slotId}/create`
-            }
+          if (!booked && !isUserSession && info.slotId) {
+            href = `/slots/${info.slotId}/create`
           }
 
           const cardStyle = {
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
+            background: isUserSession ? 'rgba(200,244,0,0.04)' : 'var(--surface)',
+            border: `1px solid ${isUserSession ? 'rgba(200,244,0,0.3)' : 'var(--border)'}`,
             borderRadius: '10px',
             padding: '1.1rem 1.25rem',
-            cursor: booked ? 'not-allowed' : 'pointer',
+            cursor: booked ? 'not-allowed' : isUserSession ? 'default' : 'pointer',
             transition: 'all 0.18s',
             position: 'relative' as const,
             overflow: 'hidden' as const,
             opacity: booked ? 0.45 : 1,
-            borderLeft: `3px solid ${typeColor}`,
+            borderLeft: `3px solid ${isUserSession ? 'var(--green)' : typeColor}`,
           }
 
           const fillPct = booked ? 100 : filling ? Math.round((info.playerCount / 10) * 100) : 0
-          const barColor = booked ? 'var(--red)' : fillPct >= 70 ? 'var(--amber)' : 'var(--green)'
+          const barColor = booked ? 'var(--red)' : isUserSession ? 'var(--green)' : fillPct >= 70 ? 'var(--amber)' : 'var(--green)'
 
           const cardContent = (
             <>
@@ -274,18 +328,18 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
                 {booked ? (
                   <span style={{ color: 'var(--red)', fontWeight: 700 }}>Booked — slot taken</span>
+                ) : filling && isUserSession ? (
+                  // State 1 — user is already in this session (card is not a link)
+                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>✓ You&apos;re in this game</span>
                 ) : filling ? (
+                  // State 2 — rival group (5+ players) is filling; user can still create their own
                   <>
-                    <span style={{ color: 'var(--muted)' }}>
-                      {info.hasRival ? 'Multiple groups filling' : `${info.playerCount}/10 players`}
-                    </span>
-                    {info.hasRival && <span style={{ color: 'var(--amber)', fontWeight: 700 }}>⚡ Race to fill</span>}
-                  </>
-                ) : (
-                  <>
-                    <span style={{ fontWeight: 700, color: 'var(--muted)' }}>0/10 · be the first</span>
+                    <span style={{ color: 'var(--amber)', fontWeight: 700 }}>⚡ Another group is racing for this</span>
                     <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: '12px' }}>Create game →</span>
                   </>
+                ) : (
+                  // State 3 — slot is available
+                  <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: '12px', marginLeft: 'auto' }}>Create game →</span>
                 )}
               </div>
             </>
@@ -296,7 +350,9 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
               <div className="slot-pick" style={cardStyle}>{cardContent}</div>
             </Link>
           ) : (
-            <div key={template.startTime} className="taken" style={cardStyle}>{cardContent}</div>
+            // No link: booked slots get 'taken' class (cursor:not-allowed via CSS);
+            // user-session cards are just static (cursor:default, no hover lift).
+            <div key={template.startTime} className={booked ? 'taken' : ''} style={cardStyle}>{cardContent}</div>
           )
         })}
       </div>

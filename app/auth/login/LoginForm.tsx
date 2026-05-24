@@ -6,9 +6,11 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginForm() {
+  const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect') ?? '/my-bookings'
+  const message = searchParams.get('message')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,7 +21,6 @@ export default function LoginForm() {
     setLoading(true)
     setError('')
 
-    const supabase = createClient()
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (authError) {
@@ -28,6 +29,8 @@ export default function LoginForm() {
       return
     }
 
+    // Invalidate the server-component cache so the next page sees the new session
+    router.refresh()
     router.push(redirectTo)
   }
 
@@ -36,6 +39,16 @@ export default function LoginForm() {
       <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', letterSpacing: '-1px', marginBottom: '0.25rem' }}>
         Log in
       </div>
+      {message && (
+        <div style={{
+          background: 'rgba(200,244,0,0.06)', border: '1px solid rgba(200,244,0,0.2)',
+          borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1rem',
+          fontSize: '14px', color: 'var(--green)', lineHeight: 1.5,
+        }}>
+          {message}
+        </div>
+      )}
+
       <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '2rem' }}>
         Don&apos;t have an account?{' '}
         <Link href="/auth/signup" style={{ color: 'var(--green)', textDecoration: 'none' }}>Sign up</Link>

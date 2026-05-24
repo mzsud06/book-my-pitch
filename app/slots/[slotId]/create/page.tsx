@@ -22,6 +22,14 @@ export default async function CreateSessionPage({ params }: Props) {
   const { slotId } = await params
   const supabase = await createClient()
 
+  // Auth guard — creating a game requires a logged-in account
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    const returnTo = encodeURIComponent(`/slots/${slotId}/create`)
+    const msg = encodeURIComponent('You need an account to create a game')
+    redirect(`/auth/login?redirect=${returnTo}&message=${msg}`)
+  }
+
   const { data: raw } = await supabase
     .from('slots')
     .select('id, date, start_time, end_time, type, price, max_players, venues(name, address)')
@@ -32,18 +40,6 @@ export default async function CreateSessionPage({ params }: Props) {
 
   const rawVenue = (raw as SlotRow).venues
   const venue = Array.isArray(rawVenue) ? rawVenue[0] : rawVenue
-
-  // If a filling session already exists for this slot, join it instead
-  const { data: existing } = await supabase
-    .from('sessions')
-    .select('id')
-    .eq('slot_id', slotId)
-    .eq('status', 'filling')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-
-  if (existing) redirect(`/session/${existing.id}`)
 
   const slot = {
     id: raw.id,

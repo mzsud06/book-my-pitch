@@ -14,6 +14,10 @@ interface Slot {
   venue: { name: string; address: string } | null
 }
 
+interface Props {
+  slot: Slot
+}
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -33,7 +37,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
 }
 
-export default function CreateSessionForm({ slot }: { slot: Slot }) {
+export default function CreateSessionForm({ slot }: Props) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -67,8 +71,9 @@ export default function CreateSessionForm({ slot }: { slot: Slot }) {
     // Save name/phone so the join form can auto-fill them
     sessionStorage.setItem('join_details', JSON.stringify({ name: name.trim(), phone: phone.trim() }))
 
-    // Redirect organiser through the payment flow so they are charged like everyone else
-    router.push(`/session/${data.sessionId}/join?organiser=1`)
+    // Redirect organiser through the payment flow so they are charged like everyone else.
+    // router.replace() so the create page doesn't sit in history behind the join page.
+    router.replace(`/session/${data.sessionId}/join?organiser=1`)
   }
 
   return (
@@ -111,7 +116,7 @@ export default function CreateSessionForm({ slot }: { slot: Slot }) {
             <div key={i} style={{
               height: '36px', borderRadius: '6px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: i === 0 ? '11px' : '11px', fontWeight: 700,
+              fontSize: '11px', fontWeight: 700,
               background: i === 0 ? 'var(--green)' : 'var(--surface2)',
               border: i === 0 ? 'none' : '1px dashed rgba(255,255,255,0.07)',
               color: i === 0 ? 'var(--black)' : 'var(--muted)',

@@ -12,13 +12,14 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll()
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, _headers) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
           } catch {
-            // Called from Server Component — can be ignored
+            // Called from a Server Component — the cookie write is best-effort.
+            // Headers are handled by middleware where they matter.
           }
         },
       },

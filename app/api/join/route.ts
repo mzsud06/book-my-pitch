@@ -36,6 +36,30 @@ export async function POST(req: NextRequest) {
     if (!existingSession) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
     if (existingSession.status === 'confirmed') return NextResponse.json({ error: 'Session already confirmed' }, { status: 400 })
 
+    // Duplicate-join guard — run before touching any Stripe resources.
+    // Logged-in users are identified by user_id; guests by phone number.
+    if (user?.id) {
+      const { data: alreadyIn } = await supabase
+        .from('players')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (alreadyIn) {
+        return NextResponse.json({ error: "You're already in this game" }, { status: 409 })
+      }
+    } else if (phone) {
+      const { data: alreadyIn } = await supabase
+        .from('players')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('phone', phone)
+        .maybeSingle()
+      if (alreadyIn) {
+        return NextResponse.json({ error: "You're already in this game" }, { status: 409 })
+      }
+    }
+
     // Use the customer created during setup-intent (avoids duplicate customer + avoids
     // re-attaching a payment method that Stripe already attached to that customer).
     // If no customerId provided (shouldn't happen with new flow), create one as fallback.

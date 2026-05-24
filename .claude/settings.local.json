@@ -11,7 +11,13 @@
       "Bash(Format-List)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Projects\\\\book-my-pitch\" -Recurse -Depth 3 | Where-Object { !$_.FullName.Contains\\(\"node_modules\"\\) -and !$_.FullName.Contains\\(\".git\"\\) -and !$_.FullName.Contains\\(\".next\"\\) } | Select-Object FullName | Format-List)",
       "Bash(git add *)",
-      "Bash(git commit -m 'Fix critical payment bugs, organiser flow, time display, mobile viewport *)"
+      "Bash(git commit -m 'Fix critical payment bugs, organiser flow, time display, mobile viewport *)",
+      "mcp__ide__getDiagnostics",
+      "Bash(node *)",
+      "PowerShell(Start-Process -NoNewWindow -FilePath \"cmd.exe\" -ArgumentList \"/c npm run dev > C:\\\\Temp\\\\bmp-dev.log 2>&1\" -WorkingDirectory \"C:\\\\Projects\\\\book-my-pitch\")",
+      "Bash(mkdir -p /tmp)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(curl *)"
     ]
   }
 }

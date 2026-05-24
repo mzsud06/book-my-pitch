@@ -11,6 +11,12 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient()
 
+    // Only authenticated users may create sessions
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
     const { data: slot } = await supabase
       .from('slots')
       .select('id')
