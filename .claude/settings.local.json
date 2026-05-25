@@ -17,7 +17,8 @@
       "PowerShell(Start-Process -NoNewWindow -FilePath \"cmd.exe\" -ArgumentList \"/c npm run dev > C:\\\\Temp\\\\bmp-dev.log 2>&1\" -WorkingDirectory \"C:\\\\Projects\\\\book-my-pitch\")",
       "Bash(mkdir -p /tmp)",
       "Bash(echo \"PID: $!\")",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { stripe, PLATFORM_FEE_PENCE, STRIPE_PROCESSING_PENCE } from '@/lib/stripe'
 
 export async function POST(req: NextRequest) {
@@ -12,7 +12,9 @@ export async function POST(req: NextRequest) {
   const { sessionId } = await req.json()
   if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 })
 
-  const supabase = await createClient()
+  // Service-role client bypasses RLS so we can read all players' payment data,
+  // update session status, and insert the booking row from a server-side context.
+  const supabase = createServiceClient()
 
   const { data: session } = await supabase
     .from('sessions')
@@ -30,12 +32,15 @@ export async function POST(req: NextRequest) {
     .eq('id', slot.venue_id)
     .single()
 
-  if (!venue?.stripe_account_id) {
-    return NextResponse.json({ error: 'Venue stripe account not configured' }, { status: 500 })
+  const venueStripeAccountId: string | null = venue?.stripe_account_id ?? null
+  if (!venueStripeAccountId) {
+    console.warn('Venue has no stripe_account_id — charging directly to platform account (test mode fallback)')
   }
 
   const perPlayerPitch = Math.round((slot.price * 100) / 10)
   const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
+
+  const capacity: number = slot.max_players ?? 10
 
   const { data: players } = await supabase
     .from('players')
@@ -43,9 +48,9 @@ export async function POST(req: NextRequest) {
     .eq('session_id', sessionId)
     .not('stripe_payment_method_id', 'is', null)
     .not('stripe_customer_id', 'is', null)
-    .limit(10)
+    .limit(capacity)
 
-  if (!players || players.length < 10) {
+  if (!players || players.length < capacity) {
     return NextResponse.json({ error: 'Not enough players' }, { status: 400 })
   }
 
@@ -59,8 +64,14 @@ export async function POST(req: NextRequest) {
         confirm: true,
         off_session: true,
         description: `BookMyPitch — Globe Pitch ${slot.start_time}–${slot.end_time} ${slot.date}`,
-        application_fee_amount: PLATFORM_FEE_PENCE * 10, // platform takes £0.50 per player = £5 total
-        transfer_data: { destination: venue.stripe_account_id },
+        // Only add Connect params when the venue has a Stripe account configured.
+        // Without them, the charge goes directly to the platform account (test fallback).
+        ...(venueStripeAccountId ? {
+          // PLATFORM_FEE_PENCE is the per-player platform fee (£0.50).
+          // Each PaymentIntent covers one player, so the fee is per-intent, not ×10.
+          application_fee_amount: PLATFORM_FEE_PENCE,
+          transfer_data: { destination: venueStripeAccountId },
+        } : {}),
         metadata: { session_id: sessionId, player_id: player.id },
       })
       return { pi, player }

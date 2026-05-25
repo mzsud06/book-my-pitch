@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { stripe, PLATFORM_FEE_PENCE, STRIPE_PROCESSING_PENCE } from '@/lib/stripe'
 
 export async function POST(req: NextRequest) {
@@ -102,25 +103,26 @@ export async function POST(req: NextRequest) {
         .eq('id', sessionId)
     }
 
-    // Count total players (players table only — organiser is now in the table too)
-    const { count } = await supabase
+    // Use the service-role client to count players — the anon client is scoped to the
+    // current user and RLS may hide other players' rows, giving a wrong count.
+    const serviceSupabase = createServiceClient()
+
+    // Count players who have provided payment details.
+    // We only trigger when every slot in the session has a paying player behind it —
+    // the organiser reserved a spot via organiser_name, but that spot only counts once
+    // they have joined via the flow and appear in the players table with a payment method.
+    const { count: payingCount } = await serviceSupabase
       .from('players')
       .select('*', { count: 'exact', head: true })
       .eq('session_id', sessionId)
+      .not('stripe_payment_method_id', 'is', null)
+      .not('stripe_customer_id', 'is', null)
 
-    // For non-organiser joins we still need to add organiser_name to the count because
-    // the organiser hasn't gone through the join flow yet (they haven't paid).
-    // Once they do, organiser_name is cleared and they're in the players table.
-    const { data: sess } = await supabase
-      .from('sessions')
-      .select('organiser_name')
-      .eq('id', sessionId)
-      .single()
-    const remainingOrganiserCount = (sess as unknown as { organiser_name: string | null } | null)?.organiser_name ? 1 : 0
-    const playerCount = (count ?? 0) + remainingOrganiserCount
+    const capacity: number = (slot as unknown as { max_players?: number }).max_players ?? 10
+    const playerCount = payingCount ?? 0
 
-    if (playerCount >= 10) {
-      await triggerPayments(sessionId, slot, supabase)
+    if (playerCount >= capacity) {
+      await triggerPayments(sessionId, slot as unknown as SlotForPayment)
     }
 
     return NextResponse.json({ sessionId, playerCount })
@@ -130,36 +132,48 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function triggerPayments(
-  sessionId: string,
-  slot: { id: string; type: string; price: number; venue_id: string },
-  supabase: Awaited<ReturnType<typeof createClient>>
-) {
-  // Get venue stripe account
-  const { data: venue } = await supabase
+interface SlotForPayment {
+  id: string
+  type: string
+  price: number
+  venue_id: string
+  max_players?: number
+}
+
+async function triggerPayments(sessionId: string, slot: SlotForPayment) {
+  // Use service-role client so RLS doesn't block reading other players'
+  // payment info, updating session status, or inserting the booking row.
+  const serviceSupabase = createServiceClient()
+
+  // Get venue stripe account — may be absent during testing before Connect is configured
+  const { data: venue } = await serviceSupabase
     .from('venues')
     .select('stripe_account_id')
     .eq('id', slot.venue_id)
     .single()
 
-  if (!venue?.stripe_account_id) {
-    console.error('No stripe account for venue')
-    return
+  const venueStripeAccountId: string | null = venue?.stripe_account_id ?? null
+  if (!venueStripeAccountId) {
+    console.warn('Venue has no stripe_account_id — charging directly to platform account (test mode fallback)')
   }
 
   const perPlayerPitch = Math.round((slot.price * 100) / 10)
   const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
 
-  // Get all players who have a payment method (max 10)
-  const { data: players } = await supabase
+  // Get all players who have a payment method (up to capacity)
+  const capacity = slot.max_players ?? 10
+  const { data: players } = await serviceSupabase
     .from('players')
     .select('id, stripe_customer_id, stripe_payment_method_id, name')
     .eq('session_id', sessionId)
     .not('stripe_payment_method_id', 'is', null)
     .not('stripe_customer_id', 'is', null)
-    .limit(10)
+    .limit(capacity)
 
-  if (!players || players.length === 0) return
+  if (!players || players.length === 0) {
+    console.error('No players with payment methods found for session', sessionId)
+    return
+  }
 
   const results = await Promise.allSettled(
     players.map(async (player: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }) => {
@@ -171,8 +185,12 @@ async function triggerPayments(
         confirm: true,
         off_session: true,
         description: `BookMyPitch — Globe Pitch ${slot.type} slot`,
-        application_fee_amount: PLATFORM_FEE_PENCE,
-        transfer_data: { destination: venue.stripe_account_id },
+        // Only add Connect params when the venue has a Stripe account configured.
+        // Without them, the charge goes directly to the platform account (test fallback).
+        ...(venueStripeAccountId ? {
+          application_fee_amount: PLATFORM_FEE_PENCE,
+          transfer_data: { destination: venueStripeAccountId },
+        } : {}),
         metadata: { session_id: sessionId, player_id: player.id },
       })
     })
@@ -183,16 +201,16 @@ async function triggerPayments(
   )
 
   if (allSucceeded) {
-    await supabase
+    await serviceSupabase
       .from('sessions')
       .update({ status: 'confirmed' })
       .eq('id', sessionId)
 
-    await supabase
+    await serviceSupabase
       .from('bookings')
       .insert({
         session_id: sessionId,
-        slot_id: slot.id,   // Fixed: was incorrectly using slot.venue_id
+        slot_id: slot.id,
         confirmed_at: new Date().toISOString(),
       })
   } else {

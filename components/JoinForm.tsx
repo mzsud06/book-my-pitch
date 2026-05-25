@@ -108,12 +108,31 @@ function PaymentStep({
       })
 
       if (confirmError) {
+        // Log the full Stripe error to the console so it's visible in DevTools.
+        console.error('stripe.confirmSetup error:', {
+          type: confirmError.type,
+          code: confirmError.code,
+          declineCode: (confirmError as { decline_code?: string }).decline_code,
+          message: confirmError.message,
+        })
         setError(confirmError.message ?? 'Payment setup failed')
         return
       }
 
       if (!setupIntent?.payment_method) {
         setError('Could not save payment method')
+        return
+      }
+
+      // setupIntent.payment_method may be a full PaymentMethod object in newer
+      // Stripe.js versions (not just an ID string) — normalise to the ID.
+      const paymentMethodId =
+        typeof setupIntent.payment_method === 'string'
+          ? setupIntent.payment_method
+          : setupIntent.payment_method.id
+
+      if (!paymentMethodId) {
+        setError('Could not read payment method ID')
         return
       }
 
@@ -126,7 +145,7 @@ function PaymentStep({
           isOrganiser,
           name,
           phone,
-          paymentMethodId: setupIntent.payment_method,
+          paymentMethodId,
           customerId,
         }),
       })
