@@ -116,7 +116,7 @@ export default function HomePage() {
             <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--green)', marginBottom: '0.75rem' }}>For pitch owners</div>
             <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: 'clamp(28px, 3.5vw, 42px)', letterSpacing: '-1px', marginBottom: '1rem' }}>Want to list your pitch?</div>
             <p style={{ fontSize: '16px', color: 'var(--muted)', lineHeight: 1.75, fontWeight: 500, marginBottom: '2rem' }}>
-              We handle payments, player coordination, and booking confirmations — so you just show up to a full pitch. Get in touch and we&apos;ll have you set up quickly.
+              We handle bookings, payments and player coordination automatically. No more WhatsApp messages, no more chasing bank transfers. Money lands in your account the moment a game confirms.
             </p>
             <a href="mailto:hello@bookmypitch.uk" style={{ textDecoration: 'none' }}>
               <button className="btn-g" style={{ fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: '15px', padding: '0.75rem 1.75rem', borderRadius: '6px', border: 'none', cursor: 'pointer', background: 'var(--green)', color: 'var(--black)', transition: 'all 0.15s' }}>

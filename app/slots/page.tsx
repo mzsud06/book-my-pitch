@@ -56,7 +56,7 @@ export default async function SlotsPage() {
 
     await supabase
       .from('slots')
-      .upsert(slotInserts, { onConflict: 'venue_id,date,start_time', ignoreDuplicates: true })
+      .upsert(slotInserts, { onConflict: 'venue_id,date,start_time', ignoreDuplicates: false })
   }
 
   // Identify the logged-in user so we can highlight slots they've already joined.

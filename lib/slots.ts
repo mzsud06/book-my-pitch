@@ -10,27 +10,27 @@ export interface SlotTemplate {
 
 // Globe Pitch slot schedule
 const WEEKDAY_SLOTS: SlotTemplate[] = [
-  { startTime: '15:30', endTime: '16:30', type: 'offpeak', priceGBP: 25, maxPlayers: 10 },
-  { startTime: '16:30', endTime: '17:30', type: 'offpeak', priceGBP: 25, maxPlayers: 10 },
-  { startTime: '17:30', endTime: '18:30', type: 'offpeak', priceGBP: 25, maxPlayers: 10 },
-  { startTime: '18:30', endTime: '19:30', type: 'peak',    priceGBP: 45, maxPlayers: 10 },
-  { startTime: '19:30', endTime: '20:30', type: 'peak',    priceGBP: 45, maxPlayers: 10 },
-  { startTime: '20:30', endTime: '21:30', type: 'peak',    priceGBP: 45, maxPlayers: 10 },
+  { startTime: '15:30', endTime: '16:30', type: 'offpeak', priceGBP: 30, maxPlayers: 10 },
+  { startTime: '16:30', endTime: '17:30', type: 'offpeak', priceGBP: 30, maxPlayers: 10 },
+  { startTime: '17:30', endTime: '18:30', type: 'offpeak', priceGBP: 30, maxPlayers: 10 },
+  { startTime: '18:30', endTime: '19:30', type: 'peak',    priceGBP: 50, maxPlayers: 10 },
+  { startTime: '19:30', endTime: '20:30', type: 'peak',    priceGBP: 50, maxPlayers: 10 },
+  { startTime: '20:30', endTime: '21:30', type: 'peak',    priceGBP: 50, maxPlayers: 10 },
 ]
 
 const WEEKEND_SLOTS: SlotTemplate[] = [
-  { startTime: '09:30', endTime: '10:30', type: 'weekend', priceGBP: 35, maxPlayers: 10 },
-  { startTime: '10:30', endTime: '11:30', type: 'weekend', priceGBP: 35, maxPlayers: 10 },
-  { startTime: '11:30', endTime: '12:30', type: 'weekend', priceGBP: 35, maxPlayers: 10 },
-  { startTime: '12:30', endTime: '13:30', type: 'weekend', priceGBP: 35, maxPlayers: 10 },
-  { startTime: '13:30', endTime: '14:30', type: 'weekend', priceGBP: 35, maxPlayers: 10 },
-  { startTime: '14:30', endTime: '15:30', type: 'weekend', priceGBP: 35, maxPlayers: 10 },
-  { startTime: '15:30', endTime: '16:30', type: 'weekend', priceGBP: 35, maxPlayers: 10 },
-  { startTime: '16:30', endTime: '17:30', type: 'weekend', priceGBP: 35, maxPlayers: 10 },
-  { startTime: '17:30', endTime: '18:30', type: 'weekend', priceGBP: 35, maxPlayers: 10 },
-  { startTime: '18:30', endTime: '19:30', type: 'peak',    priceGBP: 45, maxPlayers: 10 },
-  { startTime: '19:30', endTime: '20:30', type: 'peak',    priceGBP: 45, maxPlayers: 10 },
-  { startTime: '20:30', endTime: '21:30', type: 'peak',    priceGBP: 45, maxPlayers: 10 },
+  { startTime: '09:30', endTime: '10:30', type: 'weekend', priceGBP: 40, maxPlayers: 10 },
+  { startTime: '10:30', endTime: '11:30', type: 'weekend', priceGBP: 40, maxPlayers: 10 },
+  { startTime: '11:30', endTime: '12:30', type: 'weekend', priceGBP: 40, maxPlayers: 10 },
+  { startTime: '12:30', endTime: '13:30', type: 'weekend', priceGBP: 40, maxPlayers: 10 },
+  { startTime: '13:30', endTime: '14:30', type: 'weekend', priceGBP: 40, maxPlayers: 10 },
+  { startTime: '14:30', endTime: '15:30', type: 'weekend', priceGBP: 40, maxPlayers: 10 },
+  { startTime: '15:30', endTime: '16:30', type: 'weekend', priceGBP: 40, maxPlayers: 10 },
+  { startTime: '16:30', endTime: '17:30', type: 'weekend', priceGBP: 40, maxPlayers: 10 },
+  { startTime: '17:30', endTime: '18:30', type: 'weekend', priceGBP: 40, maxPlayers: 10 },
+  { startTime: '18:30', endTime: '19:30', type: 'peak',    priceGBP: 50, maxPlayers: 10 },
+  { startTime: '19:30', endTime: '20:30', type: 'peak',    priceGBP: 50, maxPlayers: 10 },
+  { startTime: '20:30', endTime: '21:30', type: 'peak',    priceGBP: 50, maxPlayers: 10 },
 ]
 
 export function getSlotsForDay(date: Date): SlotTemplate[] {

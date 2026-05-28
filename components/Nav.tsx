@@ -72,8 +72,8 @@ export default function Nav() {
   return (
     <>
       <style>{`
-        .nav-btn-ghost:hover { color: var(--text) !important; border-color: rgba(255,255,255,0.18) !important; }
         .nav-btn-green:hover { background: var(--green-dim) !important; transform: translateY(-1px); }
+        .nav-link-ghost:hover { color: var(--text) !important; }
         .profile-btn:hover { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.04) !important; }
         .dropdown-item:hover { background: var(--surface2) !important; color: var(--text) !important; }
       `}</style>
@@ -89,7 +89,7 @@ export default function Nav() {
           </span>
         </Link>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {user ? (
             <div ref={dropdownRef} style={{ position: 'relative' }}>
               <button
@@ -182,20 +182,23 @@ export default function Nav() {
             </div>
           ) : (
             <>
-              <Link href="/auth/login" style={{ textDecoration: 'none' }}>
-                <button className="nav-btn-ghost" style={{
-                  fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: '13px',
-                  padding: '0.5rem 1.1rem', borderRadius: '6px', border: '1px solid var(--border)',
-                  cursor: 'pointer', background: 'transparent', color: 'var(--muted)', transition: 'all 0.15s',
-                }}>
-                  Login / Sign up
-                </button>
+              <Link
+                href="/auth/login"
+                className="nav-link-ghost"
+                style={{
+                  fontFamily: "'Archivo', sans-serif", fontWeight: 500, fontSize: '13px',
+                  color: 'var(--muted)', textDecoration: 'none', transition: 'color 0.15s',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Login / Sign up
               </Link>
               <Link href="/slots" style={{ textDecoration: 'none' }}>
                 <button className="nav-btn-green" style={{
                   fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: '13px',
                   padding: '0.5rem 1.1rem', borderRadius: '6px', border: 'none',
                   cursor: 'pointer', background: 'var(--green)', color: 'var(--black)', transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
                 }}>
                   Find a slot →
                 </button>
