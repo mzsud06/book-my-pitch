@@ -24,7 +24,10 @@
       "mcp__magic__21st_magic_component_inspiration",
       "mcp__magic__21st_magic_component_builder",
       "Bash(timeout 40 bash -c 'until curl -sf http://localhost:3000 >/dev/null 2>&1; do sleep 1; done')",
-      "Bash(chromium-cli *)"
+      "Bash(chromium-cli *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Projects\\\\book-my-pitch\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "Bash(npx --yes wait-on tcp:3000 --timeout 10000)"
     ]
   }
 }

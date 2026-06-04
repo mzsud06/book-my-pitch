@@ -208,7 +208,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
             border: '1px solid var(--border)', background: 'transparent',
             color: weekOffset === 0 ? 'rgba(90,90,90,0.3)' : 'var(--muted)',
             fontFamily: "'Archivo', sans-serif", fontSize: '16px', cursor: weekOffset === 0 ? 'not-allowed' : 'pointer',
-            transition: 'all 0.15s',
+            transition: 'border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.1s ease',
           }}
         >‹</button>
 
@@ -229,7 +229,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                   color: active ? 'var(--black)' : isPast ? 'rgba(90,90,90,0.4)' : 'var(--muted)',
                   fontFamily: "'Archivo', sans-serif", fontSize: '13px',
                   fontWeight: active ? 700 : 500, cursor: isPast ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.15s', textAlign: 'center',
+                  transition: 'border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.1s ease',
+                  textAlign: 'center',
                 }}
               >
                 <span style={{ display: 'block', fontSize: '13px' }}>{DAY_NAMES[day.getDay()]}</span>
@@ -250,14 +251,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
             border: '1px solid var(--border)', background: 'transparent',
             color: weekOffset === 1 ? 'rgba(90,90,90,0.3)' : 'var(--muted)',
             fontFamily: "'Archivo', sans-serif", fontSize: '16px', cursor: weekOffset === 1 ? 'not-allowed' : 'pointer',
-            transition: 'all 0.15s',
+            transition: 'border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.1s ease',
           }}
         >›</button>
       </div>
 
       {/* Slot list */}
-      <div className="anim-fade-up d-200" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {slotTemplates.map(template => {
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {slotTemplates.map((template, idx) => {
           const info = getSlotStatus(template)
           const booked = info.status === 'booked'
           const filling = info.status === 'filling'
@@ -276,6 +277,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
             href = `/slots/${info.slotId}/create`
           }
 
+          const staggerStyle: React.CSSProperties = {
+            animationName: 'fadeUp',
+            animationDuration: '0.5s',
+            animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            animationFillMode: 'both',
+            animationDelay: `${100 + idx * 55}ms`,
+          }
+
           const cardStyle = {
             background: isUserSession
               ? 'linear-gradient(135deg, rgba(200,244,0,0.05) 0%, #0e0e0e 100%)'
@@ -284,7 +293,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
             borderRadius: '14px',
             padding: '1.25rem 1.4rem',
             cursor: booked ? 'not-allowed' : isUserSession ? 'default' : 'pointer',
-            transition: 'all 0.18s',
+            transition: 'transform 0.22s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.22s ease, box-shadow 0.22s cubic-bezier(0.23, 1, 0.32, 1)',
             position: 'relative' as const,
             overflow: 'visible' as const,
             opacity: booked ? 0.38 : 1,
@@ -359,11 +368,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
           )
 
           return href ? (
-            <Link key={template.startTime} href={href} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+            <Link key={template.startTime} href={href} style={{ textDecoration: 'none', color: 'inherit', display: 'block', ...staggerStyle }}>
               <div className="slot-pick" style={cardStyle}>{cardContent}</div>
             </Link>
           ) : (
-            <div key={template.startTime} className={`${booked ? 'taken' : ''} ${isUserSession ? 'user-session' : ''}`} style={cardStyle}>{cardContent}</div>
+            <div key={template.startTime} className={`${booked ? 'taken' : ''} ${isUserSession ? 'user-session' : ''}`} style={{ ...cardStyle, ...staggerStyle }}>{cardContent}</div>
           )
         })}
       </div>

@@ -235,7 +235,13 @@ export default function SessionClient({ session: initialSession, hasRival, initi
       )}
 
       {/* Session summary card */}
-      <div className="anim-fade-up d-100" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem' }}>
+      <div className="anim-fade-up d-100" style={{
+        background: isConfirmed
+          ? 'linear-gradient(135deg, rgba(200,244,0,0.04) 0%, var(--surface) 100%)'
+          : 'var(--surface)',
+        border: `1px solid ${isConfirmed ? 'rgba(200,244,0,0.22)' : isFilling ? 'rgba(200,244,0,0.1)' : 'var(--border)'}`,
+        borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem',
+      }}>
         <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {slot.venues?.name ?? 'Globe Football Pitch'} · Bethnal Green
         </div>
@@ -255,7 +261,7 @@ export default function SessionClient({ session: initialSession, hasRival, initi
               <div
                 key={i}
                 title={player ? player.name : `Spot ${i + 1}`}
-                className={player ? 'anim-pop-in' : ''}
+                className={player ? 'anim-spot-in' : ''}
                 style={{
                   height: '38px', borderRadius: '6px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -266,8 +272,8 @@ export default function SessionClient({ session: initialSession, hasRival, initi
                   overflow: 'hidden', padding: '0 2px',
                   textAlign: 'center', lineHeight: 1.1,
                   whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-                  animationDelay: `${i * 55}ms`,
-                  transition: 'background 0.3s ease, border-color 0.3s ease',
+                  animationDelay: `${i * 45}ms`,
+                  transition: 'background-color 0.3s ease, border-color 0.3s ease',
                 }}
               >
                 {name ?? '+1'}
@@ -278,13 +284,14 @@ export default function SessionClient({ session: initialSession, hasRival, initi
 
         {/* Fill bar */}
         <div style={{ background: 'var(--surface2)', borderRadius: '100px', height: '7px', overflow: 'hidden', marginBottom: '6px' }}>
-          <div style={{
-            height: '100%', borderRadius: '100px',
-            background: isConfirmed ? 'var(--green)' : fillPercent >= 70 ? 'var(--amber)' : 'var(--green)',
-            width: `${fillPercent}%`,
-            transition: 'width 0.75s cubic-bezier(0.22, 1, 0.36, 1), background 0.4s ease',
-            boxShadow: isConfirmed ? '0 0 8px rgba(200,244,0,0.35)' : 'none',
-          }} />
+          <div
+            className={`slot-bar-fill ${isConfirmed ? 'glow-green' : fillPercent >= 70 ? 'glow-amber' : isFilling ? 'glow-green' : ''}`}
+            style={{
+              background: isConfirmed ? 'var(--green)' : fillPercent >= 70 ? 'var(--amber)' : 'var(--green)',
+              width: `${fillPercent}%`,
+              transition: 'width 0.75s cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          />
         </div>
         <div style={{ fontSize: '14px', color: 'var(--muted)', textAlign: 'center' }}>
           {isConfirmed ? (
@@ -334,23 +341,24 @@ export default function SessionClient({ session: initialSession, hasRival, initi
         <>
           {/* Share card — always shown first, before the Join CTA */}
           <div className="anim-fade-up d-200" style={{
-            background: 'rgba(200,244,0,0.06)',
-            border: '1px solid rgba(200,244,0,0.3)',
+            background: 'linear-gradient(135deg, rgba(200,244,0,0.07) 0%, rgba(200,244,0,0.03) 100%)',
+            border: '1px solid rgba(200,244,0,0.28)',
             borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem',
           }}>
             <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '-0.3px', marginBottom: '4px' }}>
-              📤 Share with your team
+              Share with your team
             </div>
             <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '0.85rem', lineHeight: 1.5 }}>
-              {remaining} spot{remaining !== 1 ? 's' : ''} left — send this link to fill them. Anyone with the link can join.
+              {remaining} spot{remaining !== 1 ? 's' : ''} left. Send this link to fill them. Anyone with the link can join.
             </div>
 
             {/* URL display */}
             <div style={{
-              background: 'var(--surface2)', borderRadius: '8px', padding: '0.75rem 1rem',
-              fontSize: '13px', color: 'rgba(200,244,0,0.85)', wordBreak: 'break-all',
+              background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '0.75rem 1rem',
+              fontSize: '12px', color: 'rgba(200,244,0,0.7)', wordBreak: 'break-all',
               lineHeight: 1.5, marginBottom: '0.85rem', fontFamily: 'monospace',
-              border: '1px solid rgba(200,244,0,0.15)',
+              border: '1px solid rgba(200,244,0,0.12)',
+              letterSpacing: '0.01em',
             }}>
               {shareUrl}
             </div>
@@ -437,7 +445,8 @@ export default function SessionClient({ session: initialSession, hasRival, initi
             <button className="send-btn" type="submit" disabled={sendingMsg || !newMsg.trim()} style={{
               padding: '0.65rem 1.1rem', borderRadius: '8px', border: 'none',
               background: 'var(--green)', color: 'var(--black)',
-              fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: '13px', cursor: 'pointer',
+              fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+              transition: 'background-color 0.15s ease, transform 0.1s ease',
             }}>
               Send
             </button>

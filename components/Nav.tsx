@@ -98,7 +98,7 @@ export default function Nav() {
                   padding: '0.4rem 0.75rem 0.4rem 0.4rem',
                   borderRadius: '20px', border: '1px solid var(--border)',
                   cursor: 'pointer', background: 'transparent', color: 'var(--text)',
-                  transition: 'all 0.15s',
+                  transition: 'border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease',
                 }}
               >
                 <span style={{
@@ -113,7 +113,7 @@ export default function Nav() {
               </button>
 
               {dropdownOpen && (
-                <div style={{
+                <div className="nav-dropdown" style={{
                   position: 'absolute', top: 'calc(100% + 8px)', right: 0,
                   background: 'var(--surface)', border: '1px solid var(--border)',
                   borderRadius: '12px', padding: '6px',
@@ -184,7 +184,7 @@ export default function Nav() {
                 className="nav-link-ghost"
                 style={{
                   fontFamily: "'Archivo', sans-serif", fontWeight: 500, fontSize: '13px',
-                  color: 'var(--muted)', textDecoration: 'none', transition: 'color 0.15s',
+                  color: 'var(--muted)', textDecoration: 'none', transition: 'color 0.15s ease',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -194,7 +194,8 @@ export default function Nav() {
                 <button className="nav-btn-green" style={{
                   fontFamily: "'Archivo', sans-serif", fontWeight: 600, fontSize: '13px',
                   padding: '0.5rem 1.1rem', borderRadius: '6px', border: 'none',
-                  cursor: 'pointer', background: 'var(--green)', color: 'var(--black)', transition: 'all 0.15s',
+                  cursor: 'pointer', background: 'var(--green)', color: 'var(--black)',
+                  transition: 'background-color 0.15s ease, transform 0.16s var(--ease-out), box-shadow 0.16s ease',
                   whiteSpace: 'nowrap',
                 }}>
                   Find a slot →

@@ -46,7 +46,7 @@ const inputStyle: React.CSSProperties = {
   width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
   borderRadius: '8px', padding: '0.65rem 0.9rem', color: 'var(--text)',
   fontFamily: "'Archivo', sans-serif", fontSize: '14px', outline: 'none',
-  transition: 'border-color 0.15s',
+  transition: 'border-color 0.15s ease',
 }
 
 const labelStyle: React.CSSProperties = {
@@ -193,32 +193,33 @@ function PaymentStep({
 
       {/* Cost breakdown */}
       <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border)',
-        borderRadius: '10px', padding: '1.1rem 1.25rem', marginBottom: '1.25rem',
+        background: 'linear-gradient(135deg, rgba(200,244,0,0.03) 0%, var(--surface) 100%)',
+        border: '1px solid rgba(200,244,0,0.12)',
+        borderRadius: '12px', padding: '1.25rem 1.4rem', marginBottom: '1.25rem',
       }}>
         {[
-          { label: `Pitch hire split (£${slot.price} ÷ 10)`, amount: `£${pitchPerPlayer.toFixed(2)}` },
+          { label: `Pitch hire split (£${slot.price} / 10)`, amount: `£${pitchPerPlayer.toFixed(2)}` },
           { label: 'Booking fee', amount: '50p' },
           { label: 'Payment handling', amount: '30p' },
         ].map(row => (
           <div key={row.label} style={{
             display: 'flex', justifyContent: 'space-between',
-            fontSize: '14px', color: 'var(--muted)', marginBottom: '7px',
+            fontSize: '13px', color: 'var(--muted)', marginBottom: '8px',
           }}>
-            <span>{row.label}</span><span>{row.amount}</span>
+            <span>{row.label}</span><span style={{ fontWeight: 700 }}>{row.amount}</span>
           </div>
         ))}
         <div style={{
-          display: 'flex', justifyContent: 'space-between',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
           color: 'var(--text)', fontWeight: 800, fontSize: '15px',
-          marginTop: '6px', paddingTop: '8px', borderTop: '1px solid var(--border)',
+          marginTop: '8px', paddingTop: '10px', borderTop: '1px solid rgba(200,244,0,0.12)',
         }}>
           <span>Total if confirmed</span>
-          <span style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '20px', color: 'var(--green)', letterSpacing: '-0.3px' }}>
+          <span style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '22px', color: 'var(--green)', letterSpacing: '-0.5px' }}>
             £{totalPerPlayer}
           </span>
         </div>
-        <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.5 }}>
+        <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '0.6rem', lineHeight: 1.5 }}>
           You&apos;ll get a text the moment it&apos;s confirmed. Less than a coffee.
         </div>
       </div>
@@ -241,15 +242,21 @@ function PaymentStep({
         </div>
       )}
 
-      <button type="submit" disabled={loading || !stripe} style={{
-        width: '100%', padding: '0.85rem', fontSize: '15px', borderRadius: '10px', border: 'none',
-        cursor: loading ? 'not-allowed' : 'pointer',
-        background: loading ? 'var(--surface2)' : 'var(--green)',
-        color: loading ? 'var(--muted)' : 'var(--black)',
-        fontFamily: "'Archivo', sans-serif", fontWeight: 600,
-        transition: 'all 0.15s', marginBottom: '8px',
-      }}>
-        {loading ? 'Processing…' : `Join — only £${totalPerPlayer} if confirmed`}
+      <button
+        type="submit"
+        disabled={loading || !stripe}
+        className={!loading && stripe ? 'btn-g' : ''}
+        style={{
+          width: '100%', padding: '0.85rem', fontSize: '15px', borderRadius: '10px', border: 'none',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          background: loading ? 'var(--surface2)' : 'var(--green)',
+          color: loading ? 'var(--muted)' : 'var(--black)',
+          fontFamily: "'Archivo', sans-serif", fontWeight: 700,
+          transition: 'background-color 0.15s ease, color 0.15s ease, transform 0.16s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.16s ease',
+          marginBottom: '8px',
+        }}
+      >
+        {loading ? 'Processing...' : `Join — only £${totalPerPlayer} if confirmed`}
       </button>
       <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--muted)', marginBottom: '1rem' }}>
         🔒 Secured by Stripe · Card only charged when session is full
@@ -507,14 +514,14 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
             return (
               <div
                 key={i}
-                className={filled || isYouSlot ? 'anim-pop-in' : ''}
+                className={filled || isYouSlot ? 'anim-spot-in' : ''}
                 style={{
                   height: '38px', borderRadius: '6px', display: 'flex', alignItems: 'center',
                   justifyContent: 'center', fontSize: '11px', fontWeight: 700,
                   background: isYouSlot ? 'var(--green)' : filled ? 'rgba(200,244,0,0.12)' : 'var(--surface2)',
                   border: filled && !isYouSlot ? '1px solid rgba(200,244,0,0.3)' : isYouSlot ? 'none' : '1px dashed rgba(255,255,255,0.07)',
                   color: isYouSlot ? 'var(--black)' : filled ? 'var(--green)' : 'var(--muted)',
-                  animationDelay: `${i * 50}ms`,
+                  animationDelay: `${i * 45}ms`,
                 }}
               >
                 {isYouSlot ? 'You' : filled ? '✓' : `+${i - gridFilledCount + 1}`}
@@ -534,19 +541,17 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
           <div>
             <label style={labelStyle}>Your name</label>
             <input
+              className="field-input"
               value={name} onChange={e => setName(e.target.value)}
               placeholder="Full name" required style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = 'rgba(200,244,0,0.4)')}
-              onBlur={e => (e.target.style.borderColor = 'var(--border)')}
             />
           </div>
           <div style={{ marginBottom: '4px' }}>
             <label style={labelStyle}>Phone number</label>
             <input
+              className="field-input"
               value={phone} onChange={e => setPhone(e.target.value)}
               type="tel" placeholder="+44 7700 000000" required style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = 'rgba(200,244,0,0.4)')}
-              onBlur={e => (e.target.style.borderColor = 'var(--border)')}
             />
           </div>
 
@@ -562,15 +567,17 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
           <button
             type="submit"
             disabled={loadingSetup || !name.trim() || !phone.trim()}
+            className={!loadingSetup && name.trim() && phone.trim() ? 'btn-g' : ''}
             style={{
               width: '100%', padding: '0.85rem', fontSize: '15px', borderRadius: '10px', border: 'none',
               cursor: loadingSetup || !name.trim() || !phone.trim() ? 'not-allowed' : 'pointer',
               background: loadingSetup || !name.trim() || !phone.trim() ? 'var(--surface2)' : 'var(--green)',
               color: loadingSetup || !name.trim() || !phone.trim() ? 'var(--muted)' : 'var(--black)',
-              fontFamily: "'Archivo', sans-serif", fontWeight: 600, marginTop: '4px',
+              fontFamily: "'Archivo', sans-serif", fontWeight: 700, marginTop: '4px',
+              transition: 'background-color 0.15s ease, color 0.15s ease, transform 0.16s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.16s ease',
             }}
           >
-            {loadingSetup ? 'Checking…' : 'Continue to payment →'}
+            {loadingSetup ? 'Checking...' : 'Continue to payment →'}
           </button>
         </form>
       )}

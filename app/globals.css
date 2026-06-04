@@ -15,6 +15,8 @@
   --text: #F7F4EE;
   --red: #FF4444;
   --amber: #FFB800;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 * { box-sizing: border-box; }
@@ -58,14 +60,34 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.93); }
+  from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1); }
 }
 
 @keyframes popIn {
-  0%   { opacity: 0; transform: scale(0.6); }
-  65%  { transform: scale(1.08); }
+  0%   { opacity: 0; transform: scale(0.92); }
+  65%  { transform: scale(1.04); }
   100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes spotIn {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes barShimmerMove {
+  from { transform: translateX(-150%); }
+  to   { transform: translateX(250%); }
+}
+
+@keyframes amberPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,184,0,0.35); }
+  50%       { box-shadow: 0 0 20px rgba(255,184,0,0.65); }
 }
 
 @keyframes checkPulse {
@@ -83,7 +105,8 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 .anim-fade-up  { animation: fadeUp  0.65s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .anim-fade-in  { animation: fadeIn  0.45s ease both; }
 .anim-scale-in { animation: scaleIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.anim-pop-in   { animation: popIn   0.44s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.anim-pop-in   { animation: popIn   0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.anim-spot-in  { animation: spotIn  0.28s var(--ease-out) both; }
 
 /* ---- Delay utilities ---- */
 .d-0   { animation-delay:   0ms; }
@@ -125,40 +148,51 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 /* ============================================================
    NAVIGATION
    ============================================================ */
-.nav-btn-green:hover  {
-  background: var(--green-dim) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 16px rgba(200,244,0,0.22) !important;
+.nav-dropdown {
+  animation: dropdownIn 160ms var(--ease-out) both;
+  transform-origin: top right;
 }
+
+@media (hover: hover) and (pointer: fine) {
+  .nav-btn-green:hover  {
+    background: var(--green-dim) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 16px rgba(200,244,0,0.22) !important;
+  }
+  .nav-link-ghost:hover { color: var(--text) !important; }
+  .profile-btn:hover    { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.04) !important; }
+  .dropdown-item:hover  { background: var(--surface2) !important; color: var(--text) !important; }
+}
+
 .nav-btn-green:active {
   transform: scale(0.96) translateY(0) !important;
   box-shadow: none !important;
-  transition-duration: 0.05s !important;
+  transition-duration: 0.06s !important;
 }
-.nav-link-ghost:hover { color: var(--text) !important; }
-.profile-btn:hover    { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.04) !important; }
-.dropdown-item:hover  { background: var(--surface2) !important; color: var(--text) !important; }
+.profile-btn:active { transform: scale(0.96) !important; transition-duration: 0.06s !important; }
 
 /* ============================================================
    BUTTONS
    ============================================================ */
-.btn-g:hover {
-  background: var(--green-dim) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 22px rgba(200,244,0,0.22) !important;
+@media (hover: hover) and (pointer: fine) {
+  .btn-g:hover {
+    background: var(--green-dim) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 22px rgba(200,244,0,0.22) !important;
+  }
+  .share-copy:hover  { background: rgba(200,244,0,0.85) !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(200,244,0,0.2); }
+  .share-wa:hover    { background: rgba(37,211,102,0.85) !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,211,102,0.2); }
+  .join-btn:hover    { opacity: 0.88; transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.35) !important; }
 }
+
 .btn-g:active {
   transform: scale(0.97) translateY(0) !important;
   box-shadow: none !important;
-  transition-duration: 0.05s !important;
+  transition-duration: 0.06s !important;
 }
-
-.share-copy:hover  { background: rgba(200,244,0,0.85) !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(200,244,0,0.2); }
-.share-copy:active { transform: scale(0.97) !important; }
-.share-wa:hover    { background: rgba(37,211,102,0.85) !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,211,102,0.2); }
-.share-wa:active   { transform: scale(0.97) !important; }
-.join-btn:hover    { opacity: 0.88; transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.35) !important; }
-.join-btn:active   { transform: scale(0.98) translateY(0) !important; }
+.share-copy:active { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
+.share-wa:active   { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
+.join-btn:active   { transform: scale(0.98) translateY(0) !important; transition-duration: 0.06s !important; }
 
 /* ============================================================
    CARDS — homepage slot preview
@@ -167,45 +201,110 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 
 .slot-card {
   transition:
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.22s var(--ease-out),
     border-color 0.22s ease,
-    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow 0.22s var(--ease-out);
 }
-.slot-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(200,244,0,0.28) !important;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(200,244,0,0.14);
+
+@media (hover: hover) and (pointer: fine) {
+  .slot-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(200,244,0,0.28) !important;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(200,244,0,0.14);
+  }
+}
+
+.slot-card:active {
+  transform: scale(0.98) !important;
+  transition-duration: 0.08s !important;
 }
 
 /* Slots page cards */
 .slot-pick {
   transition:
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.22s var(--ease-out),
     border-color 0.22s ease,
-    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.slot-pick:hover:not(.taken):not(.user-session) {
-  border-color: rgba(200,244,0,0.28) !important;
-  transform: translateY(-3px);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(200,244,0,0.1), inset 0 0 40px rgba(200,244,0,0.025);
+    box-shadow 0.22s var(--ease-out);
 }
 
-/* Progress bar glow */
+@media (hover: hover) and (pointer: fine) {
+  .slot-pick:hover:not(.taken):not(.user-session) {
+    border-color: rgba(200,244,0,0.28) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(200,244,0,0.1), inset 0 0 40px rgba(200,244,0,0.025);
+  }
+}
+
+.slot-pick:active:not(.taken):not(.user-session) {
+  transform: scale(0.98) !important;
+  transition-duration: 0.08s !important;
+}
+
+/* Progress bar */
 .slot-bar-fill {
   height: 100%;
   border-radius: 100px;
+  position: relative;
+  overflow: hidden;
   transition: width 0.65s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
 }
-.slot-bar-fill.glow-green { box-shadow: 0 0 10px rgba(200,244,0,0.55); }
-.slot-bar-fill.glow-amber { box-shadow: 0 0 10px rgba(255,184,0,0.45); }
-.slot-bar-fill.glow-red   { box-shadow: 0 0 10px rgba(255,68,68,0.4); }
+
+.slot-bar-fill.glow-green {
+  box-shadow: 0 0 10px rgba(200,244,0,0.55);
+}
+.slot-bar-fill.glow-green::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.28) 50%, transparent 100%);
+  animation: barShimmerMove 2.4s linear infinite;
+}
+
+.slot-bar-fill.glow-amber {
+  animation: amberPulse 2s ease-in-out infinite;
+}
+
+.slot-bar-fill.glow-red { box-shadow: 0 0 10px rgba(255,68,68,0.4); }
 
 /* Day picker */
-.day-btn-item:hover { border-color: rgba(255,255,255,0.2) !important; color: var(--text) !important; background: rgba(255,255,255,0.04) !important; }
-.week-arrow:hover   { border-color: rgba(255,255,255,0.2) !important; color: var(--text) !important; background: rgba(255,255,255,0.04) !important; }
+@media (hover: hover) and (pointer: fine) {
+  .day-btn-item:hover { border-color: rgba(255,255,255,0.2) !important; color: var(--text) !important; background: rgba(255,255,255,0.04) !important; }
+  .week-arrow:hover   { border-color: rgba(255,255,255,0.2) !important; color: var(--text) !important; background: rgba(255,255,255,0.04) !important; }
+}
+
+.day-btn-item:active { transform: scale(0.94) !important; transition-duration: 0.06s !important; }
+.week-arrow:active   { transform: scale(0.92) !important; transition-duration: 0.06s !important; }
 
 /* Chat */
 .msg-input:focus { border-color: rgba(200,244,0,0.4) !important; outline: none; }
+
+/* ============================================================
+   FORM FIELDS — CSS-managed focus (replaces JS onFocus/onBlur)
+   ============================================================ */
+.field-input:focus { border-color: rgba(200,244,0,0.4) !important; }
+
+/* ============================================================
+   STEP CARDS (how it works)
+   ============================================================ */
+.step-card {
+  transition: border-color 0.22s var(--ease-out), box-shadow 0.22s var(--ease-out), transform 0.22s var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .step-card:hover {
+    border-color: rgba(200,244,0,0.22) !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    transform: translateY(-3px);
+  }
+}
+
+/* ============================================================
+   SESSION — SEND BUTTON
+   ============================================================ */
+@media (hover: hover) and (pointer: fine) {
+  .send-btn:hover:not(:disabled) { background: var(--green-dim) !important; }
+}
+.send-btn:active:not(:disabled) { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
 
 /* ============================================================
    STRIPE
