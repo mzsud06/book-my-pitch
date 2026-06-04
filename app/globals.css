@@ -5,18 +5,22 @@
 :root {
   --black: #080808;
   --white: #F7F4EE;
-  --green: #C8F400;
-  --green-dim: #A8D000;
+  --green: #C6F135;
+  --green-dim: #AACE2C;
+  --green-faint: rgba(198,241,53,0.08);
   --surface: #111;
-  --surface2: #191919;
-  --surface3: #222;
+  --surface2: #161616;
+  --surface3: #1e1e1e;
   --border: rgba(255,255,255,0.07);
+  --border-subtle: rgba(255,255,255,0.04);
   --muted: #5A5A5A;
   --text: #F7F4EE;
   --red: #FF4444;
   --amber: #FFB800;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * { box-sizing: border-box; }
@@ -40,7 +44,7 @@ body {
 
 .font-heading { font-family: 'Archivo Black', sans-serif; }
 strong { font-weight: 800; }
-input::placeholder { color: #3d3d3d; }
+input::placeholder { color: #2e2e2e; }
 input:focus { outline: none; }
 p, span, a, li, div { font-weight: 600; }
 h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
@@ -50,7 +54,7 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
    ============================================================ */
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -60,23 +64,29 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.96); }
+  from { opacity: 0; transform: scale(0.94); }
   to   { opacity: 1; transform: scale(1); }
 }
 
 @keyframes popIn {
-  0%   { opacity: 0; transform: scale(0.92); }
-  65%  { transform: scale(1.04); }
+  0%   { opacity: 0; transform: scale(0.88); }
+  60%  { transform: scale(1.06); }
   100% { opacity: 1; transform: scale(1); }
 }
 
 @keyframes spotIn {
-  from { opacity: 0; transform: scale(0.88); }
+  from { opacity: 0; transform: scale(0.82); }
   to   { opacity: 1; transform: scale(1); }
 }
 
+@keyframes tokenJoin {
+  0%   { opacity: 0; transform: scale(0.5); }
+  65%  { transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
 @keyframes dropdownIn {
-  from { opacity: 0; transform: scale(0.95) translateY(-6px); }
+  from { opacity: 0; transform: scale(0.94) translateY(-8px); }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
@@ -87,13 +97,18 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 
 @keyframes amberPulse {
   0%, 100% { box-shadow: 0 0 8px rgba(255,184,0,0.35); }
-  50%       { box-shadow: 0 0 20px rgba(255,184,0,0.65); }
+  50%       { box-shadow: 0 0 22px rgba(255,184,0,0.7); }
+}
+
+@keyframes greenPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(198,241,53,0.35); }
+  50%       { box-shadow: 0 0 22px rgba(198,241,53,0.6); }
 }
 
 @keyframes checkPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(200,244,0,0.45); }
-  60%  { box-shadow: 0 0 0 20px rgba(200,244,0,0); }
-  100% { box-shadow: 0 0 0 0 rgba(200,244,0,0); }
+  0%   { box-shadow: 0 0 0 0 rgba(198,241,53,0.5); }
+  60%  { box-shadow: 0 0 0 22px rgba(198,241,53,0); }
+  100% { box-shadow: 0 0 0 0 rgba(198,241,53,0); }
 }
 
 @keyframes shimmer {
@@ -101,12 +116,24 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
   100% { background-position: 200% center; }
 }
 
+@keyframes segPop {
+  0%   { transform: scaleY(0.3); opacity: 0.4; }
+  65%  { transform: scaleY(1.2); }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes lineReveal {
+  from { transform: scaleX(0); transform-origin: left; }
+  to   { transform: scaleX(1); transform-origin: left; }
+}
+
 /* ---- Animation utilities ---- */
 .anim-fade-up  { animation: fadeUp  0.65s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .anim-fade-in  { animation: fadeIn  0.45s ease both; }
 .anim-scale-in { animation: scaleIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.anim-pop-in   { animation: popIn   0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-.anim-spot-in  { animation: spotIn  0.28s var(--ease-out) both; }
+.anim-pop-in   { animation: popIn   0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.anim-spot-in  { animation: spotIn  0.35s var(--ease-expo) both; }
+.anim-token-join { animation: tokenJoin 0.4s var(--ease-spring) both; }
 
 /* ---- Delay utilities ---- */
 .d-0   { animation-delay:   0ms; }
@@ -127,9 +154,9 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 /* CSS scroll-driven reveal — Chrome 115+. Other browsers see elements normally. */
 @supports (animation-timeline: view()) {
   .reveal-scroll {
-    animation: fadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-timeline: view();
-    animation-range: entry 0% entry 32%;
+    animation-range: entry 0% entry 30%;
   }
 }
 
@@ -149,27 +176,27 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
    NAVIGATION
    ============================================================ */
 .nav-dropdown {
-  animation: dropdownIn 160ms var(--ease-out) both;
+  animation: dropdownIn 180ms var(--ease-expo) both;
   transform-origin: top right;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .nav-btn-green:hover  {
     background: var(--green-dim) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 16px rgba(200,244,0,0.22) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(198,241,53,0.28) !important;
   }
   .nav-link-ghost:hover { color: var(--text) !important; }
-  .profile-btn:hover    { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.04) !important; }
+  .profile-btn:hover    { border-color: rgba(255,255,255,0.18) !important; background: rgba(255,255,255,0.05) !important; }
   .dropdown-item:hover  { background: var(--surface2) !important; color: var(--text) !important; }
 }
 
 .nav-btn-green:active {
-  transform: scale(0.96) translateY(0) !important;
+  transform: scale(0.95) translateY(0) !important;
   box-shadow: none !important;
   transition-duration: 0.06s !important;
 }
-.profile-btn:active { transform: scale(0.96) !important; transition-duration: 0.06s !important; }
+.profile-btn:active { transform: scale(0.95) !important; transition-duration: 0.06s !important; }
 
 /* ============================================================
    BUTTONS
@@ -177,12 +204,18 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 @media (hover: hover) and (pointer: fine) {
   .btn-g:hover {
     background: var(--green-dim) !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 22px rgba(200,244,0,0.22) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 8px 28px rgba(198,241,53,0.28) !important;
   }
-  .share-copy:hover  { background: rgba(200,244,0,0.85) !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(200,244,0,0.2); }
-  .share-wa:hover    { background: rgba(37,211,102,0.85) !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,211,102,0.2); }
-  .join-btn:hover    { opacity: 0.88; transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.35) !important; }
+  .btn-ghost:hover {
+    border-color: rgba(255,255,255,0.18) !important;
+    color: var(--text) !important;
+    background: rgba(255,255,255,0.04) !important;
+    transform: translateY(-1px) !important;
+  }
+  .share-copy:hover  { background: rgba(198,241,53,0.88) !important; transform: translateY(-2px) !important; box-shadow: 0 6px 18px rgba(198,241,53,0.25) !important; }
+  .share-wa:hover    { background: rgba(37,211,102,0.88) !important; transform: translateY(-2px) !important; box-shadow: 0 6px 18px rgba(37,211,102,0.25) !important; }
+  .join-btn:hover    { border-color: rgba(255,255,255,0.14) !important; background: rgba(255,255,255,0.04) !important; transform: translateY(-2px) !important; box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important; }
 }
 
 .btn-g:active {
@@ -190,9 +223,10 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
   box-shadow: none !important;
   transition-duration: 0.06s !important;
 }
+.btn-ghost:active { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
 .share-copy:active { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
 .share-wa:active   { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
-.join-btn:active   { transform: scale(0.98) translateY(0) !important; transition-duration: 0.06s !important; }
+.join-btn:active   { transform: scale(0.97) translateY(0) !important; transition-duration: 0.06s !important; }
 
 /* ============================================================
    CARDS — homepage slot preview
@@ -201,16 +235,19 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 
 .slot-card {
   transition:
-    transform 0.22s var(--ease-out),
-    border-color 0.22s ease,
-    box-shadow 0.22s var(--ease-out);
+    transform 0.25s var(--ease-out),
+    border-color 0.25s ease,
+    box-shadow 0.25s var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .slot-card:hover {
-    transform: translateY(-4px);
-    border-color: rgba(200,244,0,0.28) !important;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(200,244,0,0.14);
+    transform: translateY(-6px);
+    border-color: rgba(198,241,53,0.35) !important;
+    box-shadow:
+      0 24px 64px rgba(0,0,0,0.7),
+      0 0 0 1px rgba(198,241,53,0.2),
+      inset 0 1px 0 rgba(255,255,255,0.04);
   }
 }
 
@@ -222,16 +259,19 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 /* Slots page cards */
 .slot-pick {
   transition:
-    transform 0.22s var(--ease-out),
-    border-color 0.22s ease,
-    box-shadow 0.22s var(--ease-out);
+    transform 0.25s var(--ease-out),
+    border-color 0.25s ease,
+    box-shadow 0.25s var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .slot-pick:hover:not(.taken):not(.user-session) {
-    border-color: rgba(200,244,0,0.28) !important;
-    transform: translateY(-3px);
-    box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(200,244,0,0.1), inset 0 0 40px rgba(200,244,0,0.025);
+    border-color: rgba(198,241,53,0.32) !important;
+    transform: translateY(-4px);
+    box-shadow:
+      0 20px 56px rgba(0,0,0,0.65),
+      0 0 0 1px rgba(198,241,53,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.03);
   }
 }
 
@@ -240,17 +280,17 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
   transition-duration: 0.08s !important;
 }
 
-/* Progress bar */
+/* Progress bar — smooth fill */
 .slot-bar-fill {
   height: 100%;
   border-radius: 100px;
   position: relative;
   overflow: hidden;
-  transition: width 0.65s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  transition: width 0.75s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
 }
 
 .slot-bar-fill.glow-green {
-  box-shadow: 0 0 10px rgba(200,244,0,0.55);
+  box-shadow: 0 0 12px rgba(198,241,53,0.55);
 }
 .slot-bar-fill.glow-green::after {
   content: '';
@@ -264,37 +304,69 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
   animation: amberPulse 2s ease-in-out infinite;
 }
 
-.slot-bar-fill.glow-red { box-shadow: 0 0 10px rgba(255,68,68,0.4); }
+.slot-bar-fill.glow-red { box-shadow: 0 0 12px rgba(255,68,68,0.45); }
+
+/* Segmented bar segments */
+.seg-bar {
+  display: flex;
+  gap: 3px;
+}
+.seg-bar-seg {
+  flex: 1;
+  height: 6px;
+  border-radius: 2px;
+  transition: background 0.35s ease, box-shadow 0.35s ease;
+}
+.seg-bar-seg.lit-green  { background: var(--green); box-shadow: 0 0 6px rgba(198,241,53,0.4); }
+.seg-bar-seg.lit-amber  { background: var(--amber); box-shadow: 0 0 6px rgba(255,184,0,0.45); animation: amberPulse 2s ease-in-out infinite; }
+.seg-bar-seg.lit-red    { background: var(--red);   box-shadow: 0 0 6px rgba(255,68,68,0.35); }
+.seg-bar-seg.unlit      { background: #1a1a1a; box-shadow: none; }
 
 /* Day picker */
 @media (hover: hover) and (pointer: fine) {
-  .day-btn-item:hover { border-color: rgba(255,255,255,0.2) !important; color: var(--text) !important; background: rgba(255,255,255,0.04) !important; }
-  .week-arrow:hover   { border-color: rgba(255,255,255,0.2) !important; color: var(--text) !important; background: rgba(255,255,255,0.04) !important; }
+  .day-btn-item:hover {
+    border-color: rgba(198,241,53,0.28) !important;
+    color: var(--text) !important;
+    background: rgba(198,241,53,0.06) !important;
+  }
+  .week-arrow:hover {
+    border-color: rgba(255,255,255,0.18) !important;
+    color: var(--text) !important;
+    background: rgba(255,255,255,0.04) !important;
+  }
 }
 
-.day-btn-item:active { transform: scale(0.94) !important; transition-duration: 0.06s !important; }
-.week-arrow:active   { transform: scale(0.92) !important; transition-duration: 0.06s !important; }
+.day-btn-item:active { transform: scale(0.93) !important; transition-duration: 0.06s !important; }
+.week-arrow:active   { transform: scale(0.90) !important; transition-duration: 0.06s !important; }
+
+/* Player lineup tokens */
+.player-token {
+  transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+.player-token.filled {
+  animation: tokenJoin 0.42s var(--ease-spring) both;
+}
 
 /* Chat */
-.msg-input:focus { border-color: rgba(200,244,0,0.4) !important; outline: none; }
+.msg-input:focus { border-color: rgba(198,241,53,0.4) !important; outline: none; }
 
 /* ============================================================
-   FORM FIELDS — CSS-managed focus (replaces JS onFocus/onBlur)
+   FORM FIELDS
    ============================================================ */
-.field-input:focus { border-color: rgba(200,244,0,0.4) !important; }
+.field-input:focus { border-color: rgba(198,241,53,0.4) !important; }
 
 /* ============================================================
    STEP CARDS (how it works)
    ============================================================ */
 .step-card {
-  transition: border-color 0.22s var(--ease-out), box-shadow 0.22s var(--ease-out), transform 0.22s var(--ease-out);
+  transition: border-color 0.25s var(--ease-out), box-shadow 0.25s var(--ease-out), transform 0.25s var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .step-card:hover {
-    border-color: rgba(200,244,0,0.22) !important;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-    transform: translateY(-3px);
+    border-color: rgba(198,241,53,0.28) !important;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(198,241,53,0.08);
+    transform: translateY(-4px);
   }
 }
 
@@ -302,9 +374,9 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
    SESSION — SEND BUTTON
    ============================================================ */
 @media (hover: hover) and (pointer: fine) {
-  .send-btn:hover:not(:disabled) { background: var(--green-dim) !important; }
+  .send-btn:hover:not(:disabled) { background: var(--green-dim) !important; transform: translateY(-1px) !important; }
 }
-.send-btn:active:not(:disabled) { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
+.send-btn:active:not(:disabled) { transform: scale(0.96) !important; transition-duration: 0.06s !important; }
 
 /* ============================================================
    STRIPE
@@ -319,7 +391,7 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
   font-size: 14px;
   transition: border-color 0.15s;
 }
-.StripeElement--focus { border-color: rgba(200, 244, 0, 0.4); }
+.StripeElement--focus { border-color: rgba(198, 241, 53, 0.4); }
 
 /* ============================================================
    SCROLLBAR
@@ -337,4 +409,33 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 }
 @media (max-width: 480px) {
   .steps-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ============================================================
+   NAV ACCENT LINE
+   ============================================================ */
+.nav-accent-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--green);
+  z-index: 400;
+  animation: fadeIn 0.6s ease both;
+}
+
+/* ============================================================
+   OWNER SECTION (lime background) — button hover
+   ============================================================ */
+@media (hover: hover) and (pointer: fine) {
+  .btn-dark-on-lime:hover {
+    background: rgba(8,8,8,0.88) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.35) !important;
+  }
+}
+.btn-dark-on-lime:active {
+  transform: scale(0.97) !important;
+  transition-duration: 0.06s !important;
 }

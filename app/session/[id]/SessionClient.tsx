@@ -64,14 +64,38 @@ function formatTime(ts: string): string {
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 
-/** Strip seconds off DB time strings like "18:30:00" → "18:30" */
 function sliceTime(t: string): string {
   return t ? t.slice(0, 5) : t
 }
 
+/* ------------------------------------------------------------------ */
+/* SegBar — module-level component (must NOT be inside SessionClient   */
+/* or Turbopack Fast Refresh crashes tracking component identity)      */
+/* ------------------------------------------------------------------ */
+function SegBar({ count, isConfirmed }: { count: number; isConfirmed: boolean }) {
+  const isAmber = count >= 7 && count < 10
+  const segClass = isConfirmed ? 'lit-green' : isAmber ? 'lit-amber' : 'lit-green'
+  return (
+    <div className="seg-bar" style={{ marginBottom: '8px' }}>
+      {Array.from({ length: 10 }, (_, i) => (
+        <div
+          key={i}
+          className={`seg-bar-seg ${i < count ? segClass : 'unlit'}`}
+          style={{ transitionDelay: `${i * 35}ms` }}
+        />
+      ))}
+    </div>
+  )
+}
 
-
-export default function SessionClient({ session: initialSession, hasRival, initialMessages, justJoined, justCreated, alreadyIn }: Props) {
+export default function SessionClient({
+  session: initialSession,
+  hasRival,
+  initialMessages,
+  justJoined,
+  justCreated,
+  alreadyIn,
+}: Props) {
   const supabase = createClient()
   const [session, setSession] = useState(initialSession)
   const [messages, setMessages] = useState(initialMessages)
@@ -79,8 +103,6 @@ export default function SessionClient({ session: initialSession, hasRival, initi
   const [copied, setCopied] = useState(false)
   const [sendingMsg, setSendingMsg] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  // Initialise with the relative path so SSR and first client render match,
-  // then update to the full URL after hydration to avoid a mismatch.
   const [shareUrl, setShareUrl] = useState(`/session/${session.id}`)
 
   useEffect(() => {
@@ -91,9 +113,6 @@ export default function SessionClient({ session: initialSession, hasRival, initi
   const isConfirmed = session.status === 'confirmed'
   const isFilling = session.status === 'filling'
 
-  // Build the full player list: organiser first (only if still set), then joiners.
-  // Explicitly filter session.players to only this session's id — guards against
-  // any embedded or cached data bleeding in from other sessions for the same slot.
   const thisSessionPlayers = session.players.filter(p => p.session_id === session.id)
   const organiserEntry = session.organiser_name
     ? [{ id: 'organiser', name: session.organiser_name, joined_at: session.created_at, session_id: session.id }]
@@ -127,7 +146,6 @@ export default function SessionClient({ session: initialSession, hasRival, initi
           .order('joined_at', { ascending: true }),
       ]).then(([{ data }, { data: rawPlayers }]) => {
         if (!data) return
-        // Normalize nested arrays the same way the server page does
         const rawSlots = (data as unknown as { slots: unknown }).slots
         const s = Array.isArray(rawSlots) ? rawSlots[0] : rawSlots
         const rawVenues = (s as { venues: unknown })?.venues
@@ -176,146 +194,339 @@ export default function SessionClient({ session: initialSession, hasRival, initi
 
   const perPlayerPounds = (slot.price / 10 + 0.50 + 0.30).toFixed(2)
 
+  /* ------------------------------------------------------------------ */
+  /* Player token — used in the lineup grid                              */
+  /* ------------------------------------------------------------------ */
+  function renderPlayerToken(i: number) {
+    const player = allPlayers[i]
+    const parts = player ? player.name.trim().split(/\s+/) : []
+    const firstInitial = parts[0]?.[0]?.toUpperCase() ?? ''
+    const lastInitial = parts.length > 1 ? parts[parts.length - 1][0].toUpperCase() : ''
+    const initials = (firstInitial + lastInitial) || '?'
+    const firstName = parts[0] ?? ''
+
+    return (
+      <div
+        key={i}
+        title={player ? player.name : `Spot ${i + 1}`}
+        className={`player-token ${player ? 'filled' : ''}`}
+        style={{
+          position: 'relative',
+          flex: 1,
+          height: '58px',
+          borderRadius: '10px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '4px',
+          background: player ? 'rgba(198,241,53,0.1)' : 'rgba(255,255,255,0.02)',
+          border: player
+            ? '1px solid rgba(198,241,53,0.3)'
+            : '1px dashed rgba(255,255,255,0.08)',
+          boxShadow: player ? '0 0 18px rgba(198,241,53,0.1)' : 'none',
+          animationDelay: `${i * 40}ms`,
+        }}
+      >
+        {/* Jersey number */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '4px',
+            right: '6px',
+            fontSize: '7px',
+            fontWeight: 800,
+            fontFamily: "'Archivo Black', sans-serif",
+            color: player ? 'rgba(198,241,53,0.45)' : 'rgba(255,255,255,0.07)',
+            lineHeight: 1,
+            letterSpacing: '0.04em',
+          }}
+        >
+          {i + 1}
+        </div>
+
+        {/* Avatar circle */}
+        <div
+          style={{
+            width: '24px',
+            height: '24px',
+            borderRadius: '50%',
+            background: player ? 'var(--green)' : 'rgba(255,255,255,0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '9px',
+            fontWeight: 800,
+            color: player ? 'var(--black)' : 'transparent',
+            flexShrink: 0,
+            fontFamily: "'Archivo Black', sans-serif",
+          }}
+        >
+          {player ? initials : ''}
+        </div>
+
+        {/* First name */}
+        {player && (
+          <div
+            style={{
+              fontSize: '7px',
+              fontWeight: 700,
+              color: 'var(--green)',
+              textAlign: 'center',
+              lineHeight: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: '100%',
+              padding: '0 5px',
+              opacity: 0.85,
+            }}
+          >
+            {firstName}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div style={{ maxWidth: '460px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-      {/* Confirmed banner */}
+
+      {/* ============================================================
+          CONFIRMED BANNER
+          ============================================================ */}
       {isConfirmed && (
-        <div className="anim-fade-up" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <div style={{
-            width: '68px', height: '68px',
-            background: 'rgba(200,244,0,0.1)', border: '2px solid rgba(200,244,0,0.3)',
-            borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '28px', margin: '0 auto 1.25rem',
-            animation: 'checkPulse 1.2s ease-out 0.4s both',
-          }}>✓</div>
-          <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', letterSpacing: '-1px', marginBottom: '0.5rem' }}>
+        <div className="anim-fade-up" style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+          <div
+            style={{
+              width: '72px',
+              height: '72px',
+              background: 'rgba(198,241,53,0.1)',
+              border: '2px solid rgba(198,241,53,0.3)',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '30px',
+              margin: '0 auto 1.25rem',
+              animation: 'checkPulse 1.2s ease-out 0.4s both',
+            }}
+          >
+            ✓
+          </div>
+          <div
+            style={{
+              fontFamily: "'Archivo Black', sans-serif",
+              fontSize: '28px',
+              letterSpacing: '-0.035em',
+              marginBottom: '0.5rem',
+            }}
+          >
             You&apos;re confirmed!
           </div>
-          <div style={{ fontSize: '16px', color: 'var(--muted)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '16px', color: 'var(--muted)', lineHeight: 1.65, marginBottom: '1.5rem' }}>
             All 10 players paid. Venue notified. See you on the pitch.
           </div>
         </div>
       )}
 
-      {/* "Already in this game" banner */}
+      {/* Already in banner */}
       {alreadyIn && (
-        <div style={{
-          background: 'rgba(200,244,0,0.06)', border: '1px solid rgba(200,244,0,0.2)',
-          borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1.25rem',
-          fontSize: '15px', color: 'var(--green)', fontWeight: 700,
-        }}>
+        <div
+          style={{
+            background: 'rgba(198,241,53,0.06)',
+            border: '1px solid rgba(198,241,53,0.22)',
+            borderRadius: '10px',
+            padding: '0.9rem 1.1rem',
+            marginBottom: '1.25rem',
+            fontSize: '15px',
+            color: 'var(--green)',
+            fontWeight: 700,
+          }}
+        >
           👋 You&apos;re already in this game!
         </div>
       )}
 
-      {/* "Game created" banner */}
+      {/* Game created banner */}
       {justCreated && isFilling && (
-        <div style={{
-          background: 'rgba(200,244,0,0.06)', border: '1px solid rgba(200,244,0,0.2)',
-          borderRadius: '10px', padding: '1rem 1.1rem', marginBottom: '1.25rem',
-        }}>
-          <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', color: 'var(--green)', marginBottom: '4px' }}>
+        <div
+          style={{
+            background: 'rgba(198,241,53,0.06)',
+            border: '1px solid rgba(198,241,53,0.22)',
+            borderRadius: '12px',
+            padding: '1rem 1.15rem',
+            marginBottom: '1.25rem',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'Archivo Black', sans-serif",
+              fontSize: '16px',
+              color: 'var(--green)',
+              marginBottom: '4px',
+              letterSpacing: '-0.02em',
+            }}
+          >
             Game created! 🎉
           </div>
-          <div style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: 1.5 }}>
+          <div style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: 1.55, fontWeight: 500 }}>
             Share the link below with your mates. When 10 players join, everyone pays automatically.
           </div>
         </div>
       )}
 
-      {/* "Just joined" banner */}
+      {/* Just joined banner */}
       {justJoined && isFilling && (
-        <div style={{
-          background: 'rgba(200,244,0,0.06)', border: '1px solid rgba(200,244,0,0.15)',
-          borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1.25rem',
-          fontSize: '15px', color: 'var(--green)', fontWeight: 700,
-        }}>
+        <div
+          style={{
+            background: 'rgba(198,241,53,0.06)',
+            border: '1px solid rgba(198,241,53,0.18)',
+            borderRadius: '10px',
+            padding: '0.9rem 1.1rem',
+            marginBottom: '1.25rem',
+            fontSize: '15px',
+            color: 'var(--green)',
+            fontWeight: 700,
+          }}
+        >
           ✓ You&apos;re in! Share the link below to fill the remaining spots.
         </div>
       )}
 
-      {/* Session summary card */}
-      <div className="anim-fade-up d-100" style={{
-        background: isConfirmed
-          ? 'linear-gradient(135deg, rgba(200,244,0,0.04) 0%, var(--surface) 100%)'
-          : 'var(--surface)',
-        border: `1px solid ${isConfirmed ? 'rgba(200,244,0,0.22)' : isFilling ? 'rgba(200,244,0,0.1)' : 'var(--border)'}`,
-        borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem',
-      }}>
-        <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+      {/* ============================================================
+          SESSION SUMMARY CARD
+          ============================================================ */}
+      <div
+        className="anim-fade-up d-100"
+        style={{
+          background: isConfirmed
+            ? 'linear-gradient(135deg, rgba(198,241,53,0.05) 0%, var(--surface) 100%)'
+            : 'var(--surface)',
+          border: `1px solid ${isConfirmed ? 'rgba(198,241,53,0.25)' : isFilling ? 'rgba(198,241,53,0.12)' : 'var(--border)'}`,
+          borderRadius: '16px',
+          padding: '1.35rem',
+          marginBottom: '1.25rem',
+        }}
+      >
+        {/* Slot info */}
+        <div
+          style={{
+            fontSize: '10px',
+            color: 'var(--muted)',
+            marginBottom: '4px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+          }}
+        >
           {slot.venues?.name ?? 'Globe Football Pitch'} · Bethnal Green
         </div>
-        <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '22px', letterSpacing: '-0.5px', marginBottom: '2px' }}>
+        <div
+          style={{
+            fontFamily: "'Archivo Black', sans-serif",
+            fontSize: '24px',
+            letterSpacing: '-0.04em',
+            marginBottom: '2px',
+            lineHeight: 1,
+          }}
+        >
           {sliceTime(slot.start_time)} – {sliceTime(slot.end_time)}
         </div>
-        <div style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '1rem' }}>
+        <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '1.5rem', fontWeight: 500 }}>
           {formatDate(slot.date)} · {slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'} · 5-a-side
         </div>
 
-        {/* Player grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', marginBottom: '0.75rem' }}>
-          {Array.from({ length: 10 }, (_, i) => {
-            const player = allPlayers[i]
-            const name = player ? formatPlayerName(player.name) : null
-            return (
-              <div
-                key={i}
-                title={player ? player.name : `Spot ${i + 1}`}
-                className={player ? 'anim-spot-in' : ''}
-                style={{
-                  height: '38px', borderRadius: '6px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: name && name.length > 5 ? '9px' : '11px', fontWeight: 700,
-                  background: player ? 'rgba(200,244,0,0.12)' : 'var(--surface2)',
-                  border: player ? '1px solid rgba(200,244,0,0.3)' : '1px dashed rgba(255,255,255,0.07)',
-                  color: player ? 'var(--green)' : 'var(--muted)',
-                  overflow: 'hidden', padding: '0 2px',
-                  textAlign: 'center', lineHeight: 1.1,
-                  whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-                  animationDelay: `${i * 45}ms`,
-                  transition: 'background-color 0.3s ease, border-color 0.3s ease',
-                }}
-              >
-                {name ?? '+1'}
-              </div>
-            )
-          })}
+        {/* ============================================================
+            TEAM LINEUP — 2 rows of 5 with center divider
+            ============================================================ */}
+        <div style={{ marginBottom: '1.1rem' }}>
+          {/* Row 1: spots 1–5 */}
+          <div style={{ display: 'flex', gap: '5px', marginBottom: '0' }}>
+            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i))}
+          </div>
+
+          {/* Center line */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              margin: '8px 0',
+            }}
+          >
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+            <div
+              style={{
+                fontSize: '7px',
+                fontWeight: 700,
+                color: 'rgba(255,255,255,0.14)',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                flexShrink: 0,
+              }}
+            >
+              5-a-side
+            </div>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+          </div>
+
+          {/* Row 2: spots 6–10 */}
+          <div style={{ display: 'flex', gap: '5px' }}>
+            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i + 5))}
+          </div>
         </div>
 
-        {/* Fill bar */}
-        <div style={{ background: 'var(--surface2)', borderRadius: '100px', height: '7px', overflow: 'hidden', marginBottom: '6px' }}>
-          <div
-            className={`slot-bar-fill ${isConfirmed ? 'glow-green' : fillPercent >= 70 ? 'glow-amber' : isFilling ? 'glow-green' : ''}`}
-            style={{
-              background: isConfirmed ? 'var(--green)' : fillPercent >= 70 ? 'var(--amber)' : 'var(--green)',
-              width: `${fillPercent}%`,
-              transition: 'width 0.75s cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          />
-        </div>
+        {/* Segmented fill bar */}
+        <SegBar count={playerCount} isConfirmed={isConfirmed} />
+
+        {/* Player count */}
         <div style={{ fontSize: '14px', color: 'var(--muted)', textAlign: 'center' }}>
           {isConfirmed ? (
             <strong style={{ color: 'var(--green)' }}>Confirmed — all 10 players ✓</strong>
           ) : (
-            <><strong style={{ color: 'var(--text)' }}>{playerCount}/10 players</strong> — {remaining} more needed</>
+            <>
+              <strong style={{ color: 'var(--text)' }}>{playerCount}/10 players</strong>
+              {' '}— {remaining} more needed
+            </>
           )}
         </div>
       </div>
 
       {/* Rival alert */}
       {hasRival && isFilling && (
-        <div style={{
-          background: 'rgba(255,184,0,0.07)', border: '1px solid rgba(255,184,0,0.2)',
-          borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1.25rem',
-          fontSize: '14px', color: 'var(--amber)', display: 'flex', gap: '8px', lineHeight: 1.5,
-        }}>
+        <div
+          style={{
+            background: 'rgba(255,184,0,0.07)',
+            border: '1px solid rgba(255,184,0,0.22)',
+            borderRadius: '10px',
+            padding: '0.8rem 1rem',
+            marginBottom: '1.25rem',
+            fontSize: '14px',
+            color: 'var(--amber)',
+            display: 'flex',
+            gap: '8px',
+            lineHeight: 1.55,
+            fontWeight: 600,
+          }}
+        >
           ⚡ Another group is also trying to fill this slot. First to 10 gets it.
         </div>
       )}
 
-      {/* Confirmed booking details */}
+      {/* ============================================================
+          CONFIRMED BOOKING DETAILS
+          ============================================================ */}
       {isConfirmed && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+        <div
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '16px',
+            padding: '1.35rem',
+            marginBottom: '1.5rem',
+          }}
+        >
           {[
             { label: 'Pitch', val: slot.venues?.name ?? 'Globe Football Pitch' },
             { label: 'Address', val: slot.venues?.address ?? '110 Globe Rd, Bethnal Green E1 4DZ' },
@@ -324,42 +535,76 @@ export default function SessionClient({ session: initialSession, hasRival, initi
             { label: 'Your cost', val: `£${perPlayerPounds}` },
             { label: 'Status', val: 'Confirmed ✓' },
           ].map((row, idx, arr) => (
-            <div key={row.label} style={{
-              display: 'flex', justifyContent: 'space-between', fontSize: '15px',
-              padding: '0.5rem 0',
-              borderBottom: idx < arr.length - 1 ? '1px solid var(--border)' : 'none',
-            }}>
-              <span style={{ color: 'var(--muted)' }}>{row.label}</span>
-              <span style={{ fontWeight: 800, color: row.label === 'Your cost' || row.label === 'Status' ? 'var(--green)' : 'var(--text)' }}>{row.val}</span>
+            <div
+              key={row.label}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: '14px',
+                padding: '0.55rem 0',
+                borderBottom: idx < arr.length - 1 ? '1px solid var(--border)' : 'none',
+              }}
+            >
+              <span style={{ color: 'var(--muted)', fontWeight: 500 }}>{row.label}</span>
+              <span
+                style={{
+                  fontWeight: 800,
+                  color: row.label === 'Your cost' || row.label === 'Status' ? 'var(--green)' : 'var(--text)',
+                }}
+              >
+                {row.val}
+              </span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Share section — filling sessions */}
+      {/* ============================================================
+          SHARE SECTION — filling sessions
+          ============================================================ */}
       {isFilling && (
         <>
-          {/* Share card — always shown first, before the Join CTA */}
-          <div className="anim-fade-up d-200" style={{
-            background: 'linear-gradient(135deg, rgba(200,244,0,0.07) 0%, rgba(200,244,0,0.03) 100%)',
-            border: '1px solid rgba(200,244,0,0.28)',
-            borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem',
-          }}>
-            <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '-0.3px', marginBottom: '4px' }}>
+          <div
+            className="anim-fade-up d-200"
+            style={{
+              background: 'linear-gradient(135deg, rgba(198,241,53,0.08) 0%, rgba(198,241,53,0.03) 100%)',
+              border: '1px solid rgba(198,241,53,0.3)',
+              borderRadius: '16px',
+              padding: '1.35rem',
+              marginBottom: '1.1rem',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "'Archivo Black', sans-serif",
+                fontSize: '17px',
+                letterSpacing: '-0.025em',
+                marginBottom: '4px',
+              }}
+            >
               Share with your team
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '0.85rem', lineHeight: 1.5 }}>
-              {remaining} spot{remaining !== 1 ? 's' : ''} left. Send this link to fill them. Anyone with the link can join.
+            <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '1rem', lineHeight: 1.55, fontWeight: 500 }}>
+              {remaining} spot{remaining !== 1 ? 's' : ''} left. Send this link to fill them.
             </div>
 
             {/* URL display */}
-            <div style={{
-              background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '0.75rem 1rem',
-              fontSize: '12px', color: 'rgba(200,244,0,0.7)', wordBreak: 'break-all',
-              lineHeight: 1.5, marginBottom: '0.85rem', fontFamily: 'monospace',
-              border: '1px solid rgba(200,244,0,0.12)',
-              letterSpacing: '0.01em',
-            }}>
+            <div
+              style={{
+                background: 'rgba(0,0,0,0.35)',
+                borderRadius: '8px',
+                padding: '0.75rem 1rem',
+                fontSize: '11px',
+                color: 'rgba(198,241,53,0.7)',
+                wordBreak: 'break-all',
+                lineHeight: 1.55,
+                marginBottom: '0.9rem',
+                fontFamily: 'monospace',
+                border: '1px solid rgba(198,241,53,0.12)',
+                letterSpacing: '0.01em',
+              }}
+            >
               {shareUrl}
             </div>
 
@@ -369,10 +614,18 @@ export default function SessionClient({ session: initialSession, hasRival, initi
                 className="share-copy"
                 onClick={copyLink}
                 style={{
-                  flex: 1, padding: '0.8rem', borderRadius: '8px', border: 'none',
-                  background: 'var(--green)', color: 'var(--black)',
-                  fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: '14px',
-                  cursor: 'pointer', transition: 'all 0.18s',
+                  flex: 1,
+                  padding: '0.85rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'var(--green)',
+                  color: 'var(--black)',
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontWeight: 800,
+                  fontSize: '13px',
+                  letterSpacing: '-0.01em',
+                  cursor: 'pointer',
+                  transition: 'background 0.18s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
                 }}
               >
                 {copied ? '✓ Copied!' : '📋 Copy link'}
@@ -381,10 +634,18 @@ export default function SessionClient({ session: initialSession, hasRival, initi
                 className="share-wa"
                 onClick={shareWhatsApp}
                 style={{
-                  flex: 1, padding: '0.8rem', borderRadius: '8px', border: 'none',
-                  background: '#25D366', color: '#fff',
-                  fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: '14px',
-                  cursor: 'pointer', transition: 'all 0.18s',
+                  flex: 1,
+                  padding: '0.85rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#25D366',
+                  color: '#fff',
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontWeight: 800,
+                  fontSize: '13px',
+                  letterSpacing: '-0.01em',
+                  cursor: 'pointer',
+                  transition: 'background 0.18s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
                 }}
               >
                 WhatsApp →
@@ -392,39 +653,82 @@ export default function SessionClient({ session: initialSession, hasRival, initi
             </div>
           </div>
 
-          {/* Join CTA — for people who haven't joined yet */}
-          <Link href={`/session/${session.id}/join`} className="anim-fade-up d-300" style={{ textDecoration: 'none', display: 'block', marginBottom: '1.25rem' }}>
-            <button className="join-btn" style={{
-              width: '100%', padding: '1rem', fontSize: '15px', borderRadius: '10px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              cursor: 'pointer', background: 'var(--surface)', color: 'var(--text)',
-              fontFamily: "'Archivo', sans-serif", fontWeight: 700,
-              transition: 'all 0.2s',
-            }}>
+          {/* Join CTA */}
+          <Link
+            href={`/session/${session.id}/join`}
+            className="anim-fade-up d-300"
+            style={{ textDecoration: 'none', display: 'block', marginBottom: '1.25rem' }}
+          >
+            <button
+              className="join-btn"
+              style={{
+                width: '100%',
+                padding: '1rem',
+                fontSize: '15px',
+                borderRadius: '12px',
+                border: '1px solid rgba(255,255,255,0.08)',
+                cursor: 'pointer',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                fontFamily: "'Archivo', sans-serif",
+                fontWeight: 700,
+                transition: 'border-color 0.2s ease, background 0.2s ease, transform 0.2s var(--ease-out), box-shadow 0.2s ease',
+              }}
+            >
               Join this session — £{perPlayerPounds} if confirmed
             </button>
           </Link>
         </>
       )}
 
-      {/* In-session chat — only after confirmed */}
+      {/* ============================================================
+          SESSION CHAT — confirmed only
+          ============================================================ */}
       {isConfirmed && (
         <div>
-          <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '-0.5px', marginBottom: '1rem' }}>
+          <div
+            style={{
+              fontFamily: "'Archivo Black', sans-serif",
+              fontSize: '17px',
+              letterSpacing: '-0.025em',
+              marginBottom: '0.85rem',
+            }}
+          >
             Session chat
           </div>
-          <div style={{
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px',
-            padding: '1rem', minHeight: '200px', maxHeight: '360px', overflowY: 'auto',
-            marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '6px',
-          }}>
+          <div
+            style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: '14px',
+              padding: '1rem',
+              minHeight: '200px',
+              maxHeight: '360px',
+              overflowY: 'auto',
+              marginBottom: '0.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+            }}
+          >
             {messages.length === 0 ? (
-              <div style={{ fontSize: '13px', color: 'var(--muted)', textAlign: 'center', padding: '2rem', margin: 'auto' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  color: 'var(--muted)',
+                  textAlign: 'center',
+                  padding: '2rem',
+                  margin: 'auto',
+                  fontWeight: 500,
+                }}
+              >
                 No messages yet. Say something! ⚽
               </div>
             ) : messages.map(msg => (
-              <div key={msg.id} style={{ fontSize: '14px', lineHeight: 1.5 }}>
-                <span style={{ color: 'var(--muted)', fontSize: '11px', marginRight: '8px' }}>{formatTime(msg.created_at)}</span>
+              <div key={msg.id} style={{ fontSize: '14px', lineHeight: 1.55 }}>
+                <span style={{ color: 'var(--muted)', fontSize: '11px', marginRight: '8px', fontWeight: 500 }}>
+                  {formatTime(msg.created_at)}
+                </span>
                 <span>{msg.content}</span>
               </div>
             ))}
@@ -437,25 +741,52 @@ export default function SessionClient({ session: initialSession, hasRival, initi
               onChange={e => setNewMsg(e.target.value)}
               placeholder="Say something..."
               style={{
-                flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)',
-                borderRadius: '8px', padding: '0.65rem 0.9rem', color: 'var(--text)',
-                fontFamily: "'Archivo', sans-serif", fontSize: '14px',
+                flex: 1,
+                background: 'var(--surface2)',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                padding: '0.65rem 0.9rem',
+                color: 'var(--text)',
+                fontFamily: "'Archivo', sans-serif",
+                fontSize: '14px',
+                transition: 'border-color 0.15s ease',
               }}
             />
-            <button className="send-btn" type="submit" disabled={sendingMsg || !newMsg.trim()} style={{
-              padding: '0.65rem 1.1rem', borderRadius: '8px', border: 'none',
-              background: 'var(--green)', color: 'var(--black)',
-              fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: '13px', cursor: 'pointer',
-              transition: 'background-color 0.15s ease, transform 0.1s ease',
-            }}>
+            <button
+              className="send-btn"
+              type="submit"
+              disabled={sendingMsg || !newMsg.trim()}
+              style={{
+                padding: '0.65rem 1.15rem',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'var(--green)',
+                color: 'var(--black)',
+                fontFamily: "'Archivo Black', sans-serif",
+                fontWeight: 800,
+                fontSize: '13px',
+                letterSpacing: '-0.01em',
+                cursor: 'pointer',
+                transition: 'background 0.15s ease, transform 0.12s ease',
+              }}
+            >
               Send
             </button>
           </form>
         </div>
       )}
 
-      <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-        <Link href="/slots" style={{ fontSize: '14px', color: 'var(--muted)', textDecoration: 'none' }}>
+      <div style={{ marginTop: '1.75rem', textAlign: 'center' }}>
+        <Link
+          href="/slots"
+          style={{
+            fontSize: '13px',
+            color: 'var(--muted)',
+            textDecoration: 'none',
+            fontWeight: 500,
+            transition: 'color 0.15s ease',
+          }}
+        >
           ← Browse all slots
         </Link>
       </div>

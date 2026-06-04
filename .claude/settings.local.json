@@ -27,7 +27,12 @@
       "Bash(chromium-cli *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Projects\\\\book-my-pitch\" -Force)",
       "Bash(Select-Object Name, Mode)",
-      "Bash(npx --yes wait-on tcp:3000 --timeout 10000)"
+      "Bash(npx --yes wait-on tcp:3000 --timeout 10000)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Projects\\\\book-my-pitch\\\\app\" -Recurse -Filter \"*.tsx\" -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "Bash(Get-ChildItem *)",
+      "Bash(ping -n 4 127.0.0.1)"
     ]
   }
 }

@@ -35,7 +35,6 @@ interface Props {
   initialSessions: SessionData[]
   dbSlots: DbSlot[]
   venueId: string
-  /** slot_id → session_id for the logged-in user's active sessions (server-resolved). */
   mySlotToSession: Record<string, string>
 }
 
@@ -66,13 +65,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
   const [sessions, setSessions] = useState<SessionData[]>(initialSessions)
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
   const [weekOffset, setWeekOffset] = useState(0)
-  // Guest (not logged-in) users: slot_id → session_id resolved from localStorage phone.
   const [guestSlotMap, setGuestSlotMap] = useState<Record<string, string>>({})
 
-  // Build lookup: "date_startTime" → slotId
-  // DB returns time as "HH:MM:SS"; slice to "HH:MM" to match SlotTemplate.startTime
-  const slotIdMap = new Map<string, string>(
-    dbSlots.map(s => [`${s.date}_${s.start_time.slice(0, 5)}`, s.id])
+  // Slot ID map — seeded from server prop, extended client-side for week 2.
+  const [slotIdMap, setSlotIdMap] = useState<Map<string, string>>(
+    () => new Map(dbSlots.map(s => [`${s.date}_${s.start_time.slice(0, 5)}`, s.id]))
   )
 
   const today = startOfDay(new Date())
@@ -98,9 +95,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  // For guests: read saved phone from localStorage and look up their sessions.
-  // Runs once on mount; mySlotToSession (server prop) takes priority for
-  // logged-in users so this only has a visible effect for unauthenticated visitors.
   useEffect(() => {
     try {
       const stored = localStorage.getItem(LS_KEY)
@@ -126,7 +120,53 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
     } catch { /* ignore parse / storage errors */ }
   }, [])
 
-  // Merged map: server-side (logged-in) takes priority over localStorage (guest).
+  // When the user navigates to week 2, upsert its slot templates into the DB
+  // (in case the server-side upsert missed them) then fetch their IDs so cards
+  // become clickable. Week 1 data comes from the server prop; week 2 is lazy.
+  useEffect(() => {
+    if (weekOffset === 0 || !venueId) return
+
+    const week2Days = Array.from({ length: 7 }, (_, i) => addDays(startOfDay(new Date()), 7 + i))
+    const startStr = formatDate(week2Days[0])
+    const endStr = formatDate(week2Days[6])
+
+    // Skip if we already have IDs for this range
+    const firstKey = `${startStr}_${getSlotsForDay(week2Days[0])[0]?.startTime}`
+    if (slotIdMap.has(firstKey)) return
+
+    const inserts = week2Days.flatMap(day =>
+      getSlotsForDay(day).map(t => ({
+        venue_id: venueId,
+        date: formatDate(day),
+        start_time: t.startTime,
+        end_time: t.endTime,
+        type: t.type,
+        price: t.priceGBP,
+        max_players: t.maxPlayers,
+      }))
+    )
+
+    supabase
+      .from('slots')
+      .upsert(inserts, { onConflict: 'venue_id,date,start_time', ignoreDuplicates: true })
+      .then(() =>
+        supabase
+          .from('slots')
+          .select('id, date, start_time')
+          .eq('venue_id', venueId)
+          .gte('date', startStr)
+          .lte('date', endStr)
+      )
+      .then(({ data }) => {
+        if (!data?.length) return
+        setSlotIdMap(prev => {
+          const next = new Map(prev)
+          data.forEach(s => next.set(`${s.date}_${s.start_time.slice(0, 5)}`, s.id))
+          return next
+        })
+      })
+  }, [weekOffset, venueId])
+
   const myMap = { ...guestSlotMap, ...mySlotToSession }
 
   const dayStr = formatDate(selectedDate)
@@ -148,7 +188,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
 
     const confirmed = slotSessions.find(s => s.status === 'confirmed')
     if (confirmed) {
-      // Don't expose the session ID — the booked state never links anywhere
       return { status: 'booked' as const, hasRival: false, playerCount: 10, sessionId: null, slotId: confirmed.slot_id, isUserSession: false }
     }
 
@@ -159,7 +198,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
 
     const hasRival = filling.length > 1
 
-    // Check if the current user is already in one of the filling sessions.
     const userSessionId = slotId ? myMap[slotId] : null
     if (userSessionId) {
       const userSess = filling.find(s => s.id === userSessionId) ?? filling[0]
@@ -169,16 +207,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
     const best = filling.reduce((a, b) => totalCount(a) >= totalCount(b) ? a : b)
     const bestCount = totalCount(best)
 
-    // Only surface the rival warning if the leading session has enough momentum.
-    // A group with fewer than 5 players is unlikely to fill, so we treat the
-    // slot as open and show "Create game →" instead of discouraging new starters.
     const RIVAL_THRESHOLD = 5
     if (bestCount < RIVAL_THRESHOLD) {
       return { status: 'empty' as const, hasRival: false, playerCount: 0, sessionId: null, slotId, isUserSession: false }
     }
 
-    // Never expose rival session details — return no count and no session ID.
-    // The only thing the slots page needs to know is that competition exists.
     return { status: 'filling' as const, hasRival, playerCount: 0, sessionId: null, slotId, isUserSession: false }
   }
 
@@ -190,29 +223,70 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
 
   return (
     <div style={{ maxWidth: '680px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-      <div className="anim-fade-up" style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', letterSpacing: '-1px', marginBottom: '0.25rem' }}>
-        Globe Football Pitch
+
+      {/* Venue header */}
+      <div className="anim-fade-up" style={{ marginBottom: '0.3rem' }}>
+        <h1
+          style={{
+            fontFamily: "'Archivo Black', sans-serif",
+            fontSize: '30px',
+            letterSpacing: '-0.035em',
+            lineHeight: 0.95,
+            margin: 0,
+          }}
+        >
+          Globe Football Pitch
+        </h1>
       </div>
-      <div className="anim-fade-up d-80" style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '2rem' }}>
-        110 Globe Rd, Bethnal Green E1 4DZ · 4G · 5-a-side · Pick a slot to start filling your team
+      <div
+        className="anim-fade-up d-80"
+        style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '2.25rem', fontWeight: 500 }}
+      >
+        110 Globe Rd, Bethnal Green E1 4DZ · 4G · 5-a-side
       </div>
 
-      {/* Week navigation */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
+      {/* ============================================================
+          DAY PICKER
+          ============================================================ */}
+      <div
+        className="anim-fade-up d-100"
+        style={{ display: 'flex', alignItems: 'stretch', gap: '8px', marginBottom: '1.75rem' }}
+      >
+        {/* Prev week arrow */}
         <button
           className="week-arrow"
           onClick={() => { setWeekOffset(0); setSelectedDate(startOfDay(new Date())) }}
           disabled={weekOffset === 0}
+          aria-label="Previous week"
           style={{
-            flexShrink: 0, padding: '0.5rem 0.75rem', borderRadius: '8px',
-            border: '1px solid var(--border)', background: 'transparent',
-            color: weekOffset === 0 ? 'rgba(90,90,90,0.3)' : 'var(--muted)',
-            fontFamily: "'Archivo', sans-serif", fontSize: '16px', cursor: weekOffset === 0 ? 'not-allowed' : 'pointer',
-            transition: 'border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.1s ease',
+            flexShrink: 0,
+            width: '40px',
+            borderRadius: '10px',
+            border: '1px solid var(--border)',
+            background: 'transparent',
+            color: weekOffset === 0 ? 'rgba(90,90,90,0.25)' : 'var(--muted)',
+            fontSize: '18px',
+            cursor: weekOffset === 0 ? 'not-allowed' : 'pointer',
+            transition: 'border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.1s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        >‹</button>
+        >
+          ‹
+        </button>
 
-        <div style={{ display: 'flex', gap: '6px', flex: 1, overflowX: 'auto', paddingBottom: '2px' }}>
+        {/* Day buttons */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '5px',
+            flex: 1,
+            overflowX: 'auto',
+            paddingBottom: '2px',
+            scrollbarWidth: 'none',
+          }}
+        >
           {weekDays.map(day => {
             const active = formatDate(day) === formatDate(selectedDate)
             const isPast = day < startOfDay(new Date())
@@ -223,55 +297,99 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                 onClick={() => { if (!isPast) setSelectedDate(startOfDay(day)) }}
                 disabled={isPast}
                 style={{
-                  flexShrink: 0, padding: '0.5rem 0.9rem', borderRadius: '8px',
+                  flexShrink: 0,
+                  padding: '0.7rem 0.9rem',
+                  borderRadius: '10px',
                   border: active ? 'none' : '1px solid var(--border)',
                   background: active ? 'var(--green)' : 'transparent',
-                  color: active ? 'var(--black)' : isPast ? 'rgba(90,90,90,0.4)' : 'var(--muted)',
-                  fontFamily: "'Archivo', sans-serif", fontSize: '13px',
-                  fontWeight: active ? 700 : 500, cursor: isPast ? 'not-allowed' : 'pointer',
-                  transition: 'border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.1s ease',
+                  color: active ? 'var(--black)' : isPast ? 'rgba(90,90,90,0.28)' : 'var(--muted)',
+                  cursor: isPast ? 'not-allowed' : 'pointer',
+                  transition: 'border-color 0.18s ease, color 0.18s ease, background 0.18s ease, transform 0.12s ease',
                   textAlign: 'center',
+                  minWidth: '54px',
                 }}
               >
-                <span style={{ display: 'block', fontSize: '13px' }}>{DAY_NAMES[day.getDay()]}</span>
-                <span style={{ display: 'block', fontSize: '11px', opacity: 0.7, marginTop: '1px' }}>
-                  {day.getDate()} {MONTH_NAMES[day.getMonth()]}
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: '9px',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    marginBottom: '3px',
+                    opacity: active ? 0.7 : 0.65,
+                    lineHeight: 1,
+                  }}
+                >
+                  {DAY_NAMES[day.getDay()]}
+                </span>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: '20px',
+                    fontFamily: "'Archivo Black', sans-serif",
+                    letterSpacing: '-0.03em',
+                    lineHeight: 1,
+                    marginBottom: '3px',
+                  }}
+                >
+                  {day.getDate()}
+                </span>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: '9px',
+                    fontWeight: 600,
+                    letterSpacing: '0.04em',
+                    opacity: active ? 0.65 : 0.45,
+                    lineHeight: 1,
+                  }}
+                >
+                  {MONTH_NAMES[day.getMonth()]}
                 </span>
               </button>
             )
           })}
         </div>
 
+        {/* Next week arrow */}
         <button
           className="week-arrow"
           onClick={() => { setWeekOffset(1); setSelectedDate(startOfDay(allDays[7])) }}
           disabled={weekOffset === 1}
+          aria-label="Next week"
           style={{
-            flexShrink: 0, padding: '0.5rem 0.75rem', borderRadius: '8px',
-            border: '1px solid var(--border)', background: 'transparent',
-            color: weekOffset === 1 ? 'rgba(90,90,90,0.3)' : 'var(--muted)',
-            fontFamily: "'Archivo', sans-serif", fontSize: '16px', cursor: weekOffset === 1 ? 'not-allowed' : 'pointer',
-            transition: 'border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease, transform 0.1s ease',
+            flexShrink: 0,
+            width: '40px',
+            borderRadius: '10px',
+            border: '1px solid var(--border)',
+            background: 'transparent',
+            color: weekOffset === 1 ? 'rgba(90,90,90,0.25)' : 'var(--muted)',
+            fontSize: '18px',
+            cursor: weekOffset === 1 ? 'not-allowed' : 'pointer',
+            transition: 'border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.1s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        >›</button>
+        >
+          ›
+        </button>
       </div>
 
-      {/* Slot list */}
+      {/* ============================================================
+          SLOT LIST
+          ============================================================ */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {slotTemplates.map((template, idx) => {
           const info = getSlotStatus(template)
           const booked = info.status === 'booked'
           const filling = info.status === 'filling'
           const typeColor = template.type === 'peak' ? '#FF6B6B' : template.type === 'weekend' ? '#00B4FF' : 'var(--green)'
-          const typeBg = template.type === 'peak' ? 'rgba(255,68,68,0.15)' : template.type === 'weekend' ? 'rgba(0,180,255,0.12)' : 'rgba(200,244,0,0.12)'
+          const typeBg = template.type === 'peak' ? 'rgba(255,68,68,0.14)' : template.type === 'weekend' ? 'rgba(0,180,255,0.1)' : 'rgba(198,241,53,0.1)'
           const perPlayerPitch = (template.priceGBP / 10).toFixed(2)
           const isUserSession = info.isUserSession
 
-          // The slots page never links to an existing session — the only action
-          // is "Create game →" which starts the creation flow.  If the user
-          // already belongs to a session for this slot the card shows a status
-          // indicator but is not clickable (they must use their shared link to
-          // return to that session).
           let href: string | undefined
           if (!booked && !isUserSession && info.slotId) {
             href = `/slots/${info.slotId}/create`
@@ -282,97 +400,170 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
             animationDuration: '0.5s',
             animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
             animationFillMode: 'both',
-            animationDelay: `${100 + idx * 55}ms`,
+            animationDelay: `${80 + idx * 50}ms`,
           }
 
-          const cardStyle = {
+          const fillCount = booked ? 10 : filling ? info.playerCount : 0
+          const isAmberState = fillCount >= 7 && fillCount < 10
+          const segColor = booked ? 'lit-red' : isAmberState ? 'lit-amber' : (filling || isUserSession) ? 'lit-green' : 'lit-green'
+
+          const cardStyle: React.CSSProperties = {
             background: isUserSession
-              ? 'linear-gradient(135deg, rgba(200,244,0,0.05) 0%, #0e0e0e 100%)'
-              : 'linear-gradient(135deg, #111 0%, #0d0d0d 100%)',
-            border: `1px solid ${isUserSession ? 'rgba(200,244,0,0.25)' : 'rgba(255,255,255,0.07)'}`,
-            borderRadius: '14px',
-            padding: '1.25rem 1.4rem',
+              ? 'linear-gradient(135deg, rgba(198,241,53,0.06) 0%, #0f0f0f 100%)'
+              : 'linear-gradient(135deg, #111 0%, #0e0e0e 100%)',
+            border: `1px solid ${isUserSession ? 'rgba(198,241,53,0.28)' : booked ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.07)'}`,
+            borderRadius: '16px',
+            padding: '1.3rem 1.5rem',
             cursor: booked ? 'not-allowed' : isUserSession ? 'default' : 'pointer',
-            transition: 'transform 0.22s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.22s ease, box-shadow 0.22s cubic-bezier(0.23, 1, 0.32, 1)',
-            position: 'relative' as const,
-            overflow: 'visible' as const,
-            opacity: booked ? 0.38 : 1,
+            transition: 'transform 0.25s var(--ease-out), border-color 0.25s ease, box-shadow 0.25s var(--ease-out)',
+            position: 'relative',
+            overflow: 'visible',
+            opacity: booked ? 0.36 : 1,
           }
-
-          const fillPct = booked ? 100 : filling ? Math.round((info.playerCount / 10) * 100) : 0
-          const barColor = booked ? 'var(--red)' : isUserSession ? 'var(--green)' : fillPct >= 70 ? 'var(--amber)' : 'var(--green)'
-          const barGlowClass = booked ? 'glow-red' : fillPct >= 70 ? 'glow-amber' : (filling || isUserSession) ? 'glow-green' : ''
 
           const cardContent = (
             <>
-              {/* Lime left accent stripe for user session */}
+              {/* Left accent stripe for user's own session */}
               {isUserSession && (
-                <div style={{
-                  position: 'absolute', left: 0, top: '12px', bottom: '12px',
-                  width: '3px', background: 'var(--green)',
-                  borderRadius: '0 2px 2px 0',
-                  boxShadow: '0 0 12px rgba(200,244,0,0.5)',
-                }} />
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: '14px',
+                    bottom: '14px',
+                    width: '3px',
+                    background: 'var(--green)',
+                    borderRadius: '0 3px 3px 0',
+                    boxShadow: '0 0 14px rgba(198,241,53,0.55)',
+                  }}
+                />
               )}
 
               {/* Header row */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  marginBottom: '1.1rem',
+                }}
+              >
                 <div>
-                  <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '22px', letterSpacing: '-0.5px', color: 'var(--text)', lineHeight: 1 }}>
+                  <div
+                    style={{
+                      fontFamily: "'Archivo Black', sans-serif",
+                      fontSize: '24px',
+                      letterSpacing: '-0.04em',
+                      color: booked ? 'var(--muted)' : 'var(--text)',
+                      lineHeight: 1,
+                      marginBottom: '8px',
+                    }}
+                  >
                     {template.startTime}
-                    <span style={{ color: 'var(--muted)', fontFamily: "'Archivo', sans-serif", fontWeight: 500, fontSize: '16px', margin: '0 6px' }}>–</span>
+                    <span
+                      style={{
+                        color: 'var(--muted)',
+                        fontFamily: "'Archivo', sans-serif",
+                        fontWeight: 500,
+                        fontSize: '16px',
+                        margin: '0 7px',
+                      }}
+                    >
+                      –
+                    </span>
                     {template.endTime}
                   </div>
-                  <div style={{ marginTop: '7px' }}>
-                    <span style={{
-                      fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
-                      padding: '3px 8px', borderRadius: '4px',
-                      background: typeBg, color: typeColor,
-                    }}>
-                      {template.type === 'offpeak' ? 'Off-peak' : template.type === 'peak' ? 'Peak' : 'Weekend'}
-                    </span>
-                  </div>
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      fontWeight: 700,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      padding: '3px 9px',
+                      borderRadius: '4px',
+                      background: typeBg,
+                      color: typeColor,
+                    }}
+                  >
+                    {template.type === 'offpeak' ? 'Off-peak' : template.type === 'peak' ? 'Peak' : 'Weekend'}
+                  </span>
                 </div>
+
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', color: '#C8F400', letterSpacing: '-0.5px', lineHeight: 1 }}>
+                  <div
+                    style={{
+                      fontFamily: "'Archivo Black', sans-serif",
+                      fontSize: '28px',
+                      color: booked ? 'var(--muted)' : 'var(--green)',
+                      letterSpacing: '-0.04em',
+                      lineHeight: 1,
+                    }}
+                  >
                     £{perPlayerPitch}
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '3px' }}>per player</div>
+                  <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '4px' }}>per player</div>
                 </div>
               </div>
 
-              {/* Progress bar */}
-              <div style={{ background: '#1a1a1a', borderRadius: '100px', height: '6px', overflow: 'hidden', marginBottom: '10px' }}>
-                <div
-                  className={`slot-bar-fill ${fillPct > 0 || booked ? barGlowClass : ''}`}
-                  style={{ background: barColor, width: `${fillPct}%` }}
-                />
+              {/* Segmented fill bar — 10 discrete blocks */}
+              <div className="seg-bar" style={{ marginBottom: '10px' }}>
+                {Array.from({ length: 10 }, (_, i) => {
+                  const lit = i < fillCount
+                  return (
+                    <div
+                      key={i}
+                      className={`seg-bar-seg ${lit ? segColor : 'unlit'}`}
+                      style={{ transitionDelay: `${i * 25}ms` }}
+                    />
+                  )
+                })}
               </div>
 
               {/* Status row */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '12px',
+                }}
+              >
                 {booked ? (
-                  <span style={{ color: 'var(--red)', fontWeight: 700, letterSpacing: '0.02em' }}>✕ Slot taken</span>
+                  <span style={{ color: 'var(--red)', fontWeight: 700 }}>✕ Slot taken</span>
                 ) : filling && isUserSession ? (
-                  <span style={{ color: '#C8F400', fontWeight: 700, letterSpacing: '0.02em' }}>✓ You&apos;re in this game</span>
+                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>✓ You&apos;re in this game</span>
                 ) : filling ? (
                   <>
                     <span style={{ color: 'var(--amber)', fontWeight: 700 }}>⚡ Another group is racing</span>
-                    <span style={{ color: '#C8F400', fontWeight: 700, letterSpacing: '0.04em' }}>Create game →</span>
+                    <span style={{ color: 'var(--green)', fontWeight: 700, letterSpacing: '0.04em' }}>Create game →</span>
                   </>
                 ) : (
-                  <span style={{ color: '#C8F400', fontWeight: 700, letterSpacing: '0.04em', marginLeft: 'auto' }}>Create game →</span>
+                  <span style={{ color: 'var(--green)', fontWeight: 700, letterSpacing: '0.04em', marginLeft: 'auto' }}>
+                    Create game →
+                  </span>
                 )}
               </div>
             </>
           )
 
           return href ? (
-            <Link key={template.startTime} href={href} style={{ textDecoration: 'none', color: 'inherit', display: 'block', ...staggerStyle }}>
-              <div className="slot-pick" style={cardStyle}>{cardContent}</div>
+            <Link
+              key={template.startTime}
+              href={href}
+              style={{ textDecoration: 'none', color: 'inherit', display: 'block', ...staggerStyle }}
+            >
+              <div className="slot-pick" style={cardStyle}>
+                {cardContent}
+              </div>
             </Link>
           ) : (
-            <div key={template.startTime} className={`${booked ? 'taken' : ''} ${isUserSession ? 'user-session' : ''}`} style={{ ...cardStyle, ...staggerStyle }}>{cardContent}</div>
+            <div
+              key={template.startTime}
+              className={`${booked ? 'taken' : ''} ${isUserSession ? 'user-session' : ''}`}
+              style={{ ...cardStyle, ...staggerStyle }}
+            >
+              {cardContent}
+            </div>
           )
         })}
       </div>
