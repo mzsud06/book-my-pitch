@@ -13,11 +13,16 @@ export default function Loading() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} style={{
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: '10px', padding: '1.1rem 1.25rem', opacity: 0.5,
-              borderLeft: '3px solid var(--border)', height: '96px',
-            }} />
+            <div
+              key={i}
+              className="skeleton"
+              style={{
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: '14px', padding: '1.25rem 1.4rem',
+                height: '110px',
+                animationDelay: `${i * 80}ms`,
+              }}
+            />
           ))}
         </div>
       </div>

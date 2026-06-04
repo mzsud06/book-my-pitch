@@ -505,13 +505,18 @@ export default function JoinForm({ slot, isOrganiser, sessionId, existingPlayerC
             const filled = i < gridFilledCount
             const isYouSlot = i === gridFilledCount
             return (
-              <div key={i} style={{
-                height: '36px', borderRadius: '6px', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: '11px', fontWeight: 700,
-                background: isYouSlot ? 'var(--green)' : filled ? 'rgba(200,244,0,0.12)' : 'var(--surface2)',
-                border: filled && !isYouSlot ? '1px solid rgba(200,244,0,0.25)' : isYouSlot ? 'none' : '1px dashed rgba(255,255,255,0.07)',
-                color: isYouSlot ? 'var(--black)' : filled ? 'var(--green)' : 'var(--muted)',
-              }}>
+              <div
+                key={i}
+                className={filled || isYouSlot ? 'anim-pop-in' : ''}
+                style={{
+                  height: '38px', borderRadius: '6px', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', fontSize: '11px', fontWeight: 700,
+                  background: isYouSlot ? 'var(--green)' : filled ? 'rgba(200,244,0,0.12)' : 'var(--surface2)',
+                  border: filled && !isYouSlot ? '1px solid rgba(200,244,0,0.3)' : isYouSlot ? 'none' : '1px dashed rgba(255,255,255,0.07)',
+                  color: isYouSlot ? 'var(--black)' : filled ? 'var(--green)' : 'var(--muted)',
+                  animationDelay: `${i * 50}ms`,
+                }}
+              >
                 {isYouSlot ? 'You' : filled ? '✓' : `+${i - gridFilledCount + 1}`}
               </div>
             )

@@ -71,18 +71,15 @@ export default function Nav() {
 
   return (
     <>
-      <style>{`
-        .nav-btn-green:hover { background: var(--green-dim) !important; transform: translateY(-1px); }
-        .nav-link-ghost:hover { color: var(--text) !important; }
-        .profile-btn:hover { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.04) !important; }
-        .dropdown-item:hover { background: var(--surface2) !important; color: var(--text) !important; }
-      `}</style>
-      <nav style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)',
-        position: 'sticky', top: 0, zIndex: 300,
-        background: 'rgba(8,8,8,0.96)', backdropFilter: 'blur(20px)',
-      }}>
+      <nav
+        className="anim-fade-in"
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)',
+          position: 'sticky', top: 0, zIndex: 300,
+          background: 'rgba(8,8,8,0.97)', backdropFilter: 'blur(24px)',
+        }}
+      >
         <Link href="/" style={{ textDecoration: 'none' }}>
           <span style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '18px', letterSpacing: '-0.5px', cursor: 'pointer', userSelect: 'none', color: 'var(--text)' }}>
             Book<span style={{ color: 'var(--green)' }}>My</span>Pitch<span style={{ color: 'var(--green)' }}>.uk</span>

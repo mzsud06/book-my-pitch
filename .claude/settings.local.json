@@ -18,7 +18,13 @@
       "Bash(mkdir -p /tmp)",
       "Bash(echo \"PID: $!\")",
       "Bash(curl *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(npx next *)",
+      "Bash(claude mcp *)",
+      "mcp__magic__21st_magic_component_inspiration",
+      "mcp__magic__21st_magic_component_builder",
+      "Bash(timeout 40 bash -c 'until curl -sf http://localhost:3000 >/dev/null 2>&1; do sleep 1; done')",
+      "Bash(chromium-cli *)"
     ]
   }
 }

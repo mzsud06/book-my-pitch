@@ -17,9 +17,7 @@
   --amber: #FFB800;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html {
   background: var(--black);
@@ -38,23 +36,180 @@ body {
   padding: 0;
 }
 
-.font-heading {
-  font-family: 'Archivo Black', sans-serif;
+.font-heading { font-family: 'Archivo Black', sans-serif; }
+strong { font-weight: 800; }
+input::placeholder { color: #3d3d3d; }
+input:focus { outline: none; }
+p, span, a, li, div { font-weight: 600; }
+h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
+
+/* ============================================================
+   KEYFRAMES
+   ============================================================ */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-strong {
-  font-weight: 800;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-input::placeholder {
-  color: #3d3d3d;
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.93); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-input:focus {
-  outline: none;
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.6); }
+  65%  { transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
-/* Stripe element styling */
+@keyframes checkPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(200,244,0,0.45); }
+  60%  { box-shadow: 0 0 0 20px rgba(200,244,0,0); }
+  100% { box-shadow: 0 0 0 0 rgba(200,244,0,0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ---- Animation utilities ---- */
+.anim-fade-up  { animation: fadeUp  0.65s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-fade-in  { animation: fadeIn  0.45s ease both; }
+.anim-scale-in { animation: scaleIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-pop-in   { animation: popIn   0.44s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* ---- Delay utilities ---- */
+.d-0   { animation-delay:   0ms; }
+.d-80  { animation-delay:  80ms; }
+.d-100 { animation-delay: 100ms; }
+.d-150 { animation-delay: 150ms; }
+.d-200 { animation-delay: 200ms; }
+.d-250 { animation-delay: 250ms; }
+.d-300 { animation-delay: 300ms; }
+.d-350 { animation-delay: 350ms; }
+.d-400 { animation-delay: 400ms; }
+.d-450 { animation-delay: 450ms; }
+.d-500 { animation-delay: 500ms; }
+.d-600 { animation-delay: 600ms; }
+.d-700 { animation-delay: 700ms; }
+.d-800 { animation-delay: 800ms; }
+
+/* CSS scroll-driven reveal — Chrome 115+. Other browsers see elements normally. */
+@supports (animation-timeline: view()) {
+  .reveal-scroll {
+    animation: fadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 32%;
+  }
+}
+
+/* ---- Skeleton shimmer ---- */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    var(--surface2) 50%,
+    var(--surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+.nav-btn-green:hover  {
+  background: var(--green-dim) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(200,244,0,0.22) !important;
+}
+.nav-btn-green:active {
+  transform: scale(0.96) translateY(0) !important;
+  box-shadow: none !important;
+  transition-duration: 0.05s !important;
+}
+.nav-link-ghost:hover { color: var(--text) !important; }
+.profile-btn:hover    { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.04) !important; }
+.dropdown-item:hover  { background: var(--surface2) !important; color: var(--text) !important; }
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn-g:hover {
+  background: var(--green-dim) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 22px rgba(200,244,0,0.22) !important;
+}
+.btn-g:active {
+  transform: scale(0.97) translateY(0) !important;
+  box-shadow: none !important;
+  transition-duration: 0.05s !important;
+}
+
+.share-copy:hover  { background: rgba(200,244,0,0.85) !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(200,244,0,0.2); }
+.share-copy:active { transform: scale(0.97) !important; }
+.share-wa:hover    { background: rgba(37,211,102,0.85) !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,211,102,0.2); }
+.share-wa:active   { transform: scale(0.97) !important; }
+.join-btn:hover    { opacity: 0.88; transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.35) !important; }
+.join-btn:active   { transform: scale(0.98) translateY(0) !important; }
+
+/* ============================================================
+   CARDS — homepage slot preview
+   ============================================================ */
+.slot-card-link { text-decoration: none; display: block; }
+
+.slot-card {
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.22s ease,
+    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slot-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(200,244,0,0.28) !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(200,244,0,0.14);
+}
+
+/* Slots page cards */
+.slot-pick {
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.22s ease,
+    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slot-pick:hover:not(.taken):not(.user-session) {
+  border-color: rgba(200,244,0,0.28) !important;
+  transform: translateY(-3px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(200,244,0,0.1), inset 0 0 40px rgba(200,244,0,0.025);
+}
+
+/* Progress bar glow */
+.slot-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.65s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+}
+.slot-bar-fill.glow-green { box-shadow: 0 0 10px rgba(200,244,0,0.55); }
+.slot-bar-fill.glow-amber { box-shadow: 0 0 10px rgba(255,184,0,0.45); }
+.slot-bar-fill.glow-red   { box-shadow: 0 0 10px rgba(255,68,68,0.4); }
+
+/* Day picker */
+.day-btn-item:hover { border-color: rgba(255,255,255,0.2) !important; color: var(--text) !important; background: rgba(255,255,255,0.04) !important; }
+.week-arrow:hover   { border-color: rgba(255,255,255,0.2) !important; color: var(--text) !important; background: rgba(255,255,255,0.04) !important; }
+
+/* Chat */
+.msg-input:focus { border-color: rgba(200,244,0,0.4) !important; outline: none; }
+
+/* ============================================================
+   STRIPE
+   ============================================================ */
 .StripeElement {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -65,29 +220,22 @@ input:focus {
   font-size: 14px;
   transition: border-color 0.15s;
 }
+.StripeElement--focus { border-color: rgba(200, 244, 0, 0.4); }
 
-.StripeElement--focus {
-  border-color: rgba(200, 244, 0, 0.4);
-}
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+/* ============================================================
+   RESPONSIVE — homepage grids
+   ============================================================ */
+@media (max-width: 768px) {
+  .hero-grid  { grid-template-columns: 1fr !important; }
+  .steps-grid { grid-template-columns: 1fr 1fr !important; }
 }
-::-webkit-scrollbar-track {
-  background: var(--surface);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--surface3);
-  border-radius: 4px;
-}
-
-p, span, a, li, div {
-  font-weight: 600;
-}
-
-h1, h2, h3, h4 {
-  font-family: 'Archivo Black', sans-serif;
-  font-weight: 900;
+@media (max-width: 480px) {
+  .steps-grid { grid-template-columns: 1fr !important; }
 }

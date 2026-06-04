@@ -178,21 +178,15 @@ export default function SessionClient({ session: initialSession, hasRival, initi
 
   return (
     <div style={{ maxWidth: '460px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-      <style>{`
-        .msg-input:focus { border-color: rgba(200,244,0,0.4) !important; outline: none; }
-        .share-copy:hover { background: rgba(200,244,0,0.85) !important; }
-        .share-wa:hover { background: rgba(37,211,102,0.85) !important; }
-        .join-btn:hover { opacity: 0.88; transform: translateY(-1px); }
-      `}</style>
-
       {/* Confirmed banner */}
       {isConfirmed && (
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <div className="anim-fade-up" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <div style={{
-            width: '64px', height: '64px',
-            background: 'rgba(200,244,0,0.1)', border: '1px solid rgba(200,244,0,0.2)',
+            width: '68px', height: '68px',
+            background: 'rgba(200,244,0,0.1)', border: '2px solid rgba(200,244,0,0.3)',
             borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '28px', margin: '0 auto 1.25rem',
+            animation: 'checkPulse 1.2s ease-out 0.4s both',
           }}>✓</div>
           <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', letterSpacing: '-1px', marginBottom: '0.5rem' }}>
             You&apos;re confirmed!
@@ -241,7 +235,7 @@ export default function SessionClient({ session: initialSession, hasRival, initi
       )}
 
       {/* Session summary card */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem' }}>
+      <div className="anim-fade-up d-100" style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem' }}>
         <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
           {slot.venues?.name ?? 'Globe Football Pitch'} · Bethnal Green
         </div>
@@ -261,16 +255,19 @@ export default function SessionClient({ session: initialSession, hasRival, initi
               <div
                 key={i}
                 title={player ? player.name : `Spot ${i + 1}`}
+                className={player ? 'anim-pop-in' : ''}
                 style={{
-                  height: '36px', borderRadius: '6px',
+                  height: '38px', borderRadius: '6px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: name && name.length > 5 ? '9px' : '11px', fontWeight: 700,
                   background: player ? 'rgba(200,244,0,0.12)' : 'var(--surface2)',
-                  border: player ? '1px solid rgba(200,244,0,0.25)' : '1px dashed rgba(255,255,255,0.07)',
+                  border: player ? '1px solid rgba(200,244,0,0.3)' : '1px dashed rgba(255,255,255,0.07)',
                   color: player ? 'var(--green)' : 'var(--muted)',
                   overflow: 'hidden', padding: '0 2px',
                   textAlign: 'center', lineHeight: 1.1,
                   whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                  animationDelay: `${i * 55}ms`,
+                  transition: 'background 0.3s ease, border-color 0.3s ease',
                 }}
               >
                 {name ?? '+1'}
@@ -280,11 +277,13 @@ export default function SessionClient({ session: initialSession, hasRival, initi
         </div>
 
         {/* Fill bar */}
-        <div style={{ background: 'var(--surface2)', borderRadius: '100px', height: '6px', overflow: 'hidden', marginBottom: '6px' }}>
+        <div style={{ background: 'var(--surface2)', borderRadius: '100px', height: '7px', overflow: 'hidden', marginBottom: '6px' }}>
           <div style={{
             height: '100%', borderRadius: '100px',
             background: isConfirmed ? 'var(--green)' : fillPercent >= 70 ? 'var(--amber)' : 'var(--green)',
-            width: `${fillPercent}%`, transition: 'width 0.5s ease',
+            width: `${fillPercent}%`,
+            transition: 'width 0.75s cubic-bezier(0.22, 1, 0.36, 1), background 0.4s ease',
+            boxShadow: isConfirmed ? '0 0 8px rgba(200,244,0,0.35)' : 'none',
           }} />
         </div>
         <div style={{ fontSize: '14px', color: 'var(--muted)', textAlign: 'center' }}>
@@ -334,7 +333,7 @@ export default function SessionClient({ session: initialSession, hasRival, initi
       {isFilling && (
         <>
           {/* Share card — always shown first, before the Join CTA */}
-          <div style={{
+          <div className="anim-fade-up d-200" style={{
             background: 'rgba(200,244,0,0.06)',
             border: '1px solid rgba(200,244,0,0.3)',
             borderRadius: '14px', padding: '1.25rem', marginBottom: '1.25rem',
@@ -365,7 +364,7 @@ export default function SessionClient({ session: initialSession, hasRival, initi
                   flex: 1, padding: '0.8rem', borderRadius: '8px', border: 'none',
                   background: 'var(--green)', color: 'var(--black)',
                   fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: '14px',
-                  cursor: 'pointer', transition: 'background 0.15s',
+                  cursor: 'pointer', transition: 'all 0.18s',
                 }}
               >
                 {copied ? '✓ Copied!' : '📋 Copy link'}
@@ -377,7 +376,7 @@ export default function SessionClient({ session: initialSession, hasRival, initi
                   flex: 1, padding: '0.8rem', borderRadius: '8px', border: 'none',
                   background: '#25D366', color: '#fff',
                   fontFamily: "'Archivo', sans-serif", fontWeight: 700, fontSize: '14px',
-                  cursor: 'pointer', transition: 'background 0.15s',
+                  cursor: 'pointer', transition: 'all 0.18s',
                 }}
               >
                 WhatsApp →
@@ -386,13 +385,13 @@ export default function SessionClient({ session: initialSession, hasRival, initi
           </div>
 
           {/* Join CTA — for people who haven't joined yet */}
-          <Link href={`/session/${session.id}/join`} style={{ textDecoration: 'none' }}>
+          <Link href={`/session/${session.id}/join`} className="anim-fade-up d-300" style={{ textDecoration: 'none', display: 'block', marginBottom: '1.25rem' }}>
             <button className="join-btn" style={{
-              width: '100%', padding: '0.9rem', fontSize: '15px', borderRadius: '10px',
-              border: '1px solid var(--border)',
+              width: '100%', padding: '1rem', fontSize: '15px', borderRadius: '10px',
+              border: '1px solid rgba(255,255,255,0.1)',
               cursor: 'pointer', background: 'var(--surface)', color: 'var(--text)',
-              fontFamily: "'Archivo', sans-serif", fontWeight: 700, marginBottom: '1.25rem',
-              transition: 'all 0.15s',
+              fontFamily: "'Archivo', sans-serif", fontWeight: 700,
+              transition: 'all 0.2s',
             }}>
               Join this session — £{perPlayerPounds} if confirmed
             </button>

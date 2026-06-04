@@ -190,16 +190,10 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
 
   return (
     <div style={{ maxWidth: '680px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-      <style>{`
-        .slot-pick:hover:not(.taken) { border-color: rgba(200,244,0,0.25) !important; transform: translateY(-1px); }
-        .day-btn-item:hover { border-color: rgba(255,255,255,0.18) !important; color: var(--text) !important; }
-        .week-arrow:hover { border-color: rgba(255,255,255,0.18) !important; color: var(--text) !important; }
-      `}</style>
-
-      <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', letterSpacing: '-1px', marginBottom: '0.25rem' }}>
+      <div className="anim-fade-up" style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', letterSpacing: '-1px', marginBottom: '0.25rem' }}>
         Globe Football Pitch
       </div>
-      <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '2rem' }}>
+      <div className="anim-fade-up d-80" style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '2rem' }}>
         110 Globe Rd, Bethnal Green E1 4DZ · 4G · 5-a-side · Pick a slot to start filling your team
       </div>
 
@@ -262,7 +256,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
       </div>
 
       {/* Slot list */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div className="anim-fade-up d-200" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {slotTemplates.map(template => {
           const info = getSlotStatus(template)
           const booked = info.status === 'booked'
@@ -283,63 +277,82 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
           }
 
           const cardStyle = {
-            background: isUserSession ? 'rgba(200,244,0,0.04)' : 'var(--surface)',
-            border: `1px solid ${isUserSession ? 'rgba(200,244,0,0.3)' : 'var(--border)'}`,
-            borderRadius: '10px',
-            padding: '1.1rem 1.25rem',
+            background: isUserSession
+              ? 'linear-gradient(135deg, rgba(200,244,0,0.05) 0%, #0e0e0e 100%)'
+              : 'linear-gradient(135deg, #111 0%, #0d0d0d 100%)',
+            border: `1px solid ${isUserSession ? 'rgba(200,244,0,0.25)' : 'rgba(255,255,255,0.07)'}`,
+            borderRadius: '14px',
+            padding: '1.25rem 1.4rem',
             cursor: booked ? 'not-allowed' : isUserSession ? 'default' : 'pointer',
             transition: 'all 0.18s',
             position: 'relative' as const,
-            overflow: 'hidden' as const,
-            opacity: booked ? 0.45 : 1,
-            borderLeft: `3px solid ${isUserSession ? 'var(--green)' : typeColor}`,
+            overflow: 'visible' as const,
+            opacity: booked ? 0.38 : 1,
           }
 
           const fillPct = booked ? 100 : filling ? Math.round((info.playerCount / 10) * 100) : 0
           const barColor = booked ? 'var(--red)' : isUserSession ? 'var(--green)' : fillPct >= 70 ? 'var(--amber)' : 'var(--green)'
+          const barGlowClass = booked ? 'glow-red' : fillPct >= 70 ? 'glow-amber' : (filling || isUserSession) ? 'glow-green' : ''
 
           const cardContent = (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+              {/* Lime left accent stripe for user session */}
+              {isUserSession && (
+                <div style={{
+                  position: 'absolute', left: 0, top: '12px', bottom: '12px',
+                  width: '3px', background: 'var(--green)',
+                  borderRadius: '0 2px 2px 0',
+                  boxShadow: '0 0 12px rgba(200,244,0,0.5)',
+                }} />
+              )}
+
+              {/* Header row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <div>
-                  <div style={{
-                    fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-                    padding: '3px 8px', borderRadius: '4px', marginBottom: '6px', display: 'inline-block',
-                    background: typeBg, color: typeColor,
-                  }}>
-                    {template.type === 'offpeak' ? 'Off-peak' : template.type === 'peak' ? 'Peak' : 'Weekend'}
+                  <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '22px', letterSpacing: '-0.5px', color: 'var(--text)', lineHeight: 1 }}>
+                    {template.startTime}
+                    <span style={{ color: 'var(--muted)', fontFamily: "'Archivo', sans-serif", fontWeight: 500, fontSize: '16px', margin: '0 6px' }}>–</span>
+                    {template.endTime}
                   </div>
-                  <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '18px', letterSpacing: '-0.3px', marginTop: '4px' }}>
-                    {template.startTime} – {template.endTime}
+                  <div style={{ marginTop: '7px' }}>
+                    <span style={{
+                      fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+                      padding: '3px 8px', borderRadius: '4px',
+                      background: typeBg, color: typeColor,
+                    }}>
+                      {template.type === 'offpeak' ? 'Off-peak' : template.type === 'peak' ? 'Peak' : 'Weekend'}
+                    </span>
                   </div>
                 </div>
-                <div>
-                  <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '20px', color: 'var(--green)', letterSpacing: '-0.5px' }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', color: '#C8F400', letterSpacing: '-0.5px', lineHeight: 1 }}>
                     £{perPlayerPitch}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '1px', textAlign: 'right' }}>per player</div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '3px' }}>per player</div>
                 </div>
               </div>
 
-              <div style={{ background: 'var(--surface2)', borderRadius: '100px', height: '5px', overflow: 'hidden', marginBottom: '6px' }}>
-                <div style={{ height: '100%', borderRadius: '100px', background: barColor, width: `${fillPct}%`, transition: 'width 0.3s' }} />
+              {/* Progress bar */}
+              <div style={{ background: '#1a1a1a', borderRadius: '100px', height: '6px', overflow: 'hidden', marginBottom: '10px' }}>
+                <div
+                  className={`slot-bar-fill ${fillPct > 0 || booked ? barGlowClass : ''}`}
+                  style={{ background: barColor, width: `${fillPct}%` }}
+                />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+              {/* Status row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
                 {booked ? (
-                  <span style={{ color: 'var(--red)', fontWeight: 700 }}>Booked — slot taken</span>
+                  <span style={{ color: 'var(--red)', fontWeight: 700, letterSpacing: '0.02em' }}>✕ Slot taken</span>
                 ) : filling && isUserSession ? (
-                  // State 1 — user is already in this session (card is not a link)
-                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>✓ You&apos;re in this game</span>
+                  <span style={{ color: '#C8F400', fontWeight: 700, letterSpacing: '0.02em' }}>✓ You&apos;re in this game</span>
                 ) : filling ? (
-                  // State 2 — rival group (5+ players) is filling; user can still create their own
                   <>
-                    <span style={{ color: 'var(--amber)', fontWeight: 700 }}>⚡ Another group is racing for this</span>
-                    <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: '12px' }}>Create game →</span>
+                    <span style={{ color: 'var(--amber)', fontWeight: 700 }}>⚡ Another group is racing</span>
+                    <span style={{ color: '#C8F400', fontWeight: 700, letterSpacing: '0.04em' }}>Create game →</span>
                   </>
                 ) : (
-                  // State 3 — slot is available
-                  <span style={{ color: 'var(--green)', fontWeight: 700, fontSize: '12px', marginLeft: 'auto' }}>Create game →</span>
+                  <span style={{ color: '#C8F400', fontWeight: 700, letterSpacing: '0.04em', marginLeft: 'auto' }}>Create game →</span>
                 )}
               </div>
             </>
@@ -350,9 +363,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
               <div className="slot-pick" style={cardStyle}>{cardContent}</div>
             </Link>
           ) : (
-            // No link: booked slots get 'taken' class (cursor:not-allowed via CSS);
-            // user-session cards are just static (cursor:default, no hover lift).
-            <div key={template.startTime} className={booked ? 'taken' : ''} style={cardStyle}>{cardContent}</div>
+            <div key={template.startTime} className={`${booked ? 'taken' : ''} ${isUserSession ? 'user-session' : ''}`} style={cardStyle}>{cardContent}</div>
           )
         })}
       </div>
