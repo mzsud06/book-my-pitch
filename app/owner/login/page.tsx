@@ -11,9 +11,15 @@ export default function OwnerLoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [emailError, setEmailError] = useState('')
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
+    const at = email.indexOf('@')
+    if (at < 0 || !email.slice(at + 1).includes('.')) {
+      setEmailError('Please enter a valid email address')
+      return
+    }
     setLoading(true)
     setError('')
 
@@ -183,12 +189,13 @@ export default function OwnerLoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={e => { setEmail(e.target.value); if (emailError) setEmailError('') }}
                 required
                 placeholder="owner@globepitch.co.uk"
                 className="field-input"
                 style={inputStyle}
               />
+              {emailError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{emailError}</div>}
             </div>
             <div>
               <label style={labelStyle}>Password</label>
@@ -221,17 +228,17 @@ export default function OwnerLoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
-              className={!loading ? 'btn-g' : ''}
+              disabled={loading || !!emailError}
+              className={!loading && !emailError ? 'btn-g' : ''}
               style={{
                 width: '100%',
                 padding: '1rem',
                 fontSize: '16px',
                 borderRadius: '12px',
                 border: 'none',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                background: loading ? 'var(--surface2)' : 'var(--green)',
-                color: loading ? 'var(--muted)' : 'var(--black)',
+                cursor: loading || emailError ? 'not-allowed' : 'pointer',
+                background: loading || emailError ? 'var(--surface2)' : 'var(--green)',
+                color: loading || emailError ? 'var(--muted)' : 'var(--black)',
                 fontFamily: "'Archivo Black', sans-serif",
                 fontWeight: 900,
                 letterSpacing: '-0.025em',

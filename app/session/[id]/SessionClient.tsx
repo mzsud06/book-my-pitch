@@ -1,15 +1,29 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+
+const COUNTRY_CODES = [
+  { code: '+44',  label: '🇬🇧 +44' },
+  { code: '+1',   label: '🇺🇸 +1' },
+  { code: '+92',  label: '🇵🇰 +92' },
+  { code: '+880', label: '🇧🇩 +880' },
+  { code: '+91',  label: '🇮🇳 +91' },
+  { code: '+234', label: '🇳🇬 +234' },
+  { code: '+249', label: '🇸🇴 +249' },
+  { code: '+212', label: '🇲🇦 +212' },
+  { code: '+213', label: '🇩🇿 +213' },
+  { code: '+90',  label: '🇹🇷 +90' },
+]
 
 interface Player {
   id: string
   name: string
   joined_at: string
   session_id: string
+  user_id?: string | null
 }
 
 interface Message {
@@ -25,6 +39,7 @@ interface Session {
   created_at: string
   organiser_name: string | null
   organiser_phone: string | null
+  organiser_id?: string | null
   slots: {
     id: string
     date: string
@@ -88,6 +103,7 @@ export default function SessionClient({
   alreadyIn,
 }: Props) {
   const supabase = createClient()
+  const router = useRouter()
   const [session, setSession] = useState(initialSession)
   const [messages, setMessages] = useState(initialMessages)
   const [newMsg, setNewMsg] = useState('')
@@ -98,6 +114,8 @@ export default function SessionClient({
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
   const [lookupOpen, setLookupOpen] = useState(false)
   const [lookupPhone, setLookupPhone] = useState('')
+  const [lookupCountryCode, setLookupCountryCode] = useState('+44')
+  const [lookupLocalNumber, setLookupLocalNumber] = useState('')
   const [lookupLoading, setLookupLoading] = useState(false)
   const [foundPlayer, setFoundPlayer] = useState<Player | null>(null)
   const [lookupDone, setLookupDone] = useState(false)
@@ -106,7 +124,8 @@ export default function SessionClient({
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [leaveLoading, setLeaveLoading] = useState(false)
   const [leaveError, setLeaveError] = useState('')
-  const router = useRouter()
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [localAlreadyIn, setLocalAlreadyIn] = useState(alreadyIn)
 
   useEffect(() => {
     setShareUrl(`${window.location.origin}/session/${session.id}`)
@@ -146,7 +165,7 @@ export default function SessionClient({
           .single(),
         supabase
           .from('players')
-          .select('id, name, joined_at, session_id')
+          .select('id, name, joined_at, session_id, user_id')
           .eq('session_id', session.id)
           .order('joined_at', { ascending: true }),
       ]).then(([{ data }, { data: rawPlayers }]) => {
@@ -179,6 +198,7 @@ export default function SessionClient({
     async function init() {
       const { data: { user } } = await supabase.auth.getUser()
       setIsLoggedIn(!!user)
+      setCurrentUserId(user?.id ?? null)
 
       // Guest: check localStorage for a prior join to this session
       try {
@@ -195,22 +215,33 @@ export default function SessionClient({
           )
           if (matched) {
             setMyPlayer({ id: matched.id, name: matched.name })
+            setLocalAlreadyIn(true)
           } else if (initialSession.organiser_name?.toLowerCase() === entry.name.toLowerCase()) {
             setMyPlayer({ id: 'organiser', name: entry.name })
+            setLocalAlreadyIn(true)
           }
         }
       } catch {}
 
-      // Logged-in: detect membership via user metadata name
+      // Logged-in: detect membership by user_id (primary), fall back to name for organiser
       if (user) {
-        const userName: string = user.user_metadata?.name ?? ''
-        if (userName) {
-          const matched = initialSession.players.find(
-            (p: Player) => p.name.toLowerCase() === userName.toLowerCase()
-          )
-          if (matched) setMyPlayer({ id: matched.id, name: matched.name })
-          else if (initialSession.organiser_name?.toLowerCase() === userName.toLowerCase()) {
-            setMyPlayer({ id: 'organiser', name: userName })
+        console.log('[leave debug] currentUserId:', user.id)
+        console.log('[leave debug] player user_ids:', initialSession.players.map(p => ({ id: p.id, name: p.name, user_id: p.user_id })))
+
+        const matchedById = initialSession.players.find(
+          (p: Player) => p.user_id === user.id
+        )
+        if (matchedById) {
+          console.log('[leave debug] matched player by user_id:', matchedById.name)
+          setMyPlayer({ id: matchedById.id, name: matchedById.name })
+          setLocalAlreadyIn(true)
+        } else {
+          const userName: string = user.user_metadata?.name ?? ''
+          if (userName) {
+            if (initialSession.organiser_name?.toLowerCase() === userName.toLowerCase()) {
+              setMyPlayer({ id: 'organiser', name: userName })
+              setLocalAlreadyIn(true)
+            }
           }
         }
       }
@@ -227,8 +258,8 @@ export default function SessionClient({
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault()
+    if (!lookupLocalNumber.trim()) return
     const phone = lookupPhone.trim()
-    if (!phone) return
     setLookupLoading(true)
     const { data } = await supabase
       .from('players')
@@ -247,19 +278,33 @@ export default function SessionClient({
   }
 
   async function handleLeave() {
+    if (!myPlayer) return
     setLeaveLoading(true)
     setLeaveError('')
     try {
-      const res = await fetch('/api/leave', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: session.id, phone: myPhone }),
-      })
-      const json = await res.json()
-      if (!res.ok) {
-        setLeaveError(json.error ?? 'Something went wrong')
-        setLeaveLoading(false)
-        return
+      if (currentUserId) {
+        const { error } = await supabase
+          .from('players')
+          .delete()
+          .eq('session_id', session.id)
+          .eq('user_id', currentUserId)
+        if (error) {
+          setLeaveError('Something went wrong. Please try again.')
+          setLeaveLoading(false)
+          return
+        }
+      } else {
+        const res = await fetch('/api/leave', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: session.id, phone: myPhone }),
+        })
+        const json = await res.json()
+        if (!res.ok) {
+          setLeaveError(json.error ?? 'Something went wrong')
+          setLeaveLoading(false)
+          return
+        }
       }
       try {
         const stored = JSON.parse(localStorage.getItem('bmp_my_sessions') ?? '[]')
@@ -449,7 +494,7 @@ export default function SessionClient({
       )}
 
       {/* Alert banners */}
-      {alreadyIn && (
+      {localAlreadyIn && (
         <div
           style={{
             background: 'rgba(198,241,53,0.06)',
@@ -597,7 +642,7 @@ export default function SessionClient({
         {/* TEAM LINEUP */}
         <div style={{ marginBottom: '1.2rem' }}>
           <div style={{ display: 'flex', gap: '5px', marginBottom: '0' }}>
-            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i, foundPlayer?.id, foundPlayer?.name))}
+            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i, myPlayer?.id ?? foundPlayer?.id, myPlayer?.name ?? foundPlayer?.name))}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
@@ -616,7 +661,7 @@ export default function SessionClient({
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
           </div>
           <div style={{ display: 'flex', gap: '5px' }}>
-            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i + 5, foundPlayer?.id, foundPlayer?.name))}
+            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i + 5, myPlayer?.id ?? foundPlayer?.id, myPlayer?.name ?? foundPlayer?.name))}
           </div>
         </div>
 
@@ -817,33 +862,35 @@ export default function SessionClient({
           </div>
 
           {/* Join CTA */}
-          <Link
-            href={`/session/${session.id}/join`}
-            className="anim-fade-up d-300"
-            style={{ textDecoration: 'none', display: 'block', marginBottom: '1.25rem' }}
-          >
-            <button
-              className="join-btn"
-              style={{
-                width: '100%',
-                padding: '1.25rem',
-                fontSize: '18px',
-                borderRadius: '14px',
-                border: 'none',
-                cursor: 'pointer',
-                background: '#C6F135',
-                color: '#000',
-                fontFamily: "'Archivo Black', sans-serif",
-                fontWeight: 900,
-                letterSpacing: '-0.03em',
-                transition: 'transform 0.18s var(--ease-out), box-shadow 0.18s ease',
-                lineHeight: 1,
-                boxShadow: '0 6px 28px rgba(198,241,53,0.35)',
-              }}
+          {!localAlreadyIn && (
+            <Link
+              href={`/session/${session.id}/join`}
+              className="anim-fade-up d-300"
+              style={{ textDecoration: 'none', display: 'block', marginBottom: '1.25rem' }}
             >
-              Join this session — £{perPlayerPounds} if confirmed
-            </button>
-          </Link>
+              <button
+                className="join-btn"
+                style={{
+                  width: '100%',
+                  padding: '1.25rem',
+                  fontSize: '18px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: '#C6F135',
+                  color: '#000',
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontWeight: 900,
+                  letterSpacing: '-0.03em',
+                  transition: 'transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                  lineHeight: 1,
+                  boxShadow: '0 6px 28px rgba(198,241,53,0.35)',
+                }}
+              >
+                Join this session — £{perPlayerPounds} if confirmed
+              </button>
+            </Link>
+          )}
         </>
       )}
 
@@ -891,44 +938,90 @@ export default function SessionClient({
                     Enter the phone number you used when you joined.
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      type="tel"
-                      value={lookupPhone}
-                      onChange={e => {
-                        const raw = e.target.value.replace(/[^0-9+]/g, '')
-                        setLookupPhone((raw.startsWith('+') ? '+' : '') + raw.replace(/\+/g, ''))
-                      }}
-                      placeholder="+44 7700 000000"
-                      autoComplete="tel"
+                    <div
+                      className="field-input"
                       style={{
                         flex: 1,
-                        background: 'var(--surface2)',
+                        display: 'flex',
                         border: '1px solid var(--border)',
                         borderRadius: '10px',
-                        padding: '0.8rem 1rem',
-                        color: 'var(--text)',
-                        fontFamily: "'Archivo', sans-serif",
-                        fontSize: '15px',
-                        fontWeight: 600,
-                        outline: 'none',
+                        overflow: 'hidden',
+                        background: 'var(--surface2)',
                         transition: 'border-color 0.15s ease',
                         minWidth: 0,
                       }}
-                    />
+                    >
+                      <select
+                        value={lookupCountryCode}
+                        onChange={(e) => {
+                          const code = e.target.value
+                          setLookupCountryCode(code)
+                          setLookupPhone(code + lookupLocalNumber)
+                        }}
+                        style={{
+                          background: 'var(--surface2)',
+                          border: 'none',
+                          borderRight: '1px solid var(--border)',
+                          padding: '0.8rem 0.4rem 0.8rem 0.75rem',
+                          color: 'var(--text)',
+                          fontFamily: "'Archivo', sans-serif",
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          outline: 'none',
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {COUNTRY_CODES.map(c => (
+                          <option key={c.code} value={c.code} style={{ background: '#161616' }}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        inputMode="numeric"
+                        value={lookupLocalNumber}
+                        onChange={(e) => {
+                          const cleaned = e.target.value.replace(/[^0-9]/g, '')
+                          setLookupLocalNumber(cleaned)
+                          setLookupPhone(lookupCountryCode + cleaned)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.ctrlKey || e.metaKey) return
+                          if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return
+                          if (!/^[0-9]$/.test(e.key)) e.preventDefault()
+                        }}
+                        placeholder="7911 123456"
+                        autoComplete="tel"
+                        style={{
+                          flex: 1,
+                          background: 'transparent',
+                          border: 'none',
+                          padding: '0.8rem 1rem',
+                          color: 'var(--text)',
+                          fontFamily: "'Archivo', sans-serif",
+                          fontSize: '15px',
+                          fontWeight: 600,
+                          outline: 'none',
+                          minWidth: 0,
+                        }}
+                      />
+                    </div>
                     <button
                       type="submit"
-                      disabled={lookupLoading || !lookupPhone.trim()}
+                      disabled={lookupLoading || !lookupLocalNumber.trim()}
                       style={{
                         padding: '0.8rem 1.1rem',
                         borderRadius: '10px',
                         border: 'none',
-                        background: lookupLoading || !lookupPhone.trim() ? 'var(--surface2)' : 'var(--green)',
-                        color: lookupLoading || !lookupPhone.trim() ? 'var(--muted)' : 'var(--black)',
+                        background: lookupLoading || !lookupLocalNumber.trim() ? 'var(--surface2)' : 'var(--green)',
+                        color: lookupLoading || !lookupLocalNumber.trim() ? 'var(--muted)' : 'var(--black)',
                         fontFamily: "'Archivo Black', sans-serif",
                         fontWeight: 900,
                         fontSize: '13px',
                         letterSpacing: '-0.015em',
-                        cursor: lookupLoading || !lookupPhone.trim() ? 'not-allowed' : 'pointer',
+                        cursor: lookupLoading || !lookupLocalNumber.trim() ? 'not-allowed' : 'pointer',
                         whiteSpace: 'nowrap',
                         flexShrink: 0,
                         lineHeight: 1,
@@ -1068,23 +1161,22 @@ export default function SessionClient({
         <div className="anim-fade-up d-400" style={{ marginBottom: '1.25rem' }}>
           {!leaveOpen ? (
             <button
+              className="leave-btn"
               onClick={() => setLeaveOpen(true)}
               style={{
                 width: '100%',
-                padding: '0.75rem 1rem',
-                background: 'transparent',
-                border: '1px solid rgba(255,68,68,0.18)',
+                padding: '0.9rem',
+                background: '#E53935',
+                border: 'none',
                 borderRadius: '10px',
-                color: 'var(--red)',
+                color: '#fff',
                 fontSize: '13px',
-                fontWeight: 600,
+                fontWeight: 900,
                 cursor: 'pointer',
-                fontFamily: "'Archivo', sans-serif",
-                letterSpacing: '-0.01em',
-                transition: 'border-color 0.15s ease',
-                textAlign: 'center',
+                fontFamily: "'Archivo Black', sans-serif",
+                letterSpacing: '-0.015em',
+                transition: 'background 0.18s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
                 lineHeight: 1,
-                opacity: 0.7,
               }}
             >
               Leave game
@@ -1107,7 +1199,7 @@ export default function SessionClient({
                   marginBottom: '6px',
                 }}
               >
-                Leave this game?
+                Are you sure you want to leave this session?
               </div>
               <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
                 Your spot will be gone and you won&apos;t be charged. This can&apos;t be undone.
@@ -1279,7 +1371,7 @@ export default function SessionClient({
         </Link>
       </div>
 
-      {isFilling && (
+      {isFilling && !localAlreadyIn && (
         <>
           <style>{`@media (min-width: 641px){.sticky-join-bar,.sticky-join-spacer{display:none!important}}`}</style>
           <div className="sticky-join-spacer" style={{ height: '88px' }} />

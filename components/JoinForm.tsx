@@ -10,6 +10,26 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 const LS_KEY = 'bmp_player_details'
 
+const COUNTRY_CODES = [
+  { code: '+44',  label: '🇬🇧 +44' },
+  { code: '+1',   label: '🇺🇸 +1' },
+  { code: '+92',  label: '🇵🇰 +92' },
+  { code: '+880', label: '🇧🇩 +880' },
+  { code: '+91',  label: '🇮🇳 +91' },
+  { code: '+234', label: '🇳🇬 +234' },
+  { code: '+249', label: '🇸🇴 +249' },
+  { code: '+212', label: '🇲🇦 +212' },
+  { code: '+213', label: '🇩🇿 +213' },
+  { code: '+90',  label: '🇹🇷 +90' },
+]
+
+function parsePhone(full: string): { countryCode: string; localNumber: string } {
+  const sorted = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length)
+  const match = sorted.find(({ code }) => full.startsWith(code))
+  if (match) return { countryCode: match.code, localNumber: full.slice(match.code.length) }
+  return { countryCode: '+44', localNumber: full.replace(/[^0-9]/g, '') }
+}
+
 interface SlotData {
   id: string
   date: string
@@ -389,6 +409,8 @@ export default function JoinForm({
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [countryCode, setCountryCode] = useState('+44')
+  const [localNumber, setLocalNumber] = useState('')
   const [clientSecret, setClientSecret] = useState('')
   const [customerId, setCustomerId] = useState('')
   const [loadingSetup, setLoadingSetup] = useState(false)
@@ -405,7 +427,12 @@ export default function JoinForm({
       try {
         const { name: n, phone: p } = JSON.parse(ss)
         if (n) setName(n)
-        if (p) setPhone(p)
+        if (p) {
+          const parsed = parsePhone(p)
+          setCountryCode(parsed.countryCode)
+          setLocalNumber(parsed.localNumber)
+          setPhone(p)
+        }
         return
       } catch { /* ignore */ }
     }
@@ -414,17 +441,22 @@ export default function JoinForm({
       if (ls) {
         const { name: n, phone: p } = JSON.parse(ls)
         if (n) setName(n)
-        if (p) setPhone(p)
+        if (p) {
+          const parsed = parsePhone(p)
+          setCountryCode(parsed.countryCode)
+          setLocalNumber(parsed.localNumber)
+          setPhone(p)
+        }
       }
     } catch { /* ignore */ }
   }, [])
 
   useEffect(() => {
-    if (!isOrganiser || didAutoAdvance.current || !name || !phone) return
+    if (!isOrganiser || didAutoAdvance.current || !name || !localNumber) return
     didAutoAdvance.current = true
     initSetupIntent()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, phone, isOrganiser])
+  }, [name, localNumber, isOrganiser])
 
   useEffect(() => {
     if (!sessionId || isLoggedIn) return
@@ -500,11 +532,11 @@ export default function JoinForm({
     e.preventDefault()
     let valid = true
     if (!name.trim() || !/^[A-Za-z ]+$/.test(name.trim())) {
-      setNameError('Name may only contain letters and spaces')
+      setNameError('Please enter a valid name')
       valid = false
     }
-    if (!phone.trim() || !/^\+?[0-9]+$/.test(phone.trim())) {
-      setPhoneError('Phone may only contain digits with an optional leading +')
+    if (!localNumber.trim() || !/^[0-9]{1,15}$/.test(localNumber.trim())) {
+      setPhoneError('Please enter a valid phone number')
       valid = false
     }
     if (!valid) return
@@ -811,11 +843,17 @@ export default function JoinForm({
             <label style={labelStyle}>Your name</label>
             <input
               className="field-input"
+              type="text"
+              autoComplete="name"
               value={name}
-              onChange={e => {
-                const v = e.target.value.replace(/[^A-Za-z ]/g, '')
-                setName(v)
-                if (nameError) setNameError('')
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/[^a-zA-Z\s]/g, '')
+                setName(cleaned)
+              }}
+              onKeyDown={(e) => {
+                if (e.ctrlKey || e.metaKey) return
+                if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return
+                if (!/^[a-zA-Z\s]$/.test(e.key)) e.preventDefault()
               }}
               placeholder="Full name"
               required
@@ -825,20 +863,75 @@ export default function JoinForm({
           </div>
           <div>
             <label style={labelStyle}>Phone number</label>
-            <input
+            <div
               className="field-input"
-              value={phone}
-              onChange={e => {
-                const raw = e.target.value.replace(/[^0-9+]/g, '')
-                const v = (raw.startsWith('+') ? '+' : '') + raw.replace(/\+/g, '')
-                setPhone(v)
-                if (phoneError) setPhoneError('')
+              style={{
+                display: 'flex',
+                width: '100%',
+                border: '1px solid var(--border)',
+                borderRadius: '10px',
+                overflow: 'hidden',
+                background: 'var(--surface2)',
+                transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
               }}
-              type="tel"
-              placeholder="+44 7700 000000"
-              required
-              style={inputStyle}
-            />
+            >
+              <select
+                value={countryCode}
+                onChange={(e) => {
+                  const code = e.target.value
+                  setCountryCode(code)
+                  setPhone(code + localNumber)
+                }}
+                style={{
+                  background: 'var(--surface2)',
+                  border: 'none',
+                  borderRight: '1px solid var(--border)',
+                  padding: '0.8rem 0.4rem 0.8rem 0.75rem',
+                  color: 'var(--text)',
+                  fontFamily: "'Archivo', sans-serif",
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  outline: 'none',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                {COUNTRY_CODES.map(c => (
+                  <option key={c.code} value={c.code} style={{ background: '#161616' }}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={localNumber}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/[^0-9]/g, '')
+                  setLocalNumber(cleaned)
+                  setPhone(countryCode + cleaned)
+                }}
+                onKeyDown={(e) => {
+                  if (e.ctrlKey || e.metaKey) return
+                  if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return
+                  if (!/^[0-9]$/.test(e.key)) e.preventDefault()
+                }}
+                placeholder="7911 123456"
+                required
+                style={{
+                  flex: 1,
+                  background: 'transparent',
+                  border: 'none',
+                  padding: '0.8rem 1rem',
+                  color: 'var(--text)',
+                  fontFamily: "'Archivo', sans-serif",
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  outline: 'none',
+                  minWidth: 0,
+                }}
+              />
+            </div>
             {phoneError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{phoneError}</div>}
           </div>
 
@@ -860,21 +953,21 @@ export default function JoinForm({
 
           <button
             type="submit"
-            disabled={loadingSetup || !name.trim() || !phone.trim()}
-            className={!loadingSetup && name.trim() && phone.trim() ? 'btn-g' : ''}
+            disabled={loadingSetup || !name.trim() || !localNumber.trim() || !!nameError || !!phoneError}
+            className={!loadingSetup && name.trim() && localNumber.trim() && !nameError && !phoneError ? 'btn-g' : ''}
             style={{
               width: '100%',
               padding: '1rem',
               fontSize: '16px',
               borderRadius: '12px',
               border: 'none',
-              cursor: loadingSetup || !name.trim() || !phone.trim() ? 'not-allowed' : 'pointer',
+              cursor: loadingSetup || !name.trim() || !localNumber.trim() || nameError || phoneError ? 'not-allowed' : 'pointer',
               background:
-                loadingSetup || !name.trim() || !phone.trim()
+                loadingSetup || !name.trim() || !localNumber.trim() || nameError || phoneError
                   ? 'var(--surface2)'
                   : 'var(--green)',
               color:
-                loadingSetup || !name.trim() || !phone.trim()
+                loadingSetup || !name.trim() || !localNumber.trim() || nameError || phoneError
                   ? 'var(--muted)'
                   : 'var(--black)',
               fontFamily: "'Archivo Black', sans-serif",

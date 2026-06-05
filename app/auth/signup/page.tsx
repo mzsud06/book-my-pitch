@@ -9,14 +9,30 @@ export default function SignupPage() {
   const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [nameError, setNameError] = useState('')
+  const [emailError, setEmailError] = useState('')
   const [emailSent, setEmailSent] = useState(false)
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
+    let valid = true
+
+    if (!name.trim() || !/^[A-Za-z ]+$/.test(name.trim())) {
+      setNameError('Please enter a valid name')
+      valid = false
+    }
+
+    const atIdx = email.indexOf('@')
+    if (atIdx < 0 || !email.slice(atIdx + 1).includes('.')) {
+      setEmailError('Please enter a valid email address')
+      valid = false
+    }
+
+    if (!valid) return
+
     setLoading(true)
     setError('')
 
@@ -25,7 +41,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { name, phone },
+        data: { name },
       },
     })
 
@@ -214,37 +230,37 @@ export default function SignupPage() {
             <div>
               <label style={labelStyle}>Name</label>
               <input
+                type="text"
+                autoComplete="name"
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/[^a-zA-Z\s]/g, '')
+                  setName(cleaned)
+                }}
+                onKeyDown={(e) => {
+                  if (e.ctrlKey || e.metaKey) return
+                  if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return
+                  if (!/^[a-zA-Z\s]$/.test(e.key)) e.preventDefault()
+                }}
                 required
                 placeholder="Your full name"
                 className="field-input"
                 style={inputStyle}
               />
+              {nameError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{nameError}</div>}
             </div>
             <div>
               <label style={labelStyle}>Email</label>
               <input
                 type="email"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={e => { setEmail(e.target.value); if (emailError) setEmailError('') }}
                 required
                 placeholder="you@example.com"
                 className="field-input"
                 style={inputStyle}
               />
-            </div>
-            <div>
-              <label style={labelStyle}>Phone</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                required
-                placeholder="+44 7700 000000"
-                className="field-input"
-                style={inputStyle}
-              />
+              {emailError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{emailError}</div>}
             </div>
             <div>
               <label style={labelStyle}>Password</label>
@@ -278,17 +294,17 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={loading}
-              className={!loading ? 'btn-g' : ''}
+              disabled={loading || !!nameError || !!emailError}
+              className={!loading && !nameError && !emailError ? 'btn-g' : ''}
               style={{
                 width: '100%',
                 padding: '1rem',
                 fontSize: '16px',
                 borderRadius: '12px',
                 border: 'none',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                background: loading ? 'var(--surface2)' : 'var(--green)',
-                color: loading ? 'var(--muted)' : 'var(--black)',
+                cursor: loading || nameError || emailError ? 'not-allowed' : 'pointer',
+                background: loading || nameError || emailError ? 'var(--surface2)' : 'var(--green)',
+                color: loading || nameError || emailError ? 'var(--muted)' : 'var(--black)',
                 fontFamily: "'Archivo Black', sans-serif",
                 fontWeight: 900,
                 letterSpacing: '-0.025em',

@@ -29,13 +29,10 @@ export interface DbSlot {
   start_time: string
 }
 
-const LS_KEY = 'bmp_player_details'
-
 interface Props {
   initialSessions: SessionData[]
   dbSlots: DbSlot[]
   venueId: string
-  mySlotToSession: Record<string, string>
 }
 
 function formatDate(date: Date): string {
@@ -60,12 +57,11 @@ function startOfDay(date: Date): Date {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotToSession }: Props) {
+export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props) {
   const supabase = createClient()
   const [sessions, setSessions] = useState<SessionData[]>(initialSessions)
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
   const [weekOffset, setWeekOffset] = useState(0)
-  const [guestSlotMap, setGuestSlotMap] = useState<Record<string, string>>({})
 
   const [slotIdMap, setSlotIdMap] = useState<Map<string, string>>(
     () => new Map(dbSlots.map(s => [`${s.date}_${s.start_time.slice(0, 5)}`, s.id]))
@@ -98,31 +94,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
     }
 
     return () => { supabase.removeChannel(channel) }
-  }, [])
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(LS_KEY)
-      if (!stored) return
-      const { phone } = JSON.parse(stored) as { phone?: string }
-      if (!phone) return
-
-      type PlayerRow = { session_id: string; sessions: { slot_id: string; status: string } | { slot_id: string; status: string }[] | null }
-      supabase
-        .from('players')
-        .select('session_id, sessions(slot_id, status)')
-        .eq('phone', phone)
-        .then(({ data }) => {
-          const map: Record<string, string> = {}
-          ;(data as PlayerRow[] | null ?? []).forEach(p => {
-            const sess = Array.isArray(p.sessions) ? p.sessions[0] : p.sessions
-            if (sess && ['filling', 'confirmed'].includes(sess.status)) {
-              map[sess.slot_id] = p.session_id
-            }
-          })
-          setGuestSlotMap(map)
-        })
-    } catch { /* ignore */ }
   }, [])
 
   useEffect(() => {
@@ -168,8 +139,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
       })
   }, [weekOffset, venueId])
 
-  const myMap = { ...guestSlotMap, ...mySlotToSession }
-
   const dayStr = formatDate(selectedDate)
   const slotTemplates = getSlotsForDay(selectedDate)
 
@@ -187,23 +156,15 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
     const slotSessions = daySessionMap.get(template.startTime) ?? []
     const slotId = slotIdMap.get(`${dayStr}_${template.startTime}`) ?? null
 
-    // User check first so they always see their own session link
-    const userSessionId = slotId ? myMap[slotId] : null
-    if (userSessionId) {
-      const userSess = slotSessions.find(s => s.id === userSessionId) ?? slotSessions[0]
-      const filling = slotSessions.filter(s => s.status === 'filling')
-      return { status: 'filling' as const, hasRival: filling.length > 1, playerCount: userSess ? totalCount(userSess) : 0, sessionId: userSessionId, slotId, isUserSession: true }
-    }
-
     // Only truly unavailable when confirmed with a full 10-player game
     const confirmed = slotSessions.find(s => s.status === 'confirmed' && totalCount(s) >= 10)
     if (confirmed) {
-      return { status: 'booked' as const, hasRival: false, playerCount: 10, sessionId: null, slotId: confirmed.slot_id, isUserSession: false }
+      return { status: 'booked' as const, hasRival: false, playerCount: 10, sessionId: null, slotId: confirmed.slot_id }
     }
 
     const filling = slotSessions.filter(s => s.status === 'filling')
     if (filling.length === 0) {
-      return { status: 'empty' as const, hasRival: false, playerCount: 0, sessionId: null, slotId, isUserSession: false }
+      return { status: 'empty' as const, hasRival: false, playerCount: 0, sessionId: null, slotId }
     }
 
     const hasRival = filling.length > 1
@@ -212,10 +173,10 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
 
     const RIVAL_THRESHOLD = 7
     if (bestCount < RIVAL_THRESHOLD) {
-      return { status: 'empty' as const, hasRival: false, playerCount: 0, sessionId: null, slotId, isUserSession: false }
+      return { status: 'empty' as const, hasRival: false, playerCount: 0, sessionId: null, slotId }
     }
 
-    return { status: 'filling' as const, hasRival, playerCount: bestCount, sessionId: null, slotId, isUserSession: false }
+    return { status: 'filling' as const, hasRival, playerCount: bestCount, sessionId: null, slotId }
   }
 
   function totalCount(s: SessionData): number {
@@ -421,14 +382,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
           const typeColor = template.type === 'peak' ? '#FF6B6B' : template.type === 'weekend' ? '#00B4FF' : 'var(--green)'
           const typeBg = template.type === 'peak' ? 'rgba(255,68,68,0.12)' : template.type === 'weekend' ? 'rgba(0,180,255,0.09)' : 'rgba(198,241,53,0.09)'
           const perPlayerPitch = (template.priceGBP / 10).toFixed(2)
-          const isUserSession = info.isUserSession
 
-          let href: string | undefined
-          if (isUserSession && info.sessionId) {
-            href = `/session/${info.sessionId}`
-          } else if (!booked && !isUserSession && info.slotId) {
-            href = `/slots/${info.slotId}/create`
-          }
+          const href = !booked && info.slotId ? `/slots/${info.slotId}/create` : undefined
 
           const staggerStyle: React.CSSProperties = {
             animationName: 'fadeUp',
@@ -440,18 +395,12 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
 
           const fillCount = booked ? 10 : filling ? info.playerCount : 0
           const isAmberState = fillCount >= 7 && fillCount < 10
-          const segColor = booked ? 'lit-red' : isAmberState ? 'lit-amber' : (filling || isUserSession) ? 'lit-green' : 'lit-green'
+          const segColor = booked ? 'lit-red' : isAmberState ? 'lit-amber' : filling ? 'lit-green' : 'lit-green'
 
-          const borderColor = isUserSession
-            ? 'rgba(198,241,53,0.3)'
-            : booked
-            ? 'rgba(255,255,255,0.04)'
-            : 'rgba(255,255,255,0.07)'
+          const borderColor = booked ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.07)'
 
           const cardStyle: React.CSSProperties = {
-            background: isUserSession
-              ? 'linear-gradient(145deg, rgba(198,241,53,0.05) 0%, #0f0f0f 100%)'
-              : 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+            background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
             border: `1px solid ${borderColor}`,
             borderRadius: '18px',
             padding: '1.4rem 1.6rem',
@@ -460,29 +409,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
             position: 'relative',
             overflow: 'hidden',
             opacity: booked ? 0.32 : 1,
-            boxShadow: isUserSession
-              ? '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)'
-              : '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
           }
 
           const cardContent = (
             <>
-              {/* Left accent stripe for user's own session */}
-              {isUserSession && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: '16px',
-                    bottom: '16px',
-                    width: '3px',
-                    background: 'var(--green)',
-                    borderRadius: '0 3px 3px 0',
-                    boxShadow: '0 0 16px rgba(198,241,53,0.6)',
-                  }}
-                />
-              )}
-
               {/* Header row */}
               <div
                 style={{
@@ -576,8 +507,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
               >
                 {booked ? (
                   <span style={{ color: 'var(--red)', letterSpacing: '0.02em' }}>Slot taken</span>
-                ) : filling && isUserSession ? (
-                  <span style={{ color: 'var(--green)' }}>You&apos;re in this game</span>
                 ) : filling ? (
                   <>
                     <span style={{ color: 'var(--amber)' }}>⚡ Another group is racing for this</span>
@@ -605,7 +534,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
           ) : (
             <div
               key={template.startTime}
-              className={`${booked ? 'taken' : ''} ${isUserSession ? 'user-session' : ''}`}
+              className={booked ? 'taken' : ''}
               style={{ ...cardStyle, ...staggerStyle }}
             >
               {cardContent}
