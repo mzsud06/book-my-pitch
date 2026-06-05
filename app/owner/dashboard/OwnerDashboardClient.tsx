@@ -57,7 +57,6 @@ function formatDate(dateStr: string): string {
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`
 }
 
-/** Total players in a session including the organiser (if still set on the session row) */
 function totalPlayers(s: SessionData): number {
   const organiserCount = s.organiser_name ? 1 : 0
   return organiserCount + s.players.length
@@ -67,6 +66,12 @@ const typeLabels: Record<string, string> = {
   offpeak: 'Off-peak',
   peak: 'Peak',
   weekend: 'Weekend',
+}
+
+const typeColors: Record<string, string> = {
+  offpeak: 'var(--green)',
+  peak: '#FF6B6B',
+  weekend: '#00B4FF',
 }
 
 export default function OwnerDashboardClient({ venue, sessions: initialSessions, stats, occupancyData }: Props) {
@@ -108,38 +113,96 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
   const filling = sessions.filter(s => s.status === 'filling')
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem 1.5rem' }}>
-      {/* Owner nav bar */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: '1.75rem',
-      }}>
-        <div>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--black)',
+        color: 'var(--text)',
+      }}
+    >
+      {/* Dashboard Nav */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '0 2rem',
+          height: '60px',
+          borderBottom: '1px solid var(--border)',
+          borderTop: '3px solid var(--green)',
+          background: 'rgba(8,8,8,0.97)',
+          backdropFilter: 'blur(28px)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 200,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <span style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '-0.5px', color: 'var(--text)' }}>
-              Book<span style={{ color: 'var(--green)' }}>My</span>Pitch<span style={{ color: 'var(--green)' }}>.uk</span>
+            <span
+              style={{
+                fontFamily: "'Archivo Black', sans-serif",
+                fontSize: '17px',
+                letterSpacing: '-0.04em',
+                color: 'var(--text)',
+                lineHeight: 1,
+              }}
+            >
+              Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
+              <span style={{ color: 'var(--green)', fontSize: '12px', verticalAlign: 'super', marginLeft: '1px' }}>.uk</span>
             </span>
           </Link>
-          <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '22px', letterSpacing: '-0.5px', marginTop: '4px' }}>
-            Globe Pitch Dashboard
-          </div>
-          <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '2px' }}>
-            {venue.address}
-          </div>
+          <span
+            style={{
+              width: '1px',
+              height: '16px',
+              background: 'var(--border)',
+              display: 'block',
+            }}
+          />
+          <span
+            style={{
+              fontSize: '13px',
+              color: 'var(--muted)',
+              fontWeight: 600,
+            }}
+          >
+            Owner dashboard
+          </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {!venue.stripe_account_id && (
-            <div style={{ background: 'rgba(255,68,68,0.1)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '8px', padding: '0.65rem 1rem', fontSize: '13px', color: 'var(--red)' }}>
-              ⚠ Stripe Connect not set up — payments won&apos;t process
+            <div
+              style={{
+                background: 'rgba(255,68,68,0.08)',
+                border: '1px solid rgba(255,68,68,0.2)',
+                borderRadius: '8px',
+                padding: '0.5rem 0.9rem',
+                fontSize: '12px',
+                color: 'var(--red)',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span>⚠</span> Stripe Connect not set up
             </div>
           )}
           <button
             onClick={handleSignOut}
             style={{
-              padding: '0.5rem 1rem', borderRadius: '6px',
-              border: '1px solid var(--border)', background: 'transparent',
-              color: 'var(--muted)', fontFamily: "'Archivo', sans-serif",
-              fontWeight: 600, fontSize: '13px', cursor: 'pointer',
+              padding: '0.45rem 1rem',
+              borderRadius: '8px',
+              border: '1px solid var(--border)',
+              background: 'transparent',
+              color: 'var(--muted)',
+              fontFamily: "'Archivo', sans-serif",
+              fontWeight: 600,
+              fontSize: '13px',
+              cursor: 'pointer',
+              transition: 'border-color 0.15s ease, color 0.15s ease',
+              lineHeight: 1,
             }}
           >
             Sign out
@@ -147,128 +210,391 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
         </div>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '1.5rem' }} className="stats-grid">
-        {[
-          { n: String(stats.confirmedThisWeek), l: 'Confirmed this week' },
-          { n: `£${stats.revenueThisWeek}`, l: 'Revenue this week' },
-          { n: `£${stats.totalRevenue.toLocaleString()}`, l: 'Total revenue' },
-          { n: `${stats.fillRate}%`, l: 'Slots filled' },
-        ].map(stat => (
-          <div key={stat.l} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '1.1rem' }}>
-            <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '26px', color: 'var(--green)', letterSpacing: '-0.5px' }}>{stat.n}</div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '3px' }}>{stat.l}</div>
+      <div style={{ maxWidth: '1060px', margin: '0 auto', padding: '2.5rem 2rem 4rem' }}>
+
+        {/* Venue header */}
+        <div style={{ marginBottom: '2.5rem' }}>
+          <div
+            className="anim-fade-up"
+            style={{
+              fontFamily: "'Archivo Black', sans-serif",
+              fontSize: 'clamp(24px, 4vw, 34px)',
+              letterSpacing: '-0.04em',
+              lineHeight: 0.95,
+              marginBottom: '0.4rem',
+            }}
+          >
+            {venue.name}
           </div>
-        ))}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }} className="dash-cols">
-        {/* Confirmed bookings */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '1.1rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-            Confirmed bookings
-            <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 400 }}>All paid automatically ✓</span>
+          <div className="anim-fade-up d-80" style={{ fontSize: '14px', color: 'var(--muted)', fontWeight: 500 }}>
+            {venue.address}
           </div>
-
-          {confirmed.length === 0 && (
-            <div style={{ fontSize: '13px', color: 'var(--muted)', padding: '1rem 0' }}>No confirmed bookings yet</div>
-          )}
-
-          {confirmed.slice(0, 8).map(s => (
-            <Link key={s.id} href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600 }}>
-                    {s.slots.start_time.slice(0, 5)} {typeLabels[s.slots.type] ?? s.slots.type} · {totalPlayers(s)} players
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
-                    {formatDate(s.slots.date)}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--green)', textAlign: 'right' }}>
-                    £{s.slots.price}.00
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px', textAlign: 'right' }}>Paid ✓</div>
-                </div>
-              </div>
-            </Link>
-          ))}
         </div>
 
-        {/* Slot occupancy */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '1.1rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-            Slot occupancy
-            <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 400 }}>This week</span>
-          </div>
-
-          {occupancyData.length === 0 && (
-            <div style={{ fontSize: '13px', color: 'var(--muted)', padding: '1rem 0' }}>No data for this week</div>
-          )}
-
-          {occupancyData.map(occ => (
-            <div key={occ.time} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0.55rem 0', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ minWidth: '90px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 600 }}>{occ.time.slice(0, 5)} {typeLabels[occ.type] ?? ''}</div>
-                <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                  {occ.type === 'weekend' ? 'Weekend' : 'Mon–Fri'}
-                </div>
+        {/* Stats grid */}
+        <div
+          className="stats-grid"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '1.75rem' }}
+        >
+          {[
+            { n: String(stats.confirmedThisWeek), l: 'Confirmed this week', accent: true },
+            { n: `£${stats.revenueThisWeek}`, l: 'Revenue this week', accent: true },
+            { n: `£${stats.totalRevenue.toLocaleString()}`, l: 'Total revenue', accent: false },
+            { n: `${stats.fillRate}%`, l: 'Fill rate', accent: false },
+          ].map((stat, idx) => (
+            <div
+              key={stat.l}
+              className="dash-stat-card anim-fade-up"
+              style={{
+                background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: '16px',
+                padding: '1.3rem 1.4rem',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
+                animationDelay: `${idx * 55}ms`,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontSize: 'clamp(24px, 3vw, 32px)',
+                  color: 'var(--green)',
+                  letterSpacing: '-0.04em',
+                  lineHeight: 1,
+                  marginBottom: '6px',
+                }}
+              >
+                {stat.n}
               </div>
-              <div style={{ flex: 1, height: '5px', background: 'var(--surface2)', borderRadius: '100px', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%',
-                  borderRadius: '100px',
-                  background: 'var(--green)',
-                  width: `${occ.total > 0 ? (occ.confirmed / occ.total) * 100 : 0}%`,
-                }} />
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', whiteSpace: 'nowrap', minWidth: '40px', textAlign: 'right' }}>
-                {occ.confirmed}/{occ.total}
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.02em' }}>
+                {stat.l}
               </div>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Currently filling */}
-      {filling.length > 0 && (
-        <div style={{ marginTop: '1.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px', padding: '1.1rem' }}>
-          <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-            Currently filling
-            <span style={{ fontSize: '11px', color: 'var(--amber)', fontWeight: 400 }}>Live</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {filling.map(s => (
+        <div className="dash-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+
+          {/* Confirmed bookings */}
+          <div
+            style={{
+              background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: '16px',
+              padding: '1.4rem',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1.1rem',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontSize: '15px',
+                  letterSpacing: '-0.025em',
+                }}
+              >
+                Confirmed bookings
+              </div>
+              <span
+                style={{
+                  fontSize: '10px',
+                  color: 'var(--green)',
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                }}
+              >
+                <span className="green-dot" style={{ width: '6px', height: '6px' }} />
+                All paid ✓
+              </span>
+            </div>
+
+            {confirmed.length === 0 && (
+              <div style={{ fontSize: '13px', color: 'var(--muted)', padding: '1rem 0', fontWeight: 500 }}>
+                No confirmed bookings yet
+              </div>
+            )}
+
+            {confirmed.slice(0, 8).map((s, idx) => (
               <Link key={s.id} href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'var(--surface2)', borderRadius: '8px', cursor: 'pointer' }}>
+                <div
+                  className="dash-session-row"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '0.7rem 0.6rem',
+                    borderBottom: idx < Math.min(confirmed.length, 8) - 1 ? '1px solid var(--border)' : 'none',
+                    borderRadius: '8px',
+                    margin: '0 -0.6rem',
+                  }}
+                >
                   <div>
-                    <div style={{ fontSize: '14px', fontWeight: 600 }}>
-                      {s.slots.start_time.slice(0, 5)}–{s.slots.end_time.slice(0, 5)} · {typeLabels[s.slots.type]}
+                    <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '-0.01em', marginBottom: '2px' }}>
+                      {s.slots.start_time.slice(0, 5)}
+                      {' '}
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          color: typeColors[s.slots.type] ?? 'var(--muted)',
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {typeLabels[s.slots.type] ?? s.slots.type}
+                      </span>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>
-                      {formatDate(s.slots.date)}
+                    <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500 }}>
+                      {formatDate(s.slots.date)} · {totalPlayers(s)} players
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--amber)' }}>
-                      {totalPlayers(s)}/10
+                    <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--green)', letterSpacing: '-0.02em' }}>
+                      £{s.slots.price}.00
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>players joined</div>
+                    <div style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 500 }}>Paid ✓</div>
                   </div>
                 </div>
               </Link>
             ))}
           </div>
-        </div>
-      )}
 
-      <style>{`
-        @media (max-width: 768px) {
-          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .dash-cols { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+          {/* Slot occupancy */}
+          <div
+            style={{
+              background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: '16px',
+              padding: '1.4rem',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1.1rem',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontSize: '15px',
+                  letterSpacing: '-0.025em',
+                }}
+              >
+                Slot occupancy
+              </div>
+              <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500 }}>This week</span>
+            </div>
+
+            {occupancyData.length === 0 && (
+              <div style={{ fontSize: '13px', color: 'var(--muted)', padding: '1rem 0', fontWeight: 500 }}>
+                No data for this week
+              </div>
+            )}
+
+            {occupancyData.map((occ, idx) => {
+              const fillPct = occ.total > 0 ? (occ.confirmed / occ.total) * 100 : 0
+              return (
+                <div
+                  key={occ.time}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '0.6rem 0',
+                    borderBottom: idx < occupancyData.length - 1 ? '1px solid var(--border)' : 'none',
+                  }}
+                >
+                  <div style={{ minWidth: '96px' }}>
+                    <div
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        letterSpacing: '-0.01em',
+                        color: typeColors[occ.type] ?? 'var(--text)',
+                      }}
+                    >
+                      {occ.time.slice(0, 5)}
+                      {' '}
+                      <span style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {typeLabels[occ.type] ?? ''}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500, marginTop: '1px' }}>
+                      {occ.type === 'weekend' ? 'Weekend' : 'Mon–Fri'}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      flex: 1,
+                      height: '6px',
+                      background: 'rgba(255,255,255,0.06)',
+                      borderRadius: '100px',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        borderRadius: '100px',
+                        background: fillPct >= 80 ? 'var(--green)' : fillPct >= 50 ? 'var(--amber)' : 'var(--muted)',
+                        width: `${fillPct}%`,
+                        transition: 'width 0.8s var(--ease-out)',
+                        boxShadow: fillPct >= 80 ? '0 0 8px rgba(198,241,53,0.4)' : 'none',
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--muted)',
+                      whiteSpace: 'nowrap',
+                      minWidth: '36px',
+                      textAlign: 'right',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {occ.confirmed}/{occ.total}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Currently filling */}
+        {filling.length > 0 && (
+          <div
+            style={{
+              background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+              border: '1px solid rgba(255,184,0,0.16)',
+              borderRadius: '16px',
+              padding: '1.4rem',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontSize: '15px',
+                  letterSpacing: '-0.025em',
+                }}
+              >
+                Currently filling
+              </div>
+              <span
+                style={{
+                  fontSize: '10px',
+                  color: 'var(--amber)',
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span className="live-dot" />
+                Live
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {filling.map(s => {
+                const count = totalPlayers(s)
+                const pct = (count / 10) * 100
+                return (
+                  <Link key={s.id} href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
+                    <div
+                      className="dash-session-row"
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.85rem 1rem',
+                        background: 'var(--surface2)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                          <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '-0.02em' }}>
+                            {s.slots.start_time.slice(0, 5)}–{s.slots.end_time.slice(0, 5)}
+                          </div>
+                          <span
+                            style={{
+                              fontSize: '9px',
+                              fontWeight: 700,
+                              color: typeColors[s.slots.type] ?? 'var(--muted)',
+                              letterSpacing: '0.1em',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            {typeLabels[s.slots.type]}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div
+                            style={{
+                              flex: 1,
+                              height: '4px',
+                              background: 'rgba(255,255,255,0.08)',
+                              borderRadius: '100px',
+                              overflow: 'hidden',
+                              maxWidth: '140px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                height: '100%',
+                                borderRadius: '100px',
+                                background: pct >= 70 ? 'var(--amber)' : 'var(--green)',
+                                width: `${pct}%`,
+                              }}
+                            />
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500 }}>
+                            {formatDate(s.slots.date)}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
+                        <div style={{ fontSize: '17px', fontWeight: 900, fontFamily: "'Archivo Black', sans-serif", color: 'var(--amber)', letterSpacing: '-0.03em' }}>
+                          {count}/10
+                        </div>
+                        <div style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 500 }}>players</div>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

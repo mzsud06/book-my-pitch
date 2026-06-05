@@ -29,23 +29,24 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   background: 'var(--surface2)',
   border: '1px solid var(--border)',
-  borderRadius: '8px',
-  padding: '0.7rem 1rem',
+  borderRadius: '10px',
+  padding: '0.8rem 1rem',
   color: 'var(--text)',
   fontFamily: "'Archivo', sans-serif",
   fontSize: '15px',
+  fontWeight: 600,
   outline: 'none',
-  transition: 'border-color 0.15s ease',
+  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
 }
 
 const labelStyle: React.CSSProperties = {
   fontSize: '10px',
   color: 'var(--muted)',
-  marginBottom: '6px',
+  marginBottom: '7px',
   display: 'block',
   fontWeight: 700,
   textTransform: 'uppercase',
-  letterSpacing: '0.1em',
+  letterSpacing: '0.12em',
 }
 
 export default function CreateSessionForm({ slot }: Props) {
@@ -54,15 +55,28 @@ export default function CreateSessionForm({ slot }: Props) {
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [nameError, setNameError] = useState('')
+  const [phoneError, setPhoneError] = useState('')
 
   const perPlayer = (slot.price / 10).toFixed(2)
   const typeLabel = slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'
+  const typeColor = slot.type === 'peak' ? '#FF6B6B' : slot.type === 'weekend' ? '#00B4FF' : 'var(--green)'
+  const typeBg = slot.type === 'peak' ? 'rgba(255,68,68,0.12)' : slot.type === 'weekend' ? 'rgba(0,180,255,0.09)' : 'rgba(198,241,53,0.09)'
   const startTime = slot.start_time.slice(0, 5)
   const endTime = slot.end_time.slice(0, 5)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !phone.trim()) return
+    let valid = true
+    if (!name.trim() || !/^[A-Za-z ]+$/.test(name.trim())) {
+      setNameError('Name may only contain letters and spaces')
+      valid = false
+    }
+    if (!phone.trim() || !/^\+?[0-9]+$/.test(phone.trim())) {
+      setPhoneError('Phone may only contain digits with an optional leading +')
+      valid = false
+    }
+    if (!valid) return
     setLoading(true)
     setError('')
 
@@ -83,8 +97,12 @@ export default function CreateSessionForm({ slot }: Props) {
     router.replace(`/session/${data.sessionId}/join?organiser=1`)
   }
 
+  const isReady = name.trim() && phone.trim()
+
   return (
-    <div style={{ maxWidth: '460px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
+
+      {/* Page header */}
       <div
         className="anim-fade-up"
         style={{
@@ -93,26 +111,39 @@ export default function CreateSessionForm({ slot }: Props) {
           fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.16em',
-          marginBottom: '0.5rem',
+          marginBottom: '0.6rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
         }}
       >
+        <span
+          style={{
+            width: '20px',
+            height: '2px',
+            background: 'var(--green)',
+            display: 'block',
+            borderRadius: '2px',
+            flexShrink: 0,
+          }}
+        />
         Create your game
       </div>
       <div
         className="anim-fade-up d-80"
         style={{
           fontFamily: "'Archivo Black', sans-serif",
-          fontSize: '30px',
-          letterSpacing: '-0.035em',
-          lineHeight: 0.95,
-          marginBottom: '0.3rem',
+          fontSize: 'clamp(28px, 5vw, 38px)',
+          letterSpacing: '-0.04em',
+          lineHeight: 0.9,
+          marginBottom: '0.4rem',
         }}
       >
         {startTime} – {endTime}
       </div>
       <div
         className="anim-fade-up d-150"
-        style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '1.75rem', fontWeight: 500 }}
+        style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '2rem', fontWeight: 500 }}
       >
         {formatDate(slot.date)} · {typeLabel} · {slot.venue?.name ?? 'Globe Football Pitch'}
       </div>
@@ -121,11 +152,12 @@ export default function CreateSessionForm({ slot }: Props) {
       <div
         className="anim-fade-up d-200"
         style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: '16px',
-          padding: '1.35rem',
+          background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: '18px',
+          padding: '1.5rem',
           marginBottom: '1.5rem',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
         }}
       >
         <div
@@ -133,7 +165,7 @@ export default function CreateSessionForm({ slot }: Props) {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
-            marginBottom: '1.25rem',
+            marginBottom: '1.5rem',
           }}
         >
           <div>
@@ -141,10 +173,10 @@ export default function CreateSessionForm({ slot }: Props) {
               style={{
                 fontSize: '10px',
                 color: 'var(--muted)',
-                marginBottom: '3px',
+                marginBottom: '4px',
                 fontWeight: 700,
                 textTransform: 'uppercase',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.1em',
               }}
             >
               {slot.venue?.name ?? 'Globe Football Pitch'}
@@ -152,12 +184,28 @@ export default function CreateSessionForm({ slot }: Props) {
             <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>
               {slot.venue?.address ?? '110 Globe Rd, Bethnal Green E1 4DZ'}
             </div>
+            <div style={{ marginTop: '10px' }}>
+              <span
+                style={{
+                  fontSize: '9px',
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  padding: '3px 9px',
+                  borderRadius: '5px',
+                  background: typeBg,
+                  color: typeColor,
+                }}
+              >
+                {typeLabel}
+              </span>
+            </div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div
               style={{
                 fontFamily: "'Archivo Black', sans-serif",
-                fontSize: '26px',
+                fontSize: '30px',
                 color: 'var(--green)',
                 letterSpacing: '-0.04em',
                 lineHeight: 1,
@@ -165,13 +213,12 @@ export default function CreateSessionForm({ slot }: Props) {
             >
               £{perPlayer}
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '3px' }}>per player</div>
+            <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '4px', fontWeight: 500 }}>per player</div>
           </div>
         </div>
 
         {/* Team lineup — 2 rows of 5 */}
-        <div style={{ marginBottom: '1rem' }}>
-          {/* Row 1 */}
+        <div style={{ marginBottom: '1.1rem' }}>
           <div style={{ display: 'flex', gap: '5px' }}>
             {Array.from({ length: 5 }, (_, i) => (
               <div
@@ -179,7 +226,7 @@ export default function CreateSessionForm({ slot }: Props) {
                 style={{
                   position: 'relative',
                   flex: 1,
-                  height: '56px',
+                  height: '58px',
                   borderRadius: '10px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -187,8 +234,8 @@ export default function CreateSessionForm({ slot }: Props) {
                   justifyContent: 'center',
                   gap: '4px',
                   background: i === 0 ? 'var(--green)' : 'rgba(255,255,255,0.02)',
-                  border: i === 0 ? 'none' : '1px dashed rgba(255,255,255,0.08)',
-                  boxShadow: i === 0 ? '0 0 20px rgba(198,241,53,0.25)' : 'none',
+                  border: i === 0 ? 'none' : '1px dashed rgba(255,255,255,0.07)',
+                  boxShadow: i === 0 ? '0 0 24px rgba(198,241,53,0.22)' : 'none',
                 }}
               >
                 <div
@@ -197,9 +244,9 @@ export default function CreateSessionForm({ slot }: Props) {
                     top: '4px',
                     right: '6px',
                     fontSize: '7px',
-                    fontWeight: 800,
+                    fontWeight: 900,
                     fontFamily: "'Archivo Black', sans-serif",
-                    color: i === 0 ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.07)',
+                    color: i === 0 ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.06)',
                     lineHeight: 1,
                   }}
                 >
@@ -207,21 +254,17 @@ export default function CreateSessionForm({ slot }: Props) {
                 </div>
                 <div
                   style={{
-                    width: '22px',
-                    height: '22px',
+                    width: '24px',
+                    height: '24px',
                     borderRadius: '50%',
-                    background: i === 0 ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.05)',
-                    fontSize: '7px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    background: i === 0 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.04)',
                   }}
                 />
                 <div
                   style={{
                     fontSize: '7px',
                     fontWeight: 700,
-                    color: i === 0 ? 'var(--black)' : 'rgba(255,255,255,0.12)',
+                    color: i === 0 ? 'var(--black)' : 'rgba(255,255,255,0.1)',
                   }}
                 >
                   {i === 0 ? 'You' : `+${i + 1}`}
@@ -230,25 +273,23 @@ export default function CreateSessionForm({ slot }: Props) {
             ))}
           </div>
 
-          {/* Center line */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
             <div
               style={{
                 fontSize: '7px',
                 fontWeight: 700,
-                color: 'rgba(255,255,255,0.14)',
-                letterSpacing: '0.12em',
+                color: 'rgba(255,255,255,0.12)',
+                letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 flexShrink: 0,
               }}
             >
               5-a-side
             </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
           </div>
 
-          {/* Row 2 */}
           <div style={{ display: 'flex', gap: '5px' }}>
             {Array.from({ length: 5 }, (_, i) => (
               <div
@@ -256,7 +297,7 @@ export default function CreateSessionForm({ slot }: Props) {
                 style={{
                   position: 'relative',
                   flex: 1,
-                  height: '56px',
+                  height: '58px',
                   borderRadius: '10px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -264,7 +305,7 @@ export default function CreateSessionForm({ slot }: Props) {
                   justifyContent: 'center',
                   gap: '4px',
                   background: 'rgba(255,255,255,0.02)',
-                  border: '1px dashed rgba(255,255,255,0.08)',
+                  border: '1px dashed rgba(255,255,255,0.07)',
                 }}
               >
                 <div
@@ -273,9 +314,9 @@ export default function CreateSessionForm({ slot }: Props) {
                     top: '4px',
                     right: '6px',
                     fontSize: '7px',
-                    fontWeight: 800,
+                    fontWeight: 900,
                     fontFamily: "'Archivo Black', sans-serif",
-                    color: 'rgba(255,255,255,0.07)',
+                    color: 'rgba(255,255,255,0.06)',
                     lineHeight: 1,
                   }}
                 >
@@ -283,14 +324,13 @@ export default function CreateSessionForm({ slot }: Props) {
                 </div>
                 <div
                   style={{
-                    width: '22px',
-                    height: '22px',
+                    width: '24px',
+                    height: '24px',
                     borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.05)',
-                    fontSize: '7px',
+                    background: 'rgba(255,255,255,0.04)',
                   }}
                 />
-                <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(255,255,255,0.12)' }}>
+                <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(255,255,255,0.1)' }}>
                   +{i + 6}
                 </div>
               </div>
@@ -299,7 +339,7 @@ export default function CreateSessionForm({ slot }: Props) {
         </div>
 
         {/* Segmented bar — 1/10 lit */}
-        <div className="seg-bar" style={{ marginBottom: '8px' }}>
+        <div className="seg-bar" style={{ marginBottom: '10px' }}>
           {Array.from({ length: 10 }, (_, i) => (
             <div
               key={i}
@@ -309,7 +349,8 @@ export default function CreateSessionForm({ slot }: Props) {
           ))}
         </div>
         <div style={{ fontSize: '13px', color: 'var(--muted)', textAlign: 'center', fontWeight: 500 }}>
-          <strong style={{ color: 'var(--text)' }}>1/10 players</strong> — 9 more needed to confirm
+          <strong style={{ color: 'var(--text)', fontWeight: 800 }}>1/10 players</strong>
+          {' '}— 9 more needed to confirm
         </div>
       </div>
 
@@ -317,41 +358,53 @@ export default function CreateSessionForm({ slot }: Props) {
       <form
         className="anim-fade-up d-300"
         onSubmit={handleSubmit}
-        style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+        style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
       >
         <div>
           <label style={labelStyle}>Your name</label>
           <input
             className="field-input"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => {
+              const v = e.target.value.replace(/[^A-Za-z ]/g, '')
+              setName(v)
+              if (nameError) setNameError('')
+            }}
             placeholder="Full name"
             required
             style={inputStyle}
           />
+          {nameError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{nameError}</div>}
         </div>
         <div>
           <label style={labelStyle}>Phone number</label>
           <input
             className="field-input"
             value={phone}
-            onChange={e => setPhone(e.target.value)}
+            onChange={e => {
+              const raw = e.target.value.replace(/[^0-9+]/g, '')
+              const v = (raw.startsWith('+') ? '+' : '') + raw.replace(/\+/g, '')
+              setPhone(v)
+              if (phoneError) setPhoneError('')
+            }}
             type="tel"
             placeholder="+44 7700 000000"
             required
             style={inputStyle}
           />
+          {phoneError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{phoneError}</div>}
         </div>
 
         {error && (
           <div
             style={{
-              background: 'rgba(255,68,68,0.1)',
+              background: 'rgba(255,68,68,0.08)',
               border: '1px solid rgba(255,68,68,0.2)',
-              borderRadius: '8px',
-              padding: '0.75rem 1rem',
+              borderRadius: '10px',
+              padding: '0.85rem 1rem',
               fontSize: '13px',
               color: 'var(--red)',
+              fontWeight: 600,
             }}
           >
             {error}
@@ -360,28 +413,28 @@ export default function CreateSessionForm({ slot }: Props) {
 
         <button
           type="submit"
-          disabled={loading || !name.trim() || !phone.trim()}
-          className={!loading && name.trim() && phone.trim() ? 'btn-g' : ''}
+          disabled={loading || !isReady}
+          className={!loading && isReady ? 'btn-g' : ''}
           style={{
             width: '100%',
-            padding: '0.95rem',
-            borderRadius: '10px',
+            padding: '1rem',
+            borderRadius: '12px',
             border: 'none',
-            cursor: loading || !name.trim() || !phone.trim() ? 'not-allowed' : 'pointer',
-            background:
-              loading || !name.trim() || !phone.trim() ? 'var(--surface2)' : 'var(--green)',
-            color:
-              loading || !name.trim() || !phone.trim() ? 'var(--muted)' : 'var(--black)',
+            cursor: loading || !isReady ? 'not-allowed' : 'pointer',
+            background: loading || !isReady ? 'var(--surface2)' : 'var(--green)',
+            color: loading || !isReady ? 'var(--muted)' : 'var(--black)',
             fontFamily: "'Archivo Black', sans-serif",
-            fontWeight: 800,
-            fontSize: '15px',
-            letterSpacing: '-0.02em',
+            fontWeight: 900,
+            fontSize: '16px',
+            letterSpacing: '-0.025em',
             marginTop: '4px',
             transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+            lineHeight: 1,
           }}
         >
           {loading ? 'Creating game…' : 'Create game →'}
         </button>
+
         <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
           No payment needed now — only charged when all 10 players join
         </div>

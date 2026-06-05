@@ -67,13 +67,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
   const [weekOffset, setWeekOffset] = useState(0)
   const [guestSlotMap, setGuestSlotMap] = useState<Record<string, string>>({})
 
-  // Slot ID map — seeded from server prop, extended client-side for week 2.
   const [slotIdMap, setSlotIdMap] = useState<Map<string, string>>(
     () => new Map(dbSlots.map(s => [`${s.date}_${s.start_time.slice(0, 5)}`, s.id]))
   )
 
   const today = startOfDay(new Date())
+  const todayDateStr = formatDate(today)
   const allDays = Array.from({ length: 14 }, (_, i) => addDays(today, i))
+    .filter(d => formatDate(d) >= todayDateStr)
   const weekDays = allDays.slice(weekOffset * 7, weekOffset * 7 + 7)
 
   useEffect(() => {
@@ -84,10 +85,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
       .subscribe()
 
     function refresh() {
+      const nowStr = formatDate(startOfDay(new Date()))
+      const endStr = formatDate(addDays(startOfDay(new Date()), 14))
       supabase
         .from('sessions')
         .select('id, slot_id, status, organiser_name, slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id), players(count)')
         .eq('slots.venue_id', venueId)
+        .gte('slots.date', nowStr)
+        .lte('slots.date', endStr)
         .in('status', ['filling', 'confirmed'])
         .then(({ data }) => { if (data) setSessions(data as unknown as SessionData[]) })
     }
@@ -117,12 +122,9 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
           })
           setGuestSlotMap(map)
         })
-    } catch { /* ignore parse / storage errors */ }
+    } catch { /* ignore */ }
   }, [])
 
-  // When the user navigates to week 2, upsert its slot templates into the DB
-  // (in case the server-side upsert missed them) then fetch their IDs so cards
-  // become clickable. Week 1 data comes from the server prop; week 2 is lazy.
   useEffect(() => {
     if (weekOffset === 0 || !venueId) return
 
@@ -130,7 +132,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
     const startStr = formatDate(week2Days[0])
     const endStr = formatDate(week2Days[6])
 
-    // Skip if we already have IDs for this range
     const firstKey = `${startStr}_${getSlotsForDay(week2Days[0])[0]?.startTime}`
     if (slotIdMap.has(firstKey)) return
 
@@ -186,7 +187,16 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
     const slotSessions = daySessionMap.get(template.startTime) ?? []
     const slotId = slotIdMap.get(`${dayStr}_${template.startTime}`) ?? null
 
-    const confirmed = slotSessions.find(s => s.status === 'confirmed')
+    // User check first so they always see their own session link
+    const userSessionId = slotId ? myMap[slotId] : null
+    if (userSessionId) {
+      const userSess = slotSessions.find(s => s.id === userSessionId) ?? slotSessions[0]
+      const filling = slotSessions.filter(s => s.status === 'filling')
+      return { status: 'filling' as const, hasRival: filling.length > 1, playerCount: userSess ? totalCount(userSess) : 0, sessionId: userSessionId, slotId, isUserSession: true }
+    }
+
+    // Only truly unavailable when confirmed with a full 10-player game
+    const confirmed = slotSessions.find(s => s.status === 'confirmed' && totalCount(s) >= 10)
     if (confirmed) {
       return { status: 'booked' as const, hasRival: false, playerCount: 10, sessionId: null, slotId: confirmed.slot_id, isUserSession: false }
     }
@@ -197,22 +207,15 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
     }
 
     const hasRival = filling.length > 1
-
-    const userSessionId = slotId ? myMap[slotId] : null
-    if (userSessionId) {
-      const userSess = filling.find(s => s.id === userSessionId) ?? filling[0]
-      return { status: 'filling' as const, hasRival, playerCount: totalCount(userSess), sessionId: userSessionId, slotId, isUserSession: true }
-    }
-
     const best = filling.reduce((a, b) => totalCount(a) >= totalCount(b) ? a : b)
     const bestCount = totalCount(best)
 
-    const RIVAL_THRESHOLD = 5
+    const RIVAL_THRESHOLD = 7
     if (bestCount < RIVAL_THRESHOLD) {
       return { status: 'empty' as const, hasRival: false, playerCount: 0, sessionId: null, slotId, isUserSession: false }
     }
 
-    return { status: 'filling' as const, hasRival, playerCount: 0, sessionId: null, slotId, isUserSession: false }
+    return { status: 'filling' as const, hasRival, playerCount: bestCount, sessionId: null, slotId, isUserSession: false }
   }
 
   function totalCount(s: SessionData): number {
@@ -222,15 +225,15 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
   }
 
   return (
-    <div style={{ maxWidth: '680px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <div style={{ maxWidth: '700px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
 
       {/* Venue header */}
-      <div className="anim-fade-up" style={{ marginBottom: '0.3rem' }}>
+      <div className="anim-fade-up" style={{ marginBottom: '0.4rem' }}>
         <h1
           style={{
             fontFamily: "'Archivo Black', sans-serif",
-            fontSize: '30px',
-            letterSpacing: '-0.035em',
+            fontSize: 'clamp(26px, 5vw, 36px)',
+            letterSpacing: '-0.04em',
             lineHeight: 0.95,
             margin: 0,
           }}
@@ -240,9 +243,38 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
       </div>
       <div
         className="anim-fade-up d-80"
-        style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '2.25rem', fontWeight: 500 }}
+        style={{
+          fontSize: '13px',
+          color: 'var(--muted)',
+          marginBottom: '2.5rem',
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}
       >
-        110 Globe Rd, Bethnal Green E1 4DZ · 4G · 5-a-side
+        <span>110 Globe Rd, Bethnal Green E1 4DZ</span>
+        <span style={{ color: 'var(--border)', fontWeight: 400 }}>·</span>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            background: 'rgba(198,241,53,0.08)',
+            border: '1px solid rgba(198,241,53,0.15)',
+            borderRadius: '5px',
+            padding: '1px 7px',
+            fontSize: '10px',
+            color: 'var(--green)',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}
+        >
+          4G
+        </span>
+        <span style={{ color: 'var(--border)', fontWeight: 400 }}>·</span>
+        <span>5-a-side</span>
       </div>
 
       {/* ============================================================
@@ -250,7 +282,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
           ============================================================ */}
       <div
         className="anim-fade-up d-100"
-        style={{ display: 'flex', alignItems: 'stretch', gap: '8px', marginBottom: '1.75rem' }}
+        style={{ display: 'flex', alignItems: 'stretch', gap: '8px', marginBottom: '2rem' }}
       >
         {/* Prev week arrow */}
         <button
@@ -260,17 +292,18 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
           aria-label="Previous week"
           style={{
             flexShrink: 0,
-            width: '40px',
-            borderRadius: '10px',
+            width: '42px',
+            borderRadius: '12px',
             border: '1px solid var(--border)',
             background: 'transparent',
-            color: weekOffset === 0 ? 'rgba(90,90,90,0.25)' : 'var(--muted)',
-            fontSize: '18px',
+            color: weekOffset === 0 ? 'rgba(104,104,104,0.22)' : 'var(--muted)',
+            fontSize: '20px',
             cursor: weekOffset === 0 ? 'not-allowed' : 'pointer',
             transition: 'border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.1s ease',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            lineHeight: 1,
           }}
         >
           ‹
@@ -298,15 +331,16 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                 disabled={isPast}
                 style={{
                   flexShrink: 0,
-                  padding: '0.7rem 0.9rem',
-                  borderRadius: '10px',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '12px',
                   border: active ? 'none' : '1px solid var(--border)',
                   background: active ? 'var(--green)' : 'transparent',
-                  color: active ? 'var(--black)' : isPast ? 'rgba(90,90,90,0.28)' : 'var(--muted)',
+                  color: active ? 'var(--black)' : isPast ? 'rgba(104,104,104,0.22)' : 'var(--muted)',
                   cursor: isPast ? 'not-allowed' : 'pointer',
                   transition: 'border-color 0.18s ease, color 0.18s ease, background 0.18s ease, transform 0.12s ease',
                   textAlign: 'center',
-                  minWidth: '54px',
+                  minWidth: '52px',
+                  lineHeight: 1,
                 }}
               >
                 <span
@@ -316,9 +350,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                     fontWeight: 700,
                     textTransform: 'uppercase',
                     letterSpacing: '0.08em',
-                    marginBottom: '3px',
-                    opacity: active ? 0.7 : 0.65,
-                    lineHeight: 1,
+                    marginBottom: '4px',
+                    opacity: active ? 0.65 : 0.6,
                   }}
                 >
                   {DAY_NAMES[day.getDay()]}
@@ -326,7 +359,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                 <span
                   style={{
                     display: 'block',
-                    fontSize: '20px',
+                    fontSize: '21px',
                     fontFamily: "'Archivo Black', sans-serif",
                     letterSpacing: '-0.03em',
                     lineHeight: 1,
@@ -338,11 +371,10 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                 <span
                   style={{
                     display: 'block',
-                    fontSize: '9px',
+                    fontSize: '8px',
                     fontWeight: 600,
                     letterSpacing: '0.04em',
-                    opacity: active ? 0.65 : 0.45,
-                    lineHeight: 1,
+                    opacity: active ? 0.6 : 0.4,
                   }}
                 >
                   {MONTH_NAMES[day.getMonth()]}
@@ -360,17 +392,18 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
           aria-label="Next week"
           style={{
             flexShrink: 0,
-            width: '40px',
-            borderRadius: '10px',
+            width: '42px',
+            borderRadius: '12px',
             border: '1px solid var(--border)',
             background: 'transparent',
-            color: weekOffset === 1 ? 'rgba(90,90,90,0.25)' : 'var(--muted)',
-            fontSize: '18px',
+            color: weekOffset === 1 ? 'rgba(104,104,104,0.22)' : 'var(--muted)',
+            fontSize: '20px',
             cursor: weekOffset === 1 ? 'not-allowed' : 'pointer',
             transition: 'border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.1s ease',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            lineHeight: 1,
           }}
         >
           ›
@@ -386,12 +419,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
           const booked = info.status === 'booked'
           const filling = info.status === 'filling'
           const typeColor = template.type === 'peak' ? '#FF6B6B' : template.type === 'weekend' ? '#00B4FF' : 'var(--green)'
-          const typeBg = template.type === 'peak' ? 'rgba(255,68,68,0.14)' : template.type === 'weekend' ? 'rgba(0,180,255,0.1)' : 'rgba(198,241,53,0.1)'
+          const typeBg = template.type === 'peak' ? 'rgba(255,68,68,0.12)' : template.type === 'weekend' ? 'rgba(0,180,255,0.09)' : 'rgba(198,241,53,0.09)'
           const perPlayerPitch = (template.priceGBP / 10).toFixed(2)
           const isUserSession = info.isUserSession
 
           let href: string | undefined
-          if (!booked && !isUserSession && info.slotId) {
+          if (isUserSession && info.sessionId) {
+            href = `/session/${info.sessionId}`
+          } else if (!booked && !isUserSession && info.slotId) {
             href = `/slots/${info.slotId}/create`
           }
 
@@ -407,18 +442,27 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
           const isAmberState = fillCount >= 7 && fillCount < 10
           const segColor = booked ? 'lit-red' : isAmberState ? 'lit-amber' : (filling || isUserSession) ? 'lit-green' : 'lit-green'
 
+          const borderColor = isUserSession
+            ? 'rgba(198,241,53,0.3)'
+            : booked
+            ? 'rgba(255,255,255,0.04)'
+            : 'rgba(255,255,255,0.07)'
+
           const cardStyle: React.CSSProperties = {
             background: isUserSession
-              ? 'linear-gradient(135deg, rgba(198,241,53,0.06) 0%, #0f0f0f 100%)'
-              : 'linear-gradient(135deg, #111 0%, #0e0e0e 100%)',
-            border: `1px solid ${isUserSession ? 'rgba(198,241,53,0.28)' : booked ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.07)'}`,
-            borderRadius: '16px',
-            padding: '1.3rem 1.5rem',
-            cursor: booked ? 'not-allowed' : isUserSession ? 'default' : 'pointer',
+              ? 'linear-gradient(145deg, rgba(198,241,53,0.05) 0%, #0f0f0f 100%)'
+              : 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+            border: `1px solid ${borderColor}`,
+            borderRadius: '18px',
+            padding: '1.4rem 1.6rem',
+            cursor: booked ? 'not-allowed' : 'pointer',
             transition: 'transform 0.25s var(--ease-out), border-color 0.25s ease, box-shadow 0.25s var(--ease-out)',
             position: 'relative',
-            overflow: 'visible',
-            opacity: booked ? 0.36 : 1,
+            overflow: 'hidden',
+            opacity: booked ? 0.32 : 1,
+            boxShadow: isUserSession
+              ? '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)'
+              : '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
           }
 
           const cardContent = (
@@ -429,12 +473,12 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                   style={{
                     position: 'absolute',
                     left: 0,
-                    top: '14px',
-                    bottom: '14px',
+                    top: '16px',
+                    bottom: '16px',
                     width: '3px',
                     background: 'var(--green)',
                     borderRadius: '0 3px 3px 0',
-                    boxShadow: '0 0 14px rgba(198,241,53,0.55)',
+                    boxShadow: '0 0 16px rgba(198,241,53,0.6)',
                   }}
                 />
               )}
@@ -452,11 +496,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                   <div
                     style={{
                       fontFamily: "'Archivo Black', sans-serif",
-                      fontSize: '24px',
+                      fontSize: '26px',
                       letterSpacing: '-0.04em',
                       color: booked ? 'var(--muted)' : 'var(--text)',
                       lineHeight: 1,
-                      marginBottom: '8px',
+                      marginBottom: '9px',
                     }}
                   >
                     {template.startTime}
@@ -464,9 +508,10 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                       style={{
                         color: 'var(--muted)',
                         fontFamily: "'Archivo', sans-serif",
-                        fontWeight: 500,
+                        fontWeight: 400,
                         fontSize: '16px',
-                        margin: '0 7px',
+                        margin: '0 8px',
+                        opacity: 0.6,
                       }}
                     >
                       –
@@ -480,7 +525,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                       letterSpacing: '0.12em',
                       textTransform: 'uppercase',
                       padding: '3px 9px',
-                      borderRadius: '4px',
+                      borderRadius: '5px',
                       background: typeBg,
                       color: typeColor,
                     }}
@@ -493,7 +538,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                   <div
                     style={{
                       fontFamily: "'Archivo Black', sans-serif",
-                      fontSize: '28px',
+                      fontSize: '30px',
                       color: booked ? 'var(--muted)' : 'var(--green)',
                       letterSpacing: '-0.04em',
                       lineHeight: 1,
@@ -501,11 +546,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                   >
                     £{perPlayerPitch}
                   </div>
-                  <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '4px' }}>per player</div>
+                  <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '5px', fontWeight: 500 }}>per player</div>
                 </div>
               </div>
 
-              {/* Segmented fill bar — 10 discrete blocks */}
+              {/* Segmented fill bar */}
               <div className="seg-bar" style={{ marginBottom: '10px' }}>
                 {Array.from({ length: 10 }, (_, i) => {
                   const lit = i < fillCount
@@ -526,19 +571,20 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, mySlotT
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   fontSize: '12px',
+                  fontWeight: 700,
                 }}
               >
                 {booked ? (
-                  <span style={{ color: 'var(--red)', fontWeight: 700 }}>✕ Slot taken</span>
+                  <span style={{ color: 'var(--red)', letterSpacing: '0.02em' }}>Slot taken</span>
                 ) : filling && isUserSession ? (
-                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>✓ You&apos;re in this game</span>
+                  <span style={{ color: 'var(--green)' }}>You&apos;re in this game</span>
                 ) : filling ? (
                   <>
-                    <span style={{ color: 'var(--amber)', fontWeight: 700 }}>⚡ Another group is racing</span>
-                    <span style={{ color: 'var(--green)', fontWeight: 700, letterSpacing: '0.04em' }}>Create game →</span>
+                    <span style={{ color: 'var(--amber)' }}>⚡ Another group is racing for this</span>
+                    <span style={{ color: 'var(--green)', letterSpacing: '0.02em' }}>Create game →</span>
                   </>
                 ) : (
-                  <span style={{ color: 'var(--green)', fontWeight: 700, letterSpacing: '0.04em', marginLeft: 'auto' }}>
+                  <span style={{ color: 'var(--green)', letterSpacing: '0.02em', marginLeft: 'auto' }}>
                     Create game →
                   </span>
                 )}

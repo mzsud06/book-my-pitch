@@ -5,43 +5,32 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
-export default function SignupPage() {
+export default function ResetPasswordPage() {
+  const supabase = createClient()
   const router = useRouter()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [emailSent, setEmailSent] = useState(false)
 
-  async function handleSignup(e: React.FormEvent) {
+  async function handleReset(e: React.FormEvent) {
     e.preventDefault()
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return
+    }
     setLoading(true)
     setError('')
 
-    const supabase = createClient()
-    const { data, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name, phone },
-      },
-    })
+    const { error: authError } = await supabase.auth.updateUser({ password })
+
+    setLoading(false)
 
     if (authError) {
       setError(authError.message)
-      setLoading(false)
       return
     }
 
-    if (!data.session) {
-      setEmailSent(true)
-      setLoading(false)
-      return
-    }
-
-    router.refresh()
     router.push('/my-bookings')
   }
 
@@ -99,11 +88,12 @@ export default function SignupPage() {
               color: 'var(--text)',
             }}
           >
-            Your game<br />
-            <span style={{ color: 'var(--green)' }}>starts here.</span>
+            New password.
+            <br />
+            <span style={{ color: 'var(--green)' }}>Fresh start.</span>
           </h2>
           <p style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.7, fontWeight: 500, maxWidth: '340px' }}>
-            Create an account to track your sessions, view your bookings, and get notified the moment your game is confirmed.
+            Choose a strong password to keep your account secure.
           </p>
         </div>
 
@@ -143,50 +133,6 @@ export default function SignupPage() {
       {/* Form panel */}
       <div className="auth-form-panel">
         <div style={{ width: '100%', maxWidth: '380px' }}>
-
-          {emailSent ? (
-            <div className="anim-fade-up" style={{ textAlign: 'center', paddingTop: '1rem' }}>
-              <div
-                style={{
-                  width: '64px',
-                  height: '64px',
-                  background: 'rgba(198,241,53,0.08)',
-                  border: '1px solid rgba(198,241,53,0.25)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '26px',
-                  margin: '0 auto 1.5rem',
-                  color: 'var(--green)',
-                }}
-              >
-                ✉
-              </div>
-              <div
-                style={{
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontSize: '24px',
-                  letterSpacing: '-0.04em',
-                  marginBottom: '0.75rem',
-                  lineHeight: 1,
-                }}
-              >
-                Check your email
-              </div>
-              <div style={{ fontSize: '15px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.65, marginBottom: '2rem' }}>
-                We&apos;ve sent a confirmation link to <strong style={{ color: 'var(--text)' }}>{email}</strong>.
-                Click the link to activate your account, then come back to log in.
-              </div>
-              <Link
-                href="/auth/login"
-                style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, textDecoration: 'none', letterSpacing: '-0.01em' }}
-              >
-                Go to login →
-              </Link>
-            </div>
-          ) : (
-            <>
           <div
             className="anim-fade-up"
             style={{
@@ -197,64 +143,39 @@ export default function SignupPage() {
               lineHeight: 0.95,
             }}
           >
-            Create account
+            Set new password
           </div>
           <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '2rem', fontWeight: 500 }}>
-            Already have an account?{' '}
-            <Link href="/auth/login" style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 700 }}>
-              Log in
-            </Link>
+            Enter and confirm your new password below.
           </div>
 
           <form
             className="anim-fade-up d-80"
-            onSubmit={handleSignup}
+            onSubmit={handleReset}
             style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
           >
             <div>
-              <label style={labelStyle}>Name</label>
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                required
-                placeholder="Your full name"
-                className="field-input"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                placeholder="you@example.com"
-                className="field-input"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Phone</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                required
-                placeholder="+44 7700 000000"
-                className="field-input"
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Password</label>
+              <label style={labelStyle}>New password</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                placeholder="Min 8 characters"
                 minLength={8}
+                placeholder="Min 8 characters"
+                className="field-input"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Confirm password</label>
+              <input
+                type="password"
+                value={confirm}
+                onChange={e => setConfirm(e.target.value)}
+                required
+                minLength={8}
+                placeholder="••••••••"
                 className="field-input"
                 style={inputStyle}
               />
@@ -297,15 +218,9 @@ export default function SignupPage() {
                 lineHeight: 1,
               }}
             >
-              {loading ? 'Creating account…' : 'Create account →'}
+              {loading ? 'Updating…' : 'Update password →'}
             </button>
-
-            <div style={{ fontSize: '12px', color: 'var(--muted)', textAlign: 'center', fontWeight: 500 }}>
-              By signing up you agree to our terms of service.
-            </div>
           </form>
-            </>
-          )}
         </div>
       </div>
     </div>

@@ -44,23 +44,24 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   background: 'var(--surface2)',
   border: '1px solid var(--border)',
-  borderRadius: '8px',
-  padding: '0.7rem 1rem',
+  borderRadius: '10px',
+  padding: '0.8rem 1rem',
   color: 'var(--text)',
   fontFamily: "'Archivo', sans-serif",
   fontSize: '15px',
+  fontWeight: 600,
   outline: 'none',
-  transition: 'border-color 0.15s ease',
+  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
 }
 
 const labelStyle: React.CSSProperties = {
   fontSize: '10px',
   color: 'var(--muted)',
-  marginBottom: '6px',
+  marginBottom: '7px',
   display: 'block',
   fontWeight: 700,
   textTransform: 'uppercase',
-  letterSpacing: '0.1em',
+  letterSpacing: '0.12em',
 }
 
 // ---------------------------------------------------------------------------
@@ -178,21 +179,22 @@ function PaymentStep({
       {hasRival && (
         <div
           style={{
-            background: 'rgba(255,184,0,0.07)',
+            background: 'rgba(255,184,0,0.06)',
             border: '1px solid rgba(255,184,0,0.22)',
-            borderRadius: '10px',
-            padding: '0.8rem 1rem',
+            borderRadius: '12px',
+            padding: '0.9rem 1.1rem',
             marginBottom: '1.25rem',
             fontSize: '14px',
             color: 'var(--amber)',
             display: 'flex',
             gap: '8px',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             lineHeight: 1.55,
             fontWeight: 600,
           }}
         >
-          ⚡ Another group is also trying to fill this slot. First to 10 gets it.
+          <span style={{ flexShrink: 0 }}>⚡</span>
+          Another group is also trying to fill this slot. First to 10 gets it.
         </div>
       )}
 
@@ -201,17 +203,18 @@ function PaymentStep({
         style={{
           display: 'flex',
           gap: '10px',
-          background: 'rgba(198,241,53,0.06)',
-          border: '1px solid rgba(198,241,53,0.14)',
-          borderRadius: '10px',
-          padding: '0.9rem 1rem',
+          background: 'rgba(198,241,53,0.05)',
+          border: '1px solid rgba(198,241,53,0.15)',
+          borderRadius: '12px',
+          padding: '1rem 1.1rem',
           marginBottom: '1.25rem',
           fontSize: '14px',
-          color: 'rgba(198,241,53,0.75)',
-          lineHeight: 1.55,
+          color: 'rgba(198,241,53,0.7)',
+          lineHeight: 1.6,
+          alignItems: 'flex-start',
         }}
       >
-        🔒{' '}
+        <span style={{ flexShrink: 0, marginTop: '1px' }}>🔒</span>
         <span>
           <strong style={{ color: 'var(--green)' }}>Nothing is charged now.</strong> Your card is only charged when the 10th player joins. If the session doesn&apos;t fill, you pay nothing.
         </span>
@@ -220,10 +223,10 @@ function PaymentStep({
       {/* Cost breakdown */}
       <div
         style={{
-          background: 'linear-gradient(135deg, rgba(198,241,53,0.04) 0%, var(--surface) 100%)',
+          background: 'linear-gradient(145deg, rgba(198,241,53,0.04) 0%, #0f0f0f 100%)',
           border: '1px solid rgba(198,241,53,0.12)',
-          borderRadius: '14px',
-          padding: '1.3rem 1.5rem',
+          borderRadius: '16px',
+          padding: '1.4rem 1.5rem',
           marginBottom: '1.25rem',
         }}
       >
@@ -244,7 +247,7 @@ function PaymentStep({
             }}
           >
             <span>{row.label}</span>
-            <span style={{ fontWeight: 700 }}>{row.amount}</span>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>{row.amount}</span>
           </div>
         ))}
         <div
@@ -255,16 +258,16 @@ function PaymentStep({
             color: 'var(--text)',
             fontWeight: 800,
             fontSize: '14px',
-            marginTop: '10px',
-            paddingTop: '10px',
+            marginTop: '12px',
+            paddingTop: '12px',
             borderTop: '1px solid rgba(198,241,53,0.12)',
           }}
         >
-          <span>Total if confirmed</span>
+          <span style={{ fontWeight: 600, color: 'var(--muted)' }}>Total if confirmed</span>
           <span
             style={{
               fontFamily: "'Archivo Black', sans-serif",
-              fontSize: '24px',
+              fontSize: '28px',
               color: 'var(--green)',
               letterSpacing: '-0.04em',
             }}
@@ -272,7 +275,7 @@ function PaymentStep({
             £{totalPerPlayer}
           </span>
         </div>
-        <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.55, fontWeight: 500 }}>
+        <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.6, fontWeight: 500 }}>
           You&apos;ll get a text the moment it&apos;s confirmed. Less than a coffee.
         </div>
       </div>
@@ -290,13 +293,14 @@ function PaymentStep({
       {error && (
         <div
           style={{
-            background: 'rgba(255,68,68,0.1)',
+            background: 'rgba(255,68,68,0.08)',
             border: '1px solid rgba(255,68,68,0.2)',
-            borderRadius: '8px',
-            padding: '0.75rem 1rem',
+            borderRadius: '10px',
+            padding: '0.85rem 1rem',
             marginBottom: '1rem',
             fontSize: '13px',
             color: 'var(--red)',
+            fontWeight: 600,
           }}
         >
           {error}
@@ -309,18 +313,19 @@ function PaymentStep({
         className={!loading && stripe ? 'btn-g' : ''}
         style={{
           width: '100%',
-          padding: '0.95rem',
-          fontSize: '15px',
-          borderRadius: '10px',
+          padding: '1rem',
+          fontSize: '16px',
+          borderRadius: '12px',
           border: 'none',
           cursor: loading ? 'not-allowed' : 'pointer',
           background: loading ? 'var(--surface2)' : 'var(--green)',
           color: loading ? 'var(--muted)' : 'var(--black)',
           fontFamily: "'Archivo Black', sans-serif",
-          fontWeight: 800,
-          letterSpacing: '-0.02em',
+          fontWeight: 900,
+          letterSpacing: '-0.025em',
           transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
           marginBottom: '8px',
+          lineHeight: 1,
         }}
       >
         {loading ? 'Processing...' : `Join — only £${totalPerPlayer} if confirmed`}
@@ -335,7 +340,7 @@ function PaymentStep({
           fontWeight: 500,
         }}
       >
-        🔒 Secured by Stripe · Card only charged when session is full
+        Secured by Stripe · Card only charged when session is full
       </div>
 
       <button
@@ -344,7 +349,7 @@ function PaymentStep({
         className="btn-ghost"
         style={{
           width: '100%',
-          padding: '0.7rem',
+          padding: '0.8rem',
           fontSize: '14px',
           borderRadius: '10px',
           border: '1px solid var(--border)',
@@ -354,6 +359,7 @@ function PaymentStep({
           fontFamily: "'Archivo', sans-serif",
           fontWeight: 600,
           transition: 'border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.12s ease',
+          lineHeight: 1,
         }}
       >
         ← Back
@@ -387,6 +393,8 @@ export default function JoinForm({
   const [customerId, setCustomerId] = useState('')
   const [loadingSetup, setLoadingSetup] = useState(false)
   const [setupError, setSetupError] = useState('')
+  const [nameError, setNameError] = useState('')
+  const [phoneError, setPhoneError] = useState('')
 
   const didAutoAdvance = useRef(false)
   const [joinDest, setJoinDest] = useState<string | null>(null)
@@ -439,7 +447,7 @@ export default function JoinForm({
         .then(({ data }) => {
           if (data) router.replace(`/session/${sessionId}?already=1`)
         })
-    } catch { /* ignore storage / parse errors */ }
+    } catch { /* ignore */ }
   }, [])
 
   useEffect(() => {
@@ -490,14 +498,34 @@ export default function JoinForm({
 
   async function handleDetailsContinue(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !phone.trim()) return
+    let valid = true
+    if (!name.trim() || !/^[A-Za-z ]+$/.test(name.trim())) {
+      setNameError('Name may only contain letters and spaces')
+      valid = false
+    }
+    if (!phone.trim() || !/^\+?[0-9]+$/.test(phone.trim())) {
+      setPhoneError('Phone may only contain digits with an optional leading +')
+      valid = false
+    }
+    if (!valid) return
     sessionStorage.setItem('join_details', JSON.stringify({ name: name.trim(), phone: phone.trim() }))
     await initSetupIntent()
   }
 
   function handleJoinSuccess(dest: string) {
     if (!isLoggedIn) {
-      try { localStorage.setItem(LS_KEY, JSON.stringify({ name, phone })) } catch { /* ignore */ }
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify({ name, phone }))
+        const sessionId = dest.split('/session/')[1]?.split('?')[0]
+        if (sessionId) {
+          const raw = JSON.parse(localStorage.getItem('bmp_my_sessions') ?? '[]')
+          const existing = Array.isArray(raw) ? raw : []
+          localStorage.setItem('bmp_my_sessions', JSON.stringify([
+            { sessionId, name, isOrganiser, joinedAt: new Date().toISOString() },
+            ...existing.filter((b: { sessionId: string }) => b.sessionId !== sessionId),
+          ]))
+        }
+      } catch { /* ignore */ }
     }
     setJoinDest(dest)
   }
@@ -510,7 +538,7 @@ export default function JoinForm({
       colorText: '#F7F4EE',
       colorDanger: '#FF4444',
       fontFamily: "'Archivo', sans-serif",
-      borderRadius: '8px',
+      borderRadius: '10px',
     },
   }
 
@@ -525,7 +553,7 @@ export default function JoinForm({
     return (
       <div
         style={{
-          maxWidth: '460px',
+          maxWidth: '480px',
           margin: '4rem auto',
           padding: '2rem 1.5rem',
           textAlign: 'center',
@@ -538,9 +566,6 @@ export default function JoinForm({
     )
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Inline player token for join form grid                              */
-  /* ------------------------------------------------------------------ */
   function renderSpot(i: number) {
     const filled = i < gridFilledCount
     const isYouSlot = i === gridFilledCount
@@ -551,7 +576,7 @@ export default function JoinForm({
         style={{
           position: 'relative',
           flex: 1,
-          height: '56px',
+          height: '58px',
           borderRadius: '10px',
           display: 'flex',
           flexDirection: 'column',
@@ -561,56 +586,54 @@ export default function JoinForm({
           background: isYouSlot
             ? 'var(--green)'
             : filled
-            ? 'rgba(198,241,53,0.1)'
+            ? 'rgba(198,241,53,0.09)'
             : 'rgba(255,255,255,0.02)',
           border: isYouSlot
             ? 'none'
             : filled
             ? '1px solid rgba(198,241,53,0.28)'
-            : '1px dashed rgba(255,255,255,0.08)',
+            : '1px dashed rgba(255,255,255,0.07)',
           boxShadow: isYouSlot
-            ? '0 0 20px rgba(198,241,53,0.25)'
+            ? '0 0 22px rgba(198,241,53,0.25)'
             : filled
-            ? '0 0 14px rgba(198,241,53,0.08)'
+            ? '0 0 14px rgba(198,241,53,0.07)'
             : 'none',
         }}
       >
-        {/* Jersey number */}
         <div
           style={{
             position: 'absolute',
             top: '4px',
             right: '6px',
             fontSize: '7px',
-            fontWeight: 800,
+            fontWeight: 900,
             fontFamily: "'Archivo Black', sans-serif",
             color: isYouSlot
-              ? 'rgba(0,0,0,0.35)'
+              ? 'rgba(0,0,0,0.3)'
               : filled
               ? 'rgba(198,241,53,0.4)'
-              : 'rgba(255,255,255,0.07)',
+              : 'rgba(255,255,255,0.06)',
             lineHeight: 1,
           }}
         >
           {i + 1}
         </div>
 
-        {/* Avatar circle */}
         <div
           style={{
-            width: '22px',
-            height: '22px',
+            width: '24px',
+            height: '24px',
             borderRadius: '50%',
             background: isYouSlot
-              ? 'rgba(0,0,0,0.25)'
+              ? 'rgba(0,0,0,0.2)'
               : filled
               ? 'var(--green)'
-              : 'rgba(255,255,255,0.05)',
+              : 'rgba(255,255,255,0.04)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '9px',
-            fontWeight: 800,
+            fontWeight: 900,
             color: isYouSlot ? 'var(--black)' : filled ? 'var(--black)' : 'transparent',
             fontFamily: "'Archivo Black', sans-serif",
           }}
@@ -618,12 +641,11 @@ export default function JoinForm({
           {isYouSlot ? '' : filled ? '✓' : ''}
         </div>
 
-        {/* Label */}
         <div
           style={{
             fontSize: '7px',
             fontWeight: 700,
-            color: isYouSlot ? 'var(--black)' : filled ? 'var(--green)' : 'rgba(255,255,255,0.12)',
+            color: isYouSlot ? 'var(--black)' : filled ? 'var(--green)' : 'rgba(255,255,255,0.1)',
             textAlign: 'center',
             lineHeight: 1,
           }}
@@ -635,39 +657,39 @@ export default function JoinForm({
   }
 
   return (
-    <div style={{ maxWidth: '460px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
       {isOrganiser ? (
         <>
           <div
             className="anim-fade-up"
             style={{
               fontFamily: "'Archivo Black', sans-serif",
-              fontSize: '28px',
-              letterSpacing: '-0.035em',
-              marginBottom: '0.35rem',
-              lineHeight: 0.95,
+              fontSize: 'clamp(24px, 5vw, 30px)',
+              letterSpacing: '-0.04em',
+              marginBottom: '0.4rem',
+              lineHeight: 0.92,
             }}
           >
             You&apos;re in — now add your mates
           </div>
-          <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '1.1rem', fontWeight: 500 }}>
+          <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '1.1rem', fontWeight: 500, lineHeight: 1.6 }}>
             Add your card details below.{' '}
             <strong style={{ color: 'var(--text)' }}>Nothing is charged now</strong> — only when all 10 players join.
           </div>
           <div
             className="anim-fade-up d-100"
             style={{
-              background: 'rgba(198,241,53,0.06)',
+              background: 'rgba(198,241,53,0.05)',
               border: '1px solid rgba(198,241,53,0.22)',
-              borderRadius: '10px',
-              padding: '0.9rem 1.1rem',
-              marginBottom: '1.35rem',
+              borderRadius: '12px',
+              padding: '1rem 1.2rem',
+              marginBottom: '1.5rem',
               fontSize: '14px',
               color: 'var(--green)',
-              fontWeight: 600,
+              fontWeight: 700,
             }}
           >
-            🎉 Game created! Once you&apos;re set up, share the link to fill your team.
+            Game created! Once you&apos;re set up, share the link to fill your team.
           </div>
         </>
       ) : (
@@ -676,15 +698,15 @@ export default function JoinForm({
             className="anim-fade-up"
             style={{
               fontFamily: "'Archivo Black', sans-serif",
-              fontSize: '28px',
-              letterSpacing: '-0.035em',
-              marginBottom: '0.35rem',
-              lineHeight: 0.95,
+              fontSize: 'clamp(24px, 5vw, 30px)',
+              letterSpacing: '-0.04em',
+              marginBottom: '0.4rem',
+              lineHeight: 0.92,
             }}
           >
             Join the game
           </div>
-          <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '1.35rem', fontWeight: 500 }}>
+          <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '1.5rem', fontWeight: 500, lineHeight: 1.6 }}>
             <strong style={{ color: 'var(--text)' }}>Nothing is charged now.</strong> Your card is only charged when all 10 players join.
           </div>
         </>
@@ -694,21 +716,22 @@ export default function JoinForm({
       <div
         className="anim-fade-up d-100"
         style={{
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: '16px',
-          padding: '1.35rem',
-          marginBottom: '1.35rem',
+          background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          borderRadius: '18px',
+          padding: '1.5rem',
+          marginBottom: '1.5rem',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
         }}
       >
         <div
           style={{
             fontSize: '10px',
             color: 'var(--muted)',
-            marginBottom: '4px',
+            marginBottom: '5px',
             fontWeight: 700,
             textTransform: 'uppercase',
-            letterSpacing: '0.08em',
+            letterSpacing: '0.1em',
           }}
         >
           Globe Football Pitch · Bethnal Green
@@ -716,49 +739,46 @@ export default function JoinForm({
         <div
           style={{
             fontFamily: "'Archivo Black', sans-serif",
-            fontSize: '24px',
+            fontSize: '26px',
             letterSpacing: '-0.04em',
-            marginBottom: '2px',
+            marginBottom: '3px',
             lineHeight: 1,
           }}
         >
           {startTime} – {endTime}
         </div>
-        <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '1.35rem', fontWeight: 500 }}>
+        <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '1.5rem', fontWeight: 500 }}>
           {formatDate(slot.date)} · {slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'} · 5-a-side
         </div>
 
-        {/* Team grid — 2 rows of 5 */}
-        <div style={{ marginBottom: '1rem' }}>
+        {/* Team grid */}
+        <div style={{ marginBottom: '1.1rem' }}>
           <div style={{ display: 'flex', gap: '5px', marginBottom: '0' }}>
             {Array.from({ length: 5 }, (_, i) => renderSpot(i))}
           </div>
-
-          {/* Center line */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
             <div
               style={{
                 fontSize: '7px',
                 fontWeight: 700,
-                color: 'rgba(255,255,255,0.14)',
-                letterSpacing: '0.12em',
+                color: 'rgba(255,255,255,0.12)',
+                letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 flexShrink: 0,
               }}
             >
               5-a-side
             </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
           </div>
-
           <div style={{ display: 'flex', gap: '5px' }}>
             {Array.from({ length: 5 }, (_, i) => renderSpot(i + 5))}
           </div>
         </div>
 
         {/* Segmented bar */}
-        <div className="seg-bar" style={{ marginBottom: '8px' }}>
+        <div className="seg-bar" style={{ marginBottom: '10px' }}>
           {Array.from({ length: 10 }, (_, i) => {
             const filled = i < existingPlayerCount
             const isAmber = existingPlayerCount >= 7 && existingPlayerCount < 10
@@ -772,8 +792,8 @@ export default function JoinForm({
           })}
         </div>
 
-        <div style={{ fontSize: '13px', color: 'var(--muted)', textAlign: 'center', fontWeight: 500 }}>
-          <strong style={{ color: 'var(--text)' }}>{existingPlayerCount}/10 players</strong>
+        <div style={{ fontSize: '13px', color: 'var(--muted)', textAlign: 'center', fontWeight: 600 }}>
+          <strong style={{ color: 'var(--text)', fontWeight: 800 }}>{existingPlayerCount}/10 players</strong>
           {existingPlayerCount === 9
             ? ' — just 1 more to confirm!'
             : ` — ${10 - existingPlayerCount} more needed`}
@@ -785,41 +805,53 @@ export default function JoinForm({
         <form
           className="anim-fade-up d-150"
           onSubmit={handleDetailsContinue}
-          style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
         >
           <div>
             <label style={labelStyle}>Your name</label>
             <input
               className="field-input"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={e => {
+                const v = e.target.value.replace(/[^A-Za-z ]/g, '')
+                setName(v)
+                if (nameError) setNameError('')
+              }}
               placeholder="Full name"
               required
               style={inputStyle}
             />
+            {nameError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{nameError}</div>}
           </div>
           <div>
             <label style={labelStyle}>Phone number</label>
             <input
               className="field-input"
               value={phone}
-              onChange={e => setPhone(e.target.value)}
+              onChange={e => {
+                const raw = e.target.value.replace(/[^0-9+]/g, '')
+                const v = (raw.startsWith('+') ? '+' : '') + raw.replace(/\+/g, '')
+                setPhone(v)
+                if (phoneError) setPhoneError('')
+              }}
               type="tel"
               placeholder="+44 7700 000000"
               required
               style={inputStyle}
             />
+            {phoneError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{phoneError}</div>}
           </div>
 
           {setupError && (
             <div
               style={{
-                background: 'rgba(255,68,68,0.1)',
+                background: 'rgba(255,68,68,0.08)',
                 border: '1px solid rgba(255,68,68,0.2)',
-                borderRadius: '8px',
-                padding: '0.75rem 1rem',
+                borderRadius: '10px',
+                padding: '0.85rem 1rem',
                 fontSize: '13px',
                 color: 'var(--red)',
+                fontWeight: 600,
               }}
             >
               {setupError}
@@ -832,9 +864,9 @@ export default function JoinForm({
             className={!loadingSetup && name.trim() && phone.trim() ? 'btn-g' : ''}
             style={{
               width: '100%',
-              padding: '0.95rem',
-              fontSize: '15px',
-              borderRadius: '10px',
+              padding: '1rem',
+              fontSize: '16px',
+              borderRadius: '12px',
               border: 'none',
               cursor: loadingSetup || !name.trim() || !phone.trim() ? 'not-allowed' : 'pointer',
               background:
@@ -846,10 +878,11 @@ export default function JoinForm({
                   ? 'var(--muted)'
                   : 'var(--black)',
               fontFamily: "'Archivo Black', sans-serif",
-              fontWeight: 800,
-              letterSpacing: '-0.02em',
+              fontWeight: 900,
+              letterSpacing: '-0.025em',
               marginTop: '4px',
               transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+              lineHeight: 1,
             }}
           >
             {loadingSetup ? 'Checking...' : 'Continue to payment →'}

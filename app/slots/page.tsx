@@ -9,12 +9,19 @@ function addDays(date: Date, days: number): Date {
   return d
 }
 
+// Format a date as YYYY-MM-DD in Europe/London timezone so server-side dates
+// always match what a UK user's browser considers "today", avoiding off-by-one
+// errors during the 23:00–00:00 UTC window (midnight–01:00 BST).
+function ukDateStr(date: Date): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(date)
+}
+
 export default async function SlotsPage() {
   const supabase = await createClient()
 
   const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
-  const endStr = addDays(today, 14).toISOString().split('T')[0]
+  const todayStr = ukDateStr(today)
+  const endStr = ukDateStr(addDays(today, 14))
 
   // Look up the venue — avoids needing GLOBE_VENUE_ID in env
   const { data: venue } = await supabase
@@ -41,10 +48,14 @@ export default async function SlotsPage() {
 
     for (let i = 0; i < 14; i++) {
       const d = addDays(today, i)
-      getSlotsForDay(d).forEach(t => {
+      const dateStr = ukDateStr(d)
+      // Use noon on the UK date so getDay() returns the correct UK weekday
+      // even during the 23:00–00:00 UTC hour when UTC day != UK day.
+      const ukNoon = new Date(`${dateStr}T12:00:00`)
+      getSlotsForDay(ukNoon).forEach(t => {
         slotInserts.push({
           venue_id: venueId,
-          date: d.toISOString().split('T')[0],
+          date: dateStr,
           start_time: t.startTime,
           end_time: t.endTime,
           type: t.type,
@@ -57,6 +68,20 @@ export default async function SlotsPage() {
     await supabase
       .from('slots')
       .upsert(slotInserts, { onConflict: 'venue_id,date,start_time', ignoreDuplicates: false })
+
+    // Delete filling sessions whose slot date has passed, along with their players.
+    const { data: expiredSessions } = await supabase
+      .from('sessions')
+      .select('id, slots!inner(date)')
+      .eq('status', 'filling')
+      .eq('slots.venue_id', venueId)
+      .lt('slots.date', todayStr)
+
+    if (expiredSessions && expiredSessions.length > 0) {
+      const expiredIds = (expiredSessions as unknown as { id: string }[]).map(s => s.id)
+      await supabase.from('players').delete().in('session_id', expiredIds)
+      await supabase.from('sessions').delete().in('id', expiredIds)
+    }
   }
 
   // Identify the logged-in user so we can highlight slots they've already joined.

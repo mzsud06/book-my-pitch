@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 interface Player {
@@ -53,12 +54,6 @@ function formatDate(dateStr: string): string {
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`
 }
 
-function formatPlayerName(name: string): string {
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) return parts[0]
-  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`
-}
-
 function formatTime(ts: string): string {
   const d = new Date(ts)
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
@@ -68,15 +63,11 @@ function sliceTime(t: string): string {
   return t ? t.slice(0, 5) : t
 }
 
-/* ------------------------------------------------------------------ */
-/* SegBar — module-level component (must NOT be inside SessionClient   */
-/* or Turbopack Fast Refresh crashes tracking component identity)      */
-/* ------------------------------------------------------------------ */
 function SegBar({ count, isConfirmed }: { count: number; isConfirmed: boolean }) {
   const isAmber = count >= 7 && count < 10
   const segClass = isConfirmed ? 'lit-green' : isAmber ? 'lit-amber' : 'lit-green'
   return (
-    <div className="seg-bar" style={{ marginBottom: '8px' }}>
+    <div className="seg-bar" style={{ marginBottom: '10px' }}>
       {Array.from({ length: 10 }, (_, i) => (
         <div
           key={i}
@@ -104,6 +95,18 @@ export default function SessionClient({
   const [sendingMsg, setSendingMsg] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [shareUrl, setShareUrl] = useState(`/session/${session.id}`)
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
+  const [lookupOpen, setLookupOpen] = useState(false)
+  const [lookupPhone, setLookupPhone] = useState('')
+  const [lookupLoading, setLookupLoading] = useState(false)
+  const [foundPlayer, setFoundPlayer] = useState<Player | null>(null)
+  const [lookupDone, setLookupDone] = useState(false)
+  const [myPlayer, setMyPlayer] = useState<{ id: string; name: string } | null>(null)
+  const [myPhone, setMyPhone] = useState<string | null>(null)
+  const [leaveOpen, setLeaveOpen] = useState(false)
+  const [leaveLoading, setLeaveLoading] = useState(false)
+  const [leaveError, setLeaveError] = useState('')
+  const router = useRouter()
 
   useEffect(() => {
     setShareUrl(`${window.location.origin}/session/${session.id}`)
@@ -117,10 +120,12 @@ export default function SessionClient({
   const organiserEntry = session.organiser_name
     ? [{ id: 'organiser', name: session.organiser_name, joined_at: session.created_at, session_id: session.id }]
     : []
-  const allPlayers: Player[] = [...organiserEntry, ...thisSessionPlayers]
+  const otherPlayers = session.organiser_name
+    ? thisSessionPlayers.filter(p => p.name.toLowerCase() !== session.organiser_name?.toLowerCase())
+    : thisSessionPlayers
+  const allPlayers: Player[] = [...organiserEntry, ...otherPlayers]
   const playerCount = allPlayers.length
   const remaining = 10 - playerCount
-  const fillPercent = (playerCount / 10) * 100
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -170,10 +175,111 @@ export default function SessionClient({
     return () => { supabase.removeChannel(channel) }
   }, [session.id])
 
+  useEffect(() => {
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsLoggedIn(!!user)
+
+      // Guest: check localStorage for a prior join to this session
+      try {
+        const sessions = JSON.parse(localStorage.getItem('bmp_my_sessions') ?? '[]')
+        const entry = Array.isArray(sessions)
+          ? sessions.find((b: { sessionId: string }) => b.sessionId === initialSession.id)
+          : null
+        if (entry?.name) {
+          const details = JSON.parse(localStorage.getItem('bmp_player_details') ?? 'null')
+          const phone = details?.phone ?? null
+          setMyPhone(phone)
+          const matched = initialSession.players.find(
+            (p: Player) => p.name.toLowerCase() === entry.name.toLowerCase()
+          )
+          if (matched) {
+            setMyPlayer({ id: matched.id, name: matched.name })
+          } else if (initialSession.organiser_name?.toLowerCase() === entry.name.toLowerCase()) {
+            setMyPlayer({ id: 'organiser', name: entry.name })
+          }
+        }
+      } catch {}
+
+      // Logged-in: detect membership via user metadata name
+      if (user) {
+        const userName: string = user.user_metadata?.name ?? ''
+        if (userName) {
+          const matched = initialSession.players.find(
+            (p: Player) => p.name.toLowerCase() === userName.toLowerCase()
+          )
+          if (matched) setMyPlayer({ id: matched.id, name: matched.name })
+          else if (initialSession.organiser_name?.toLowerCase() === userName.toLowerCase()) {
+            setMyPlayer({ id: 'organiser', name: userName })
+          }
+        }
+      }
+    }
+    init()
+  }, [])
+
+  function toggleLookup() {
+    setLookupOpen(o => {
+      if (o) { setLookupDone(false); setFoundPlayer(null); setLookupPhone('') }
+      return !o
+    })
+  }
+
+  async function handleLookup(e: React.FormEvent) {
+    e.preventDefault()
+    const phone = lookupPhone.trim()
+    if (!phone) return
+    setLookupLoading(true)
+    const { data } = await supabase
+      .from('players')
+      .select('id, name, joined_at, session_id')
+      .eq('session_id', session.id)
+      .eq('phone', phone)
+      .maybeSingle()
+    const player = data as Player | null
+    setFoundPlayer(player)
+    if (player) {
+      setMyPlayer({ id: player.id, name: player.name })
+      setMyPhone(phone)
+    }
+    setLookupDone(true)
+    setLookupLoading(false)
+  }
+
+  async function handleLeave() {
+    setLeaveLoading(true)
+    setLeaveError('')
+    try {
+      const res = await fetch('/api/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id, phone: myPhone }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setLeaveError(json.error ?? 'Something went wrong')
+        setLeaveLoading(false)
+        return
+      }
+      try {
+        const stored = JSON.parse(localStorage.getItem('bmp_my_sessions') ?? '[]')
+        if (Array.isArray(stored)) {
+          localStorage.setItem('bmp_my_sessions', JSON.stringify(
+            stored.filter((b: { sessionId: string }) => b.sessionId !== session.id)
+          ))
+        }
+      } catch {}
+      router.push('/slots')
+    } catch {
+      setLeaveError('Something went wrong. Please try again.')
+      setLeaveLoading(false)
+    }
+  }
+
   function copyLink() {
     navigator.clipboard.writeText(shareUrl).then(() => {
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      setTimeout(() => setCopied(false), 2200)
     })
   }
 
@@ -193,12 +299,15 @@ export default function SessionClient({
   }
 
   const perPlayerPounds = (slot.price / 10 + 0.50 + 0.30).toFixed(2)
+  const isMyPlayerOrganiser = !!(myPlayer && session.organiser_name && myPlayer.name.toLowerCase() === session.organiser_name.toLowerCase())
+  const showLeaveButton = isFilling && !!myPlayer && !isMyPlayerOrganiser
 
-  /* ------------------------------------------------------------------ */
-  /* Player token — used in the lineup grid                              */
-  /* ------------------------------------------------------------------ */
-  function renderPlayerToken(i: number) {
+  function renderPlayerToken(i: number, highlightId?: string, highlightName?: string) {
     const player = allPlayers[i]
+    const isHighlighted = !!(player && (
+      (highlightId && player.id === highlightId) ||
+      (highlightName && player.id === 'organiser' && player.name.toLowerCase() === highlightName.toLowerCase())
+    ))
     const parts = player ? player.name.trim().split(/\s+/) : []
     const firstInitial = parts[0]?.[0]?.toUpperCase() ?? ''
     const lastInitial = parts.length > 1 ? parts[parts.length - 1][0].toUpperCase() : ''
@@ -213,50 +322,58 @@ export default function SessionClient({
         style={{
           position: 'relative',
           flex: 1,
-          height: '58px',
+          height: '60px',
           borderRadius: '10px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           gap: '4px',
-          background: player ? 'rgba(198,241,53,0.1)' : 'rgba(255,255,255,0.02)',
-          border: player
-            ? '1px solid rgba(198,241,53,0.3)'
-            : '1px dashed rgba(255,255,255,0.08)',
-          boxShadow: player ? '0 0 18px rgba(198,241,53,0.1)' : 'none',
+          background: isHighlighted
+            ? 'rgba(198,241,53,0.22)'
+            : player
+            ? 'rgba(198,241,53,0.09)'
+            : 'rgba(255,255,255,0.02)',
+          border: isHighlighted
+            ? '2px solid rgba(198,241,53,0.7)'
+            : player
+            ? '1px solid rgba(198,241,53,0.28)'
+            : '1px dashed rgba(255,255,255,0.07)',
+          boxShadow: isHighlighted
+            ? '0 0 28px rgba(198,241,53,0.35)'
+            : player
+            ? '0 0 20px rgba(198,241,53,0.08)'
+            : 'none',
           animationDelay: `${i * 40}ms`,
+          transition: 'background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
         }}
       >
-        {/* Jersey number */}
         <div
           style={{
             position: 'absolute',
             top: '4px',
-            right: '6px',
+            right: '5px',
             fontSize: '7px',
-            fontWeight: 800,
+            fontWeight: 900,
             fontFamily: "'Archivo Black', sans-serif",
-            color: player ? 'rgba(198,241,53,0.45)' : 'rgba(255,255,255,0.07)',
+            color: player ? 'rgba(198,241,53,0.4)' : 'rgba(255,255,255,0.06)',
             lineHeight: 1,
-            letterSpacing: '0.04em',
           }}
         >
           {i + 1}
         </div>
 
-        {/* Avatar circle */}
         <div
           style={{
-            width: '24px',
-            height: '24px',
+            width: '26px',
+            height: '26px',
             borderRadius: '50%',
             background: player ? 'var(--green)' : 'rgba(255,255,255,0.05)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '9px',
-            fontWeight: 800,
+            fontWeight: 900,
             color: player ? 'var(--black)' : 'transparent',
             flexShrink: 0,
             fontFamily: "'Archivo Black', sans-serif",
@@ -265,24 +382,23 @@ export default function SessionClient({
           {player ? initials : ''}
         </div>
 
-        {/* First name */}
         {player && (
           <div
             style={{
               fontSize: '7px',
               fontWeight: 700,
-              color: 'var(--green)',
+              color: isHighlighted ? 'var(--black)' : 'var(--green)',
               textAlign: 'center',
               lineHeight: 1,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
               maxWidth: '100%',
-              padding: '0 5px',
-              opacity: 0.85,
+              padding: '0 4px',
+              opacity: isHighlighted ? 1 : 0.85,
             }}
           >
-            {firstName}
+            {isHighlighted ? 'You' : firstName}
           </div>
         )}
       </div>
@@ -290,26 +406,28 @@ export default function SessionClient({
   }
 
   return (
-    <div style={{ maxWidth: '460px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+    <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
 
       {/* ============================================================
           CONFIRMED BANNER
           ============================================================ */}
       {isConfirmed && (
-        <div className="anim-fade-up" style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+        <div className="anim-fade-up" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div
             style={{
-              width: '72px',
-              height: '72px',
-              background: 'rgba(198,241,53,0.1)',
-              border: '2px solid rgba(198,241,53,0.3)',
+              width: '80px',
+              height: '80px',
+              background: 'rgba(198,241,53,0.08)',
+              border: '2px solid rgba(198,241,53,0.28)',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '30px',
+              fontSize: '32px',
               margin: '0 auto 1.25rem',
               animation: 'checkPulse 1.2s ease-out 0.4s both',
+              color: 'var(--green)',
+              fontWeight: 900,
             }}
           >
             ✓
@@ -317,80 +435,118 @@ export default function SessionClient({
           <div
             style={{
               fontFamily: "'Archivo Black', sans-serif",
-              fontSize: '28px',
-              letterSpacing: '-0.035em',
-              marginBottom: '0.5rem',
+              fontSize: '30px',
+              letterSpacing: '-0.04em',
+              marginBottom: '0.6rem',
             }}
           >
             You&apos;re confirmed!
           </div>
-          <div style={{ fontSize: '16px', color: 'var(--muted)', lineHeight: 1.65, marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '16px', color: 'var(--muted)', lineHeight: 1.7, maxWidth: '320px', margin: '0 auto 1.5rem', fontWeight: 500 }}>
             All 10 players paid. Venue notified. See you on the pitch.
           </div>
         </div>
       )}
 
-      {/* Already in banner */}
+      {/* Alert banners */}
       {alreadyIn && (
         <div
           style={{
             background: 'rgba(198,241,53,0.06)',
             border: '1px solid rgba(198,241,53,0.22)',
-            borderRadius: '10px',
-            padding: '0.9rem 1.1rem',
+            borderRadius: '12px',
+            padding: '1rem 1.2rem',
             marginBottom: '1.25rem',
             fontSize: '15px',
             color: 'var(--green)',
             fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
           }}
         >
-          👋 You&apos;re already in this game!
+          <span
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              background: 'var(--green)',
+              color: 'var(--black)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              fontWeight: 900,
+              flexShrink: 0,
+            }}
+          >
+            ✓
+          </span>
+          You&apos;re already in this game!
         </div>
       )}
 
-      {/* Game created banner */}
       {justCreated && isFilling && (
         <div
           style={{
-            background: 'rgba(198,241,53,0.06)',
-            border: '1px solid rgba(198,241,53,0.22)',
-            borderRadius: '12px',
-            padding: '1rem 1.15rem',
+            background: 'linear-gradient(135deg, rgba(198,241,53,0.07) 0%, rgba(198,241,53,0.03) 100%)',
+            border: '1px solid rgba(198,241,53,0.25)',
+            borderRadius: '14px',
+            padding: '1.15rem 1.25rem',
             marginBottom: '1.25rem',
           }}
         >
           <div
             style={{
               fontFamily: "'Archivo Black', sans-serif",
-              fontSize: '16px',
+              fontSize: '17px',
               color: 'var(--green)',
-              marginBottom: '4px',
-              letterSpacing: '-0.02em',
+              marginBottom: '5px',
+              letterSpacing: '-0.025em',
             }}
           >
-            Game created! 🎉
+            Game created!
           </div>
-          <div style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: 1.55, fontWeight: 500 }}>
+          <div style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 500 }}>
             Share the link below with your mates. When 10 players join, everyone pays automatically.
           </div>
         </div>
       )}
 
-      {/* Just joined banner */}
       {justJoined && isFilling && (
         <div
           style={{
             background: 'rgba(198,241,53,0.06)',
-            border: '1px solid rgba(198,241,53,0.18)',
-            borderRadius: '10px',
-            padding: '0.9rem 1.1rem',
+            border: '1px solid rgba(198,241,53,0.2)',
+            borderRadius: '12px',
+            padding: '1rem 1.2rem',
             marginBottom: '1.25rem',
             fontSize: '15px',
             color: 'var(--green)',
             fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
           }}
         >
-          ✓ You&apos;re in! Share the link below to fill the remaining spots.
+          <span
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              background: 'var(--green)',
+              color: 'var(--black)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              fontWeight: 900,
+              flexShrink: 0,
+            }}
+          >
+            ✓
+          </span>
+          You&apos;re in! Share the link to fill the remaining spots.
         </div>
       )}
 
@@ -401,12 +557,13 @@ export default function SessionClient({
         className="anim-fade-up d-100"
         style={{
           background: isConfirmed
-            ? 'linear-gradient(135deg, rgba(198,241,53,0.05) 0%, var(--surface) 100%)'
-            : 'var(--surface)',
-          border: `1px solid ${isConfirmed ? 'rgba(198,241,53,0.25)' : isFilling ? 'rgba(198,241,53,0.12)' : 'var(--border)'}`,
-          borderRadius: '16px',
-          padding: '1.35rem',
+            ? 'linear-gradient(145deg, rgba(198,241,53,0.05) 0%, #0f0f0f 100%)'
+            : 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+          border: `1px solid ${isConfirmed ? 'rgba(198,241,53,0.28)' : isFilling ? 'rgba(198,241,53,0.12)' : 'rgba(255,255,255,0.07)'}`,
+          borderRadius: '18px',
+          padding: '1.5rem',
           marginBottom: '1.25rem',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
         }}
       >
         {/* Slot info */}
@@ -414,10 +571,10 @@ export default function SessionClient({
           style={{
             fontSize: '10px',
             color: 'var(--muted)',
-            marginBottom: '4px',
+            marginBottom: '5px',
             fontWeight: 700,
             textTransform: 'uppercase',
-            letterSpacing: '0.08em',
+            letterSpacing: '0.1em',
           }}
         >
           {slot.venues?.name ?? 'Globe Football Pitch'} · Bethnal Green
@@ -425,9 +582,9 @@ export default function SessionClient({
         <div
           style={{
             fontFamily: "'Archivo Black', sans-serif",
-            fontSize: '24px',
+            fontSize: '28px',
             letterSpacing: '-0.04em',
-            marginBottom: '2px',
+            marginBottom: '3px',
             lineHeight: 1,
           }}
         >
@@ -437,70 +594,60 @@ export default function SessionClient({
           {formatDate(slot.date)} · {slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'} · 5-a-side
         </div>
 
-        {/* ============================================================
-            TEAM LINEUP — 2 rows of 5 with center divider
-            ============================================================ */}
-        <div style={{ marginBottom: '1.1rem' }}>
-          {/* Row 1: spots 1–5 */}
+        {/* TEAM LINEUP */}
+        <div style={{ marginBottom: '1.2rem' }}>
           <div style={{ display: 'flex', gap: '5px', marginBottom: '0' }}>
-            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i))}
+            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i, foundPlayer?.id, foundPlayer?.name))}
           </div>
-
-          {/* Center line */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              margin: '8px 0',
-            }}
-          >
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
             <div
               style={{
                 fontSize: '7px',
                 fontWeight: 700,
-                color: 'rgba(255,255,255,0.14)',
-                letterSpacing: '0.12em',
+                color: 'rgba(255,255,255,0.12)',
+                letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 flexShrink: 0,
               }}
             >
               5-a-side
             </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
           </div>
-
-          {/* Row 2: spots 6–10 */}
           <div style={{ display: 'flex', gap: '5px' }}>
-            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i + 5))}
+            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i + 5, foundPlayer?.id, foundPlayer?.name))}
           </div>
         </div>
 
-        {/* Segmented fill bar */}
         <SegBar count={playerCount} isConfirmed={isConfirmed} />
 
-        {/* Player count */}
-        <div style={{ fontSize: '14px', color: 'var(--muted)', textAlign: 'center' }}>
+        <div style={{ fontSize: '14px', color: 'var(--muted)', textAlign: 'center', fontWeight: 600 }}>
           {isConfirmed ? (
-            <strong style={{ color: 'var(--green)' }}>Confirmed — all 10 players ✓</strong>
+            <strong style={{ color: 'var(--green)', fontWeight: 800 }}>Confirmed — all 10 players ✓</strong>
           ) : (
             <>
-              <strong style={{ color: 'var(--text)' }}>{playerCount}/10 players</strong>
+              <strong style={{ color: 'var(--text)', fontWeight: 800 }}>{playerCount}/10 players</strong>
               {' '}— {remaining} more needed
             </>
           )}
         </div>
+
+        {session.organiser_name && (
+          <div style={{ fontSize: '12px', color: 'var(--muted)', textAlign: 'center', fontWeight: 500, marginTop: '0.6rem', opacity: 0.7 }}>
+            Organiser: {session.organiser_name}{session.organiser_phone ? ` · ${session.organiser_phone}` : ''}
+          </div>
+        )}
       </div>
 
       {/* Rival alert */}
       {hasRival && isFilling && (
         <div
           style={{
-            background: 'rgba(255,184,0,0.07)',
+            background: 'rgba(255,184,0,0.06)',
             border: '1px solid rgba(255,184,0,0.22)',
-            borderRadius: '10px',
-            padding: '0.8rem 1rem',
+            borderRadius: '12px',
+            padding: '0.9rem 1.1rem',
             marginBottom: '1.25rem',
             fontSize: '14px',
             color: 'var(--amber)',
@@ -508,9 +655,11 @@ export default function SessionClient({
             gap: '8px',
             lineHeight: 1.55,
             fontWeight: 600,
+            alignItems: 'center',
           }}
         >
-          ⚡ Another group is also trying to fill this slot. First to 10 gets it.
+          <span style={{ flexShrink: 0, fontSize: '16px' }}>⚡</span>
+          <span>Another group is also trying to fill this slot. First to 10 gets it.</span>
         </div>
       )}
 
@@ -520,13 +669,24 @@ export default function SessionClient({
       {isConfirmed && (
         <div
           style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: '16px',
-            padding: '1.35rem',
+            background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '18px',
+            padding: '1.5rem',
             marginBottom: '1.5rem',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
           }}
         >
+          <div
+            style={{
+              fontFamily: "'Archivo Black', sans-serif",
+              fontSize: '15px',
+              letterSpacing: '-0.025em',
+              marginBottom: '1rem',
+            }}
+          >
+            Booking details
+          </div>
           {[
             { label: 'Pitch', val: slot.venues?.name ?? 'Globe Football Pitch' },
             { label: 'Address', val: slot.venues?.address ?? '110 Globe Rd, Bethnal Green E1 4DZ' },
@@ -542,7 +702,7 @@ export default function SessionClient({
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 fontSize: '14px',
-                padding: '0.55rem 0',
+                padding: '0.6rem 0',
                 borderBottom: idx < arr.length - 1 ? '1px solid var(--border)' : 'none',
               }}
             >
@@ -551,6 +711,7 @@ export default function SessionClient({
                 style={{
                   fontWeight: 800,
                   color: row.label === 'Your cost' || row.label === 'Status' ? 'var(--green)' : 'var(--text)',
+                  letterSpacing: '-0.01em',
                 }}
               >
                 {row.val}
@@ -561,47 +722,47 @@ export default function SessionClient({
       )}
 
       {/* ============================================================
-          SHARE SECTION — filling sessions
+          SHARE SECTION
           ============================================================ */}
       {isFilling && (
         <>
           <div
             className="anim-fade-up d-200"
             style={{
-              background: 'linear-gradient(135deg, rgba(198,241,53,0.08) 0%, rgba(198,241,53,0.03) 100%)',
-              border: '1px solid rgba(198,241,53,0.3)',
-              borderRadius: '16px',
-              padding: '1.35rem',
-              marginBottom: '1.1rem',
+              background: 'linear-gradient(145deg, rgba(198,241,53,0.07) 0%, rgba(198,241,53,0.03) 100%)',
+              border: '1px solid rgba(198,241,53,0.28)',
+              borderRadius: '18px',
+              padding: '1.5rem',
+              marginBottom: '1rem',
             }}
           >
             <div
               style={{
                 fontFamily: "'Archivo Black', sans-serif",
-                fontSize: '17px',
-                letterSpacing: '-0.025em',
-                marginBottom: '4px',
+                fontSize: '18px',
+                letterSpacing: '-0.03em',
+                marginBottom: '5px',
               }}
             >
               Share with your team
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '1rem', lineHeight: 1.55, fontWeight: 500 }}>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '1.1rem', lineHeight: 1.6, fontWeight: 500 }}>
               {remaining} spot{remaining !== 1 ? 's' : ''} left. Send this link to fill them.
             </div>
 
             {/* URL display */}
             <div
               style={{
-                background: 'rgba(0,0,0,0.35)',
-                borderRadius: '8px',
-                padding: '0.75rem 1rem',
+                background: 'rgba(0,0,0,0.4)',
+                borderRadius: '10px',
+                padding: '0.8rem 1rem',
                 fontSize: '11px',
-                color: 'rgba(198,241,53,0.7)',
+                color: 'rgba(198,241,53,0.65)',
                 wordBreak: 'break-all',
                 lineHeight: 1.55,
-                marginBottom: '0.9rem',
+                marginBottom: '1rem',
                 fontFamily: 'monospace',
-                border: '1px solid rgba(198,241,53,0.12)',
+                border: '1px solid rgba(198,241,53,0.1)',
                 letterSpacing: '0.01em',
               }}
             >
@@ -615,37 +776,39 @@ export default function SessionClient({
                 onClick={copyLink}
                 style={{
                   flex: 1,
-                  padding: '0.85rem',
-                  borderRadius: '8px',
+                  padding: '0.9rem',
+                  borderRadius: '10px',
                   border: 'none',
                   background: 'var(--green)',
                   color: 'var(--black)',
                   fontFamily: "'Archivo Black', sans-serif",
-                  fontWeight: 800,
+                  fontWeight: 900,
                   fontSize: '13px',
-                  letterSpacing: '-0.01em',
+                  letterSpacing: '-0.015em',
                   cursor: 'pointer',
                   transition: 'background 0.18s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                  lineHeight: 1,
                 }}
               >
-                {copied ? '✓ Copied!' : '📋 Copy link'}
+                {copied ? '✓ Copied!' : 'Copy link'}
               </button>
               <button
                 className="share-wa"
                 onClick={shareWhatsApp}
                 style={{
                   flex: 1,
-                  padding: '0.85rem',
-                  borderRadius: '8px',
+                  padding: '0.9rem',
+                  borderRadius: '10px',
                   border: 'none',
                   background: '#25D366',
                   color: '#fff',
                   fontFamily: "'Archivo Black', sans-serif",
-                  fontWeight: 800,
+                  fontWeight: 900,
                   fontSize: '13px',
-                  letterSpacing: '-0.01em',
+                  letterSpacing: '-0.015em',
                   cursor: 'pointer',
                   transition: 'background 0.18s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                  lineHeight: 1,
                 }}
               >
                 WhatsApp →
@@ -663,22 +826,343 @@ export default function SessionClient({
               className="join-btn"
               style={{
                 width: '100%',
-                padding: '1rem',
-                fontSize: '15px',
-                borderRadius: '12px',
-                border: '1px solid rgba(255,255,255,0.08)',
+                padding: '1.25rem',
+                fontSize: '18px',
+                borderRadius: '14px',
+                border: 'none',
                 cursor: 'pointer',
-                background: 'var(--surface)',
-                color: 'var(--text)',
-                fontFamily: "'Archivo', sans-serif",
-                fontWeight: 700,
-                transition: 'border-color 0.2s ease, background 0.2s ease, transform 0.2s var(--ease-out), box-shadow 0.2s ease',
+                background: '#C6F135',
+                color: '#000',
+                fontFamily: "'Archivo Black', sans-serif",
+                fontWeight: 900,
+                letterSpacing: '-0.03em',
+                transition: 'transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                lineHeight: 1,
+                boxShadow: '0 6px 28px rgba(198,241,53,0.35)',
               }}
             >
               Join this session — £{perPlayerPounds} if confirmed
             </button>
           </Link>
         </>
+      )}
+
+      {/* ============================================================
+          ALREADY JOINED? — guest lookup
+          ============================================================ */}
+      {isLoggedIn === false && !alreadyIn && !justJoined && !justCreated && (
+        <div className="anim-fade-up d-350" style={{ marginBottom: '1.25rem' }}>
+          <button
+            onClick={toggleLookup}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1rem',
+              background: 'transparent',
+              border: '1px dashed rgba(255,255,255,0.12)',
+              borderRadius: '10px',
+              color: 'var(--muted)',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: "'Archivo', sans-serif",
+              letterSpacing: '-0.01em',
+              transition: 'border-color 0.15s ease, color 0.15s ease',
+              textAlign: 'center',
+              lineHeight: 1,
+            }}
+          >
+            {lookupOpen ? '↑' : '↓'} Already joined this game?
+          </button>
+
+          {lookupOpen && (
+            <div
+              style={{
+                marginTop: '8px',
+                background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: '14px',
+                padding: '1.25rem',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+              }}
+            >
+              {!lookupDone ? (
+                <form onSubmit={handleLookup}>
+                  <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, marginBottom: '0.85rem', lineHeight: 1.6 }}>
+                    Enter the phone number you used when you joined.
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="tel"
+                      value={lookupPhone}
+                      onChange={e => {
+                        const raw = e.target.value.replace(/[^0-9+]/g, '')
+                        setLookupPhone((raw.startsWith('+') ? '+' : '') + raw.replace(/\+/g, ''))
+                      }}
+                      placeholder="+44 7700 000000"
+                      autoComplete="tel"
+                      style={{
+                        flex: 1,
+                        background: 'var(--surface2)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '10px',
+                        padding: '0.8rem 1rem',
+                        color: 'var(--text)',
+                        fontFamily: "'Archivo', sans-serif",
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        outline: 'none',
+                        transition: 'border-color 0.15s ease',
+                        minWidth: 0,
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={lookupLoading || !lookupPhone.trim()}
+                      style={{
+                        padding: '0.8rem 1.1rem',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: lookupLoading || !lookupPhone.trim() ? 'var(--surface2)' : 'var(--green)',
+                        color: lookupLoading || !lookupPhone.trim() ? 'var(--muted)' : 'var(--black)',
+                        fontFamily: "'Archivo Black', sans-serif",
+                        fontWeight: 900,
+                        fontSize: '13px',
+                        letterSpacing: '-0.015em',
+                        cursor: lookupLoading || !lookupPhone.trim() ? 'not-allowed' : 'pointer',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        lineHeight: 1,
+                        transition: 'background 0.15s ease, color 0.15s ease',
+                      }}
+                    >
+                      {lookupLoading ? '…' : 'Find my spot'}
+                    </button>
+                  </div>
+                </form>
+              ) : foundPlayer ? (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.85rem' }}>
+                    <span
+                      style={{
+                        width: '34px',
+                        height: '34px',
+                        borderRadius: '50%',
+                        background: 'var(--green)',
+                        color: 'var(--black)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '14px',
+                        fontWeight: 900,
+                        flexShrink: 0,
+                        fontFamily: "'Archivo Black', sans-serif",
+                      }}
+                    >
+                      ✓
+                    </span>
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: "'Archivo Black', sans-serif",
+                          fontSize: '16px',
+                          letterSpacing: '-0.025em',
+                          color: 'var(--text)',
+                          lineHeight: 1.1,
+                          marginBottom: '2px',
+                        }}
+                      >
+                        You&apos;re in, {foundPlayer.name.split(' ')[0]}!
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>
+                        Your spot is highlighted in the grid above.
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setLookupDone(false); setFoundPlayer(null); setLookupPhone('') }}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--muted)',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      padding: 0,
+                      fontFamily: "'Archivo', sans-serif",
+                      fontWeight: 600,
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    Check a different number
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ marginBottom: '0.85rem' }}>
+                    <div
+                      style={{
+                        fontFamily: "'Archivo Black', sans-serif",
+                        fontSize: '15px',
+                        letterSpacing: '-0.025em',
+                        color: 'var(--text)',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Not in this session
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6 }}>
+                      That number doesn&apos;t match anyone in this game yet.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    {isFilling && (
+                      <Link href={`/session/${session.id}/join`} style={{ textDecoration: 'none' }}>
+                        <button
+                          className="btn-g"
+                          style={{
+                            padding: '0.65rem 1.25rem',
+                            borderRadius: '10px',
+                            border: 'none',
+                            background: 'var(--green)',
+                            color: 'var(--black)',
+                            fontFamily: "'Archivo Black', sans-serif",
+                            fontWeight: 900,
+                            fontSize: '13px',
+                            letterSpacing: '-0.015em',
+                            cursor: 'pointer',
+                            lineHeight: 1,
+                            transition: 'background 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                          }}
+                        >
+                          Join this session →
+                        </button>
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => { setLookupDone(false); setLookupPhone('') }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--muted)',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontFamily: "'Archivo', sans-serif",
+                        fontWeight: 600,
+                        letterSpacing: '-0.01em',
+                      }}
+                    >
+                      Try again
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ============================================================
+          LEAVE GAME
+          ============================================================ */}
+      {showLeaveButton && (
+        <div className="anim-fade-up d-400" style={{ marginBottom: '1.25rem' }}>
+          {!leaveOpen ? (
+            <button
+              onClick={() => setLeaveOpen(true)}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1rem',
+                background: 'transparent',
+                border: '1px solid rgba(255,68,68,0.18)',
+                borderRadius: '10px',
+                color: 'var(--red)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: "'Archivo', sans-serif",
+                letterSpacing: '-0.01em',
+                transition: 'border-color 0.15s ease',
+                textAlign: 'center',
+                lineHeight: 1,
+                opacity: 0.7,
+              }}
+            >
+              Leave game
+            </button>
+          ) : (
+            <div
+              style={{
+                background: 'linear-gradient(145deg, rgba(255,68,68,0.04) 0%, #0f0f0f 100%)',
+                border: '1px solid rgba(255,68,68,0.2)',
+                borderRadius: '14px',
+                padding: '1.25rem',
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontSize: '15px',
+                  letterSpacing: '-0.025em',
+                  color: 'var(--text)',
+                  marginBottom: '6px',
+                }}
+              >
+                Leave this game?
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+                Your spot will be gone and you won&apos;t be charged. This can&apos;t be undone.
+              </div>
+              {leaveError && (
+                <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
+                  {leaveError}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => { setLeaveOpen(false); setLeaveError('') }}
+                  disabled={leaveLoading}
+                  style={{
+                    flex: 1,
+                    padding: '0.8rem',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border)',
+                    background: 'transparent',
+                    color: 'var(--muted)',
+                    fontFamily: "'Archivo Black', sans-serif",
+                    fontWeight: 900,
+                    fontSize: '13px',
+                    letterSpacing: '-0.015em',
+                    cursor: 'pointer',
+                    lineHeight: 1,
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLeave}
+                  disabled={leaveLoading}
+                  style={{
+                    flex: 1,
+                    padding: '0.8rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: leaveLoading ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.85)',
+                    color: '#fff',
+                    fontFamily: "'Archivo Black', sans-serif",
+                    fontWeight: 900,
+                    fontSize: '13px',
+                    letterSpacing: '-0.015em',
+                    cursor: leaveLoading ? 'not-allowed' : 'pointer',
+                    lineHeight: 1,
+                    transition: 'background 0.15s ease',
+                  }}
+                >
+                  {leaveLoading ? 'Leaving…' : 'Yes, leave'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* ============================================================
@@ -689,26 +1173,27 @@ export default function SessionClient({
           <div
             style={{
               fontFamily: "'Archivo Black', sans-serif",
-              fontSize: '17px',
-              letterSpacing: '-0.025em',
-              marginBottom: '0.85rem',
+              fontSize: '18px',
+              letterSpacing: '-0.03em',
+              marginBottom: '1rem',
             }}
           >
             Session chat
           </div>
           <div
             style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: '14px',
+              background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: '16px',
               padding: '1rem',
-              minHeight: '200px',
-              maxHeight: '360px',
+              minHeight: '180px',
+              maxHeight: '340px',
               overflowY: 'auto',
               marginBottom: '0.75rem',
               display: 'flex',
               flexDirection: 'column',
               gap: '6px',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
             }}
           >
             {messages.length === 0 ? (
@@ -722,14 +1207,14 @@ export default function SessionClient({
                   fontWeight: 500,
                 }}
               >
-                No messages yet. Say something! ⚽
+                No messages yet. Say something!
               </div>
             ) : messages.map(msg => (
               <div key={msg.id} style={{ fontSize: '14px', lineHeight: 1.55 }}>
                 <span style={{ color: 'var(--muted)', fontSize: '11px', marginRight: '8px', fontWeight: 500 }}>
                   {formatTime(msg.created_at)}
                 </span>
-                <span>{msg.content}</span>
+                <span style={{ fontWeight: 600 }}>{msg.content}</span>
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -744,10 +1229,11 @@ export default function SessionClient({
                 flex: 1,
                 background: 'var(--surface2)',
                 border: '1px solid var(--border)',
-                borderRadius: '8px',
-                padding: '0.65rem 0.9rem',
+                borderRadius: '10px',
+                padding: '0.75rem 1rem',
                 color: 'var(--text)',
                 fontFamily: "'Archivo', sans-serif",
+                fontWeight: 600,
                 fontSize: '14px',
                 transition: 'border-color 0.15s ease',
               }}
@@ -757,17 +1243,18 @@ export default function SessionClient({
               type="submit"
               disabled={sendingMsg || !newMsg.trim()}
               style={{
-                padding: '0.65rem 1.15rem',
-                borderRadius: '8px',
+                padding: '0.75rem 1.25rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: 'var(--green)',
                 color: 'var(--black)',
                 fontFamily: "'Archivo Black', sans-serif",
-                fontWeight: 800,
+                fontWeight: 900,
                 fontSize: '13px',
-                letterSpacing: '-0.01em',
+                letterSpacing: '-0.015em',
                 cursor: 'pointer',
                 transition: 'background 0.15s ease, transform 0.12s ease',
+                lineHeight: 1,
               }}
             >
               Send
@@ -776,20 +1263,64 @@ export default function SessionClient({
         </div>
       )}
 
-      <div style={{ marginTop: '1.75rem', textAlign: 'center' }}>
+      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
         <Link
           href="/slots"
           style={{
             fontSize: '13px',
             color: 'var(--muted)',
             textDecoration: 'none',
-            fontWeight: 500,
+            fontWeight: 600,
             transition: 'color 0.15s ease',
+            letterSpacing: '-0.01em',
           }}
         >
           ← Browse all slots
         </Link>
       </div>
+
+      {isFilling && (
+        <>
+          <style>{`@media (min-width: 641px){.sticky-join-bar,.sticky-join-spacer{display:none!important}}`}</style>
+          <div className="sticky-join-spacer" style={{ height: '88px' }} />
+          <div
+            className="sticky-join-bar"
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              padding: '0.85rem 1.25rem calc(0.85rem + env(safe-area-inset-bottom))',
+              background: 'rgba(10,10,10,0.92)',
+              backdropFilter: 'blur(14px)',
+              WebkitBackdropFilter: 'blur(14px)',
+              borderTop: '1px solid rgba(255,255,255,0.07)',
+              zIndex: 100,
+            }}
+          >
+            <Link href={`/session/${session.id}/join`} style={{ textDecoration: 'none', display: 'block' }}>
+              <button
+                style={{
+                  width: '100%',
+                  padding: '1.1rem',
+                  fontSize: '17px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: '#C6F135',
+                  color: '#000',
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontWeight: 900,
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1,
+                }}
+              >
+                Join this session — £{perPlayerPounds} if confirmed
+              </button>
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -5,62 +5,78 @@ export default function HomePage() {
   return (
     <>
       <Nav />
-      <main>
+      <main style={{ position: 'relative', zIndex: 1 }}>
+
         {/* ============================================================
             HERO
             ============================================================ */}
         <section
           className="hero-grid"
           style={{
-            maxWidth: '1100px',
+            maxWidth: '1140px',
             margin: '0 auto',
-            padding: '5rem 1.5rem 3.5rem',
+            padding: '6rem 2rem 4rem',
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
-            gap: '4rem',
+            gap: '5rem',
             alignItems: 'center',
           }}
         >
-          {/* LEFT — headline + CTA */}
+          {/* LEFT */}
           <div>
+            {/* Eyebrow */}
             <div
-              className="anim-fade-up d-100"
+              className="anim-fade-up d-60"
               style={{
-                fontSize: '10px',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase',
-                color: 'var(--green)',
-                marginBottom: '1.5rem',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '10px',
+                marginBottom: '1.75rem',
               }}
             >
-              <span style={{ width: '24px', height: '2px', background: 'var(--green)', display: 'block', borderRadius: '2px' }} />
-              Globe Pitch · Bethnal Green
+              <span
+                style={{
+                  width: '28px',
+                  height: '2px',
+                  background: 'var(--green)',
+                  display: 'block',
+                  borderRadius: '2px',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: 'var(--green)',
+                }}
+              >
+                Globe Pitch · Bethnal Green
+              </span>
             </div>
 
+            {/* Headline */}
             <h1
-              className="anim-fade-up d-150"
+              className="anim-fade-up d-100"
               style={{
                 fontFamily: "'Archivo Black', sans-serif",
-                fontSize: 'clamp(56px, 6.8vw, 100px)',
-                lineHeight: 0.9,
-                letterSpacing: '-0.035em',
-                marginBottom: '1.5rem',
-                margin: '0 0 0.25rem',
+                fontSize: 'clamp(58px, 7.5vw, 112px)',
+                lineHeight: 0.88,
+                letterSpacing: '-0.04em',
+                margin: '0 0 0.1em',
               }}
             >
               Fill the team.
             </h1>
             <h1
-              className="anim-fade-up d-200"
+              className="anim-fade-up d-160"
               style={{
                 fontFamily: "'Archivo Black', sans-serif",
-                fontSize: 'clamp(56px, 6.8vw, 100px)',
-                lineHeight: 0.9,
-                letterSpacing: '-0.035em',
+                fontSize: 'clamp(58px, 7.5vw, 112px)',
+                lineHeight: 0.88,
+                letterSpacing: '-0.04em',
                 color: 'var(--green)',
                 marginBottom: '1.75rem',
               }}
@@ -69,12 +85,12 @@ export default function HomePage() {
             </h1>
 
             <p
-              className="anim-fade-up d-300"
+              className="anim-fade-up d-240"
               style={{
                 fontSize: '17px',
                 color: 'var(--muted)',
-                lineHeight: 1.7,
-                maxWidth: '380px',
+                lineHeight: 1.75,
+                maxWidth: '360px',
                 marginBottom: '2.25rem',
                 fontWeight: 500,
               }}
@@ -82,21 +98,23 @@ export default function HomePage() {
               Share a link with your mates. Once 10 players join, everyone pays their share. The pitch is yours.
             </p>
 
-            <div className="anim-fade-up d-400" style={{ marginBottom: '3rem' }}>
+            {/* CTA */}
+            <div className="anim-fade-up d-320" style={{ marginBottom: '3.5rem' }}>
               <Link href="/slots" style={{ textDecoration: 'none' }}>
                 <button
                   className="btn-g"
                   style={{
                     fontFamily: "'Archivo Black', sans-serif",
                     fontSize: '16px',
-                    padding: '0.9rem 2.25rem',
-                    borderRadius: '8px',
+                    letterSpacing: '-0.025em',
+                    padding: '1rem 2.5rem',
+                    borderRadius: '10px',
                     border: 'none',
                     cursor: 'pointer',
                     background: 'var(--green)',
                     color: 'var(--black)',
-                    letterSpacing: '-0.02em',
                     transition: 'background 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                    lineHeight: 1,
                   }}
                 >
                   Find a slot →
@@ -106,24 +124,34 @@ export default function HomePage() {
 
             {/* Stats */}
             <div
-              className="anim-fade-up d-500"
+              className="anim-fade-up d-420"
               style={{
                 display: 'flex',
-                gap: '2.5rem',
+                gap: '0',
                 paddingTop: '2rem',
                 borderTop: '1px solid var(--border)',
               }}
             >
               {[
-                { n: '10', l: 'players needed', delay: 500 },
-                { n: '£0', l: 'charged until full', delay: 560 },
-                { n: '4G', l: 'all-weather', delay: 620 },
-              ].map(item => (
-                <div key={item.l} className="anim-fade-up" style={{ animationDelay: `${item.delay}ms` }}>
+                { n: '10', l: 'players needed' },
+                { n: '£0', l: 'charged until full' },
+                { n: '4G', l: 'all-weather pitch' },
+              ].map((item, idx) => (
+                <div
+                  key={item.l}
+                  className="anim-fade-up"
+                  style={{
+                    animationDelay: `${460 + idx * 55}ms`,
+                    flex: 1,
+                    paddingRight: idx < 2 ? '2rem' : 0,
+                    borderRight: idx < 2 ? '1px solid var(--border)' : 'none',
+                    marginRight: idx < 2 ? '2rem' : 0,
+                  }}
+                >
                   <div
                     style={{
                       fontFamily: "'Archivo Black', sans-serif",
-                      fontSize: '42px',
+                      fontSize: 'clamp(32px, 4vw, 48px)',
                       color: 'var(--green)',
                       lineHeight: 1,
                       letterSpacing: '-0.04em',
@@ -135,9 +163,9 @@ export default function HomePage() {
                     style={{
                       fontSize: '10px',
                       color: 'var(--muted)',
-                      marginTop: '5px',
+                      marginTop: '6px',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
+                      letterSpacing: '0.1em',
                       fontWeight: 700,
                     }}
                   >
@@ -150,41 +178,38 @@ export default function HomePage() {
 
           {/* RIGHT — live slot preview cards */}
           <div
-            className="anim-fade-up d-250"
-            style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+            className="anim-fade-up d-200"
+            style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
           >
             {[
               {
                 label: 'Peak · Every day',
                 labelColor: '#FF6B6B',
-                labelBg: 'rgba(255,68,68,0.14)',
+                labelBg: 'rgba(255,68,68,0.12)',
                 time: '18:30 – 19:30',
-                pp: '£5.30',
+                pp: '£5.00',
                 players: 8,
                 rival: true,
-                barColor: 'var(--amber)',
                 segClass: 'lit-amber',
               },
               {
-                label: 'Off-peak · Mon-Fri',
+                label: 'Off-peak · Mon–Fri',
                 labelColor: 'var(--green)',
-                labelBg: 'rgba(198,241,53,0.1)',
+                labelBg: 'rgba(198,241,53,0.09)',
                 time: '16:30 – 17:30',
-                pp: '£3.30',
+                pp: '£3.00',
                 players: 4,
                 rival: false,
-                barColor: 'var(--green)',
                 segClass: 'lit-green',
               },
               {
                 label: 'Weekend',
                 labelColor: '#00B4FF',
-                labelBg: 'rgba(0,180,255,0.1)',
+                labelBg: 'rgba(0,180,255,0.09)',
                 time: '11:00 – 12:00',
-                pp: '£4.30',
+                pp: '£4.00',
                 players: 2,
                 rival: false,
-                barColor: 'var(--green)',
                 segClass: 'lit-green',
               },
             ].map((card, idx) => (
@@ -192,36 +217,36 @@ export default function HomePage() {
                 key={card.time}
                 href="/slots"
                 className="slot-card-link anim-scale-in"
-                style={{ animationDelay: `${340 + idx * 100}ms` }}
+                style={{ animationDelay: `${300 + idx * 90}ms` }}
               >
                 <div
                   className="slot-card"
                   style={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '16px',
+                    background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+                    border: '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: '18px',
                     overflow: 'hidden',
                     cursor: 'pointer',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
                   }}
                 >
-                  {/* Card header */}
-                  <div style={{ padding: '1.1rem 1.35rem 0.85rem' }}>
+                  <div style={{ padding: '1.5rem 1.75rem 1.4rem' }}>
                     <div
                       style={{
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'flex-start',
-                        marginBottom: '0.85rem',
+                        marginBottom: '1.1rem',
                       }}
                     >
                       <div>
                         <div
                           style={{
                             fontFamily: "'Archivo Black', sans-serif",
-                            fontSize: '22px',
+                            fontSize: '26px',
                             letterSpacing: '-0.04em',
                             lineHeight: 1,
-                            marginBottom: '8px',
+                            marginBottom: '10px',
                           }}
                         >
                           {card.time}
@@ -230,10 +255,10 @@ export default function HomePage() {
                           style={{
                             fontSize: '9px',
                             fontWeight: 700,
-                            letterSpacing: '0.1em',
+                            letterSpacing: '0.12em',
                             textTransform: 'uppercase',
-                            padding: '3px 8px',
-                            borderRadius: '4px',
+                            padding: '3px 9px',
+                            borderRadius: '5px',
                             background: card.labelBg,
                             color: card.labelColor,
                           }}
@@ -245,7 +270,7 @@ export default function HomePage() {
                         <div
                           style={{
                             fontFamily: "'Archivo Black', sans-serif",
-                            fontSize: '26px',
+                            fontSize: '32px',
                             color: 'var(--green)',
                             letterSpacing: '-0.04em',
                             lineHeight: 1,
@@ -253,14 +278,14 @@ export default function HomePage() {
                         >
                           {card.pp}
                         </div>
-                        <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '3px' }}>
+                        <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '4px', fontWeight: 500 }}>
                           per player
                         </div>
                       </div>
                     </div>
 
-                    {/* Segmented bar — 10 discrete slots */}
-                    <div className="seg-bar" style={{ marginBottom: '7px' }}>
+                    {/* Segmented bar */}
+                    <div className="seg-bar" style={{ marginBottom: '8px' }}>
                       {Array.from({ length: 10 }, (_, i) => (
                         <div
                           key={i}
@@ -276,15 +301,21 @@ export default function HomePage() {
                         justifyContent: 'space-between',
                         fontSize: '11px',
                         color: 'var(--muted)',
+                        marginTop: '2px',
                       }}
                     >
                       {card.rival ? (
-                        <span style={{ color: 'var(--amber)', fontWeight: 700 }}>
+                        <span style={{ color: 'var(--amber)', fontWeight: 700, letterSpacing: '0.01em' }}>
                           ⚡ Another group racing for this
                         </span>
                       ) : (
                         <span style={{ fontWeight: 600 }}>
                           {card.players}/10 players joined
+                        </span>
+                      )}
+                      {!card.rival && (
+                        <span style={{ color: 'var(--green)', fontWeight: 700 }}>
+                          {10 - card.players} spots left
                         </span>
                       )}
                     </div>
@@ -298,24 +329,70 @@ export default function HomePage() {
         {/* ============================================================
             HOW IT WORKS
             ============================================================ */}
-        <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '5rem 1.5rem' }}>
+        <section style={{ maxWidth: '1140px', margin: '0 auto', padding: '6rem 2rem' }}>
+          {/* Section header */}
           <div
             className="reveal-scroll"
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
-              fontSize: 'clamp(30px, 3.8vw, 50px)',
-              letterSpacing: '-0.035em',
-              lineHeight: 0.95,
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'space-between',
               marginBottom: '3rem',
+              flexWrap: 'wrap',
+              gap: '1rem',
             }}
           >
-            Four steps<br />
-            <span style={{ color: 'var(--green)' }}>to kickoff.</span>
+            <div>
+              <div
+                style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: 'var(--green)',
+                  marginBottom: '0.75rem',
+                }}
+              >
+                How it works
+              </div>
+              <h2
+                style={{
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontSize: 'clamp(32px, 4vw, 54px)',
+                  letterSpacing: '-0.04em',
+                  lineHeight: 0.92,
+                  margin: 0,
+                }}
+              >
+                Four steps<br />
+                <span style={{ color: 'var(--green)' }}>to kickoff.</span>
+              </h2>
+            </div>
+            <Link href="/slots" style={{ textDecoration: 'none', flexShrink: 0 }}>
+              <button
+                className="btn-ghost"
+                style={{
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontSize: '14px',
+                  letterSpacing: '-0.02em',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border)',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  color: 'var(--muted)',
+                  transition: 'all 0.18s var(--ease-out)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Browse slots →
+              </button>
+            </Link>
           </div>
 
           <div
             className="steps-grid"
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}
           >
             {[
               { n: '01', t: 'Find an open slot', d: 'Browse available times at Globe Pitch and pick one that works for you.' },
@@ -327,27 +404,28 @@ export default function HomePage() {
                 key={step.n}
                 className="step-card reveal-scroll"
                 style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '14px',
-                  padding: '1.75rem 1.5rem',
+                  background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+                  border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: '18px',
+                  padding: '2rem 1.75rem 1.75rem',
                   position: 'relative',
                   overflow: 'hidden',
-                  animationDelay: `${idx * 60}ms`,
+                  animationDelay: `${idx * 55}ms`,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
                 }}
               >
-                {/* Huge watermark number */}
+                {/* Watermark number */}
                 <div
                   style={{
                     position: 'absolute',
-                    right: '-6px',
-                    bottom: '-16px',
+                    right: '-4px',
+                    bottom: '-20px',
                     fontFamily: "'Archivo Black', sans-serif",
-                    fontSize: '120px',
+                    fontSize: '160px',
                     color: 'var(--green)',
                     opacity: 0.055,
                     lineHeight: 1,
-                    letterSpacing: '-4px',
+                    letterSpacing: '-6px',
                     userSelect: 'none',
                     pointerEvents: 'none',
                   }}
@@ -355,16 +433,15 @@ export default function HomePage() {
                   {step.n}
                 </div>
 
-                {/* Content */}
                 <div style={{ position: 'relative', zIndex: 1 }}>
                   <div
                     style={{
                       fontSize: '9px',
                       fontWeight: 700,
                       color: 'var(--green)',
-                      letterSpacing: '0.14em',
+                      letterSpacing: '0.16em',
                       textTransform: 'uppercase',
-                      marginBottom: '1.25rem',
+                      marginBottom: '1.5rem',
                     }}
                   >
                     Step {step.n}
@@ -373,8 +450,8 @@ export default function HomePage() {
                     style={{
                       fontFamily: "'Archivo Black', sans-serif",
                       fontSize: '15px',
-                      marginBottom: '0.6rem',
-                      letterSpacing: '-0.02em',
+                      marginBottom: '0.7rem',
+                      letterSpacing: '-0.025em',
                       lineHeight: 1.2,
                     }}
                   >
@@ -397,65 +474,87 @@ export default function HomePage() {
         </section>
 
         {/* ============================================================
-            PITCH OWNER — full lime break
+            PITCH OWNER — lime break
             ============================================================ */}
         <section
           style={{
             background: 'var(--green)',
-            padding: '5.5rem 1.5rem',
+            padding: '6rem 2rem',
             textAlign: 'center',
+            position: 'relative',
+            overflow: 'hidden',
           }}
         >
-          <div className="reveal-scroll" style={{ maxWidth: '540px', margin: '0 auto' }}>
+          {/* Decorative concentric rings */}
+          {[640, 440, 260].map((size, i) => (
+            <div
+              key={size}
+              aria-hidden
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: `${size}px`,
+                height: `${size}px`,
+                border: `1px solid rgba(0,0,0,${0.13 + i * 0.06})`,
+                borderRadius: '50%',
+                pointerEvents: 'none',
+              }}
+            />
+          ))}
+
+          <div className="reveal-scroll" style={{ maxWidth: '560px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
             <div
               style={{
                 fontSize: '10px',
                 fontWeight: 700,
-                letterSpacing: '0.16em',
+                letterSpacing: '0.18em',
                 textTransform: 'uppercase',
-                color: 'rgba(0,0,0,0.45)',
-                marginBottom: '1rem',
+                color: 'rgba(0,0,0,0.42)',
+                marginBottom: '1.25rem',
               }}
             >
               For pitch owners
             </div>
-            <div
+            <h2
               style={{
                 fontFamily: "'Archivo Black', sans-serif",
-                fontSize: 'clamp(30px, 3.8vw, 50px)',
-                letterSpacing: '-0.035em',
-                lineHeight: 0.95,
-                marginBottom: '1.25rem',
+                fontSize: 'clamp(32px, 4vw, 56px)',
+                letterSpacing: '-0.04em',
+                lineHeight: 0.92,
+                marginBottom: '1.5rem',
                 color: 'var(--black)',
               }}
             >
               Want to list your pitch?
-            </div>
+            </h2>
             <p
               style={{
-                fontSize: '16px',
-                color: 'rgba(0,0,0,0.58)',
+                fontSize: '17px',
+                color: 'rgba(0,0,0,0.56)',
                 lineHeight: 1.75,
                 fontWeight: 500,
-                marginBottom: '2.25rem',
+                marginBottom: '2.5rem',
               }}
             >
               We handle bookings, payments and player coordination automatically. No more WhatsApp messages, no more chasing bank transfers. Money lands in your account the moment a game confirms.
             </p>
-            <a href="mailto:hello@bookmypitch.uk" style={{ textDecoration: 'none' }}>
+            <a href="mailto:masud.bookmypitch@gmail.com" style={{ textDecoration: 'none' }}>
               <button
                 className="btn-dark-on-lime"
                 style={{
                   fontFamily: "'Archivo Black', sans-serif",
-                  fontSize: '15px',
-                  letterSpacing: '-0.02em',
-                  padding: '0.9rem 2.25rem',
-                  borderRadius: '8px',
+                  fontSize: '16px',
+                  letterSpacing: '-0.025em',
+                  padding: '1rem 2.5rem',
+                  borderRadius: '10px',
                   border: '2px solid var(--black)',
                   cursor: 'pointer',
                   background: 'var(--black)',
                   color: 'var(--green)',
                   transition: 'background 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                  lineHeight: 1,
                 }}
               >
                 Get in touch →
@@ -470,12 +569,12 @@ export default function HomePage() {
         <footer
           style={{
             borderTop: '1px solid var(--border)',
-            padding: '2.5rem 1.5rem',
+            padding: '2.5rem 2rem',
           }}
         >
           <div
             style={{
-              maxWidth: '1100px',
+              maxWidth: '1140px',
               margin: '0 auto',
               display: 'flex',
               justifyContent: 'space-between',
@@ -484,21 +583,21 @@ export default function HomePage() {
               gap: '0.75rem',
             }}
           >
-            <div style={{ fontSize: '13px', color: 'var(--muted)' }}>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
               <strong
                 style={{
                   color: 'var(--green)',
                   fontFamily: "'Archivo Black', sans-serif",
                   fontSize: '15px',
-                  letterSpacing: '-0.3px',
-                  marginRight: '10px',
+                  letterSpacing: '-0.03em',
+                  marginRight: '12px',
                 }}
               >
                 BookMyPitch.uk
               </strong>
               Globe Football Pitch · 110 Globe Rd, Bethnal Green E1 4DZ
             </div>
-            <div style={{ fontSize: '12px', color: 'rgba(90,90,90,0.6)' }}>
+            <div style={{ fontSize: '12px', color: 'rgba(104,104,104,0.5)', fontWeight: 500 }}>
               © 2025 BookMyPitch.uk
             </div>
           </div>

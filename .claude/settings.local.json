@@ -32,7 +32,8 @@
       "Bash(Select-Object FullName)",
       "Bash(Sort-Object FullName)",
       "Bash(Get-ChildItem *)",
-      "Bash(ping -n 4 127.0.0.1)"
+      "Bash(ping -n 4 127.0.0.1)",
+      "Bash(Select-Object Name)"
     ]
   }
 }

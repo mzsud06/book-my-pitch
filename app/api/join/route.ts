@@ -94,15 +94,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to add player' }, { status: 500 })
     }
 
-    // If the organiser is joining their own session, clear organiser_name so they
-    // appear only through the players table (prevents double-counting in the UI).
-    if (isOrganiser && existingSession.organiser_name) {
-      await supabase
-        .from('sessions')
-        .update({ organiser_name: null, organiser_phone: null })
-        .eq('id', sessionId)
-    }
-
     // Use the service-role client to count players — the anon client is scoped to the
     // current user and RLS may hide other players' rows, giving a wrong count.
     const serviceSupabase = createServiceClient()
