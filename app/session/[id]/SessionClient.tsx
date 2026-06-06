@@ -135,14 +135,7 @@ export default function SessionClient({
   const isConfirmed = session.status === 'confirmed'
   const isFilling = session.status === 'filling'
 
-  const thisSessionPlayers = session.players.filter(p => p.session_id === session.id)
-  const organiserEntry = session.organiser_name
-    ? [{ id: 'organiser', name: session.organiser_name, joined_at: session.created_at, session_id: session.id }]
-    : []
-  const otherPlayers = session.organiser_name
-    ? thisSessionPlayers.filter(p => p.name.toLowerCase() !== session.organiser_name?.toLowerCase())
-    : thisSessionPlayers
-  const allPlayers: Player[] = [...organiserEntry, ...otherPlayers]
+  const allPlayers: Player[] = session.players.filter(p => p.session_id === session.id)
   const playerCount = allPlayers.length
   const remaining = 10 - playerCount
 
@@ -156,7 +149,7 @@ export default function SessionClient({
         supabase
           .from('sessions')
           .select(`
-            id, status, created_at, organiser_name, organiser_phone,
+            id, status, created_at, organiser_name, organiser_phone, organiser_id,
             slots(id, date, start_time, end_time, type, price, max_players,
               venues(id, name, address)
             )
@@ -225,14 +218,10 @@ export default function SessionClient({
 
       // Logged-in: detect membership by user_id (primary), fall back to name for organiser
       if (user) {
-        console.log('[leave debug] currentUserId:', user.id)
-        console.log('[leave debug] player user_ids:', initialSession.players.map(p => ({ id: p.id, name: p.name, user_id: p.user_id })))
-
         const matchedById = initialSession.players.find(
           (p: Player) => p.user_id === user.id
         )
         if (matchedById) {
-          console.log('[leave debug] matched player by user_id:', matchedById.name)
           setMyPlayer({ id: matchedById.id, name: matchedById.name })
           setLocalAlreadyIn(true)
         } else {
@@ -282,29 +271,19 @@ export default function SessionClient({
     setLeaveLoading(true)
     setLeaveError('')
     try {
-      if (currentUserId) {
-        const { error } = await supabase
-          .from('players')
-          .delete()
-          .eq('session_id', session.id)
-          .eq('user_id', currentUserId)
-        if (error) {
-          setLeaveError('Something went wrong. Please try again.')
-          setLeaveLoading(false)
-          return
-        }
-      } else {
-        const res = await fetch('/api/leave', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId: session.id, phone: myPhone }),
-        })
-        const json = await res.json()
-        if (!res.ok) {
-          setLeaveError(json.error ?? 'Something went wrong')
-          setLeaveLoading(false)
-          return
-        }
+      // Always route through the API so Stripe payment method detach is guaranteed.
+      // Authenticated users send sessionId only (API uses auth cookie to find player).
+      // Guests send their phone number so the API can look them up.
+      const res = await fetch('/api/leave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id, phone: currentUserId ? undefined : myPhone }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setLeaveError(json.error ?? 'Something went wrong')
+        setLeaveLoading(false)
+        return
       }
       try {
         const stored = JSON.parse(localStorage.getItem('bmp_my_sessions') ?? '[]')
@@ -344,14 +323,19 @@ export default function SessionClient({
   }
 
   const perPlayerPounds = (slot.price / 10 + 0.50 + 0.30).toFixed(2)
-  const isMyPlayerOrganiser = !!(myPlayer && session.organiser_name && myPlayer.name.toLowerCase() === session.organiser_name.toLowerCase())
+  const isOrganiserUser = !!(currentUserId && session.organiser_id && currentUserId === session.organiser_id)
+  const isMyPlayerOrganiser = isOrganiserUser || !!(myPlayer && session.organiser_name && myPlayer.name.toLowerCase() === session.organiser_name.toLowerCase())
   const showLeaveButton = isFilling && !!myPlayer && !isMyPlayerOrganiser
 
   function renderPlayerToken(i: number, highlightId?: string, highlightName?: string) {
     const player = allPlayers[i]
     const isHighlighted = !!(player && (
       (highlightId && player.id === highlightId) ||
-      (highlightName && player.id === 'organiser' && player.name.toLowerCase() === highlightName.toLowerCase())
+      (highlightName && player.name.toLowerCase() === highlightName.toLowerCase())
+    ))
+    const isOrganiserToken = !!(player && (
+      (session.organiser_id && player.user_id === session.organiser_id) ||
+      (!session.organiser_id && session.organiser_name && player.name.toLowerCase() === session.organiser_name.toLowerCase())
     ))
     const parts = player ? player.name.trim().split(/\s+/) : []
     const firstInitial = parts[0]?.[0]?.toUpperCase() ?? ''
@@ -362,7 +346,7 @@ export default function SessionClient({
     return (
       <div
         key={i}
-        title={player ? player.name : `Spot ${i + 1}`}
+        title={player ? `${player.name}${isOrganiserToken ? ' (Organiser)' : ''}` : `Spot ${i + 1}`}
         className={`player-token ${player ? 'filled' : ''}`}
         style={{
           position: 'relative',
@@ -407,6 +391,21 @@ export default function SessionClient({
         >
           {i + 1}
         </div>
+
+        {isOrganiserToken && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '3px',
+              left: '4px',
+              fontSize: '8px',
+              color: 'rgba(198,241,53,0.8)',
+              lineHeight: 1,
+            }}
+          >
+            ♛
+          </div>
+        )}
 
         <div
           style={{

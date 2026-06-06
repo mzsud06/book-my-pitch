@@ -38,9 +38,6 @@ create table if not exists sessions (
   status text not null default 'filling' check (status in ('filling', 'confirmed', 'cancelled', 'payment_failed')),
   created_at timestamptz default now()
 );
--- Migration (run in Supabase SQL editor if table already exists):
--- alter table sessions add column if not exists organiser_name text;
--- alter table sessions add column if not exists organiser_phone text;
 
 -- Players (people who have joined a session)
 create table if not exists players (
@@ -79,35 +76,64 @@ alter table players enable row level security;
 alter table bookings enable row level security;
 alter table messages enable row level security;
 
+-- ============================================================
 -- RLS Policies
+-- ============================================================
 
--- Venues: owners can see their own, anyone can read
-create policy "Anyone can view venues" on venues for select using (true);
-create policy "Owners can manage their venue" on venues for all using (auth.uid() = owner_id);
+-- VENUES: anyone can read, only venue owners can write
+create policy "Anyone can view venues" on venues
+  for select using (true);
+create policy "Owners can manage their venue" on venues
+  for all using (auth.uid() = owner_id);
 
--- Slots: anyone can read
-create policy "Anyone can view slots" on slots for select using (true);
-create policy "Owners can manage slots" on slots for all
-  using (exists (select 1 from venues where id = venue_id and owner_id = auth.uid()));
--- Service role can insert (API routes use service role)
-create policy "Service role can insert slots" on slots for insert with check (true);
+-- SLOTS: anyone can read, owners manage via API (service role for seeding)
+create policy "Anyone can view slots" on slots
+  for select using (true);
+create policy "Owners can manage slots" on slots
+  for all using (
+    exists (select 1 from venues where id = venue_id and owner_id = auth.uid())
+  );
+-- NOTE: slot seeding (SlotsPage upsert) uses service-role client which bypasses RLS.
+-- No permissive anon INSERT policy — that would allow arbitrary slot injection.
 
--- Sessions: anyone can read
-create policy "Anyone can view sessions" on sessions for select using (true);
-create policy "Anyone can create sessions" on sessions for insert with check (true);
-create policy "Service role can update sessions" on sessions for update using (true);
+-- SESSIONS: anyone can read
+create policy "Anyone can view sessions" on sessions
+  for select using (true);
+-- Only authenticated users may create sessions, and organiser_id must match their uid.
+-- This prevents unauthenticated direct inserts and stops users spoofing organiser_id.
+create policy "Authenticated users can create sessions" on sessions
+  for insert to authenticated
+  with check (auth.uid() = organiser_id);
+-- Updates and deletes are done exclusively by the service-role client (bypasses RLS).
+-- No anon/authenticated UPDATE policy — prevents clients from changing session status
+-- directly (e.g. setting status='confirmed' without going through payment flow).
 
--- Players: anyone can read names (for the player list), but details are protected
-create policy "Anyone can view player names" on players for select using (true);
-create policy "Anyone can join a session" on players for insert with check (true);
+-- PLAYERS: restricted column-level read, all writes via service-role only
+-- Row-level: anyone can see player rows (for the session roster display)
+create policy "Anyone can view players" on players
+  for select using (true);
+-- INSERT/UPDATE/DELETE are done exclusively by the service-role client (bypasses RLS).
+-- No anon INSERT policy — prevents bypassing /api/join validation and Stripe setup.
+-- No anon DELETE policy — prevents bypassing /api/leave and Stripe detach.
 
--- Bookings: anyone can read
-create policy "Anyone can view bookings" on bookings for select using (true);
-create policy "Service role can create bookings" on bookings for insert with check (true);
+-- BOOKINGS: anyone can read
+create policy "Anyone can view bookings" on bookings
+  for select using (true);
+-- INSERT is done exclusively by the service-role client after all payments succeed.
 
--- Messages: anyone in a confirmed session can read/write
-create policy "Anyone can view messages" on messages for select using (true);
-create policy "Anyone can send messages" on messages for insert with check (true);
+-- MESSAGES: anyone in the app can read and send messages
+create policy "Anyone can view messages" on messages
+  for select using (true);
+create policy "Anyone can send messages" on messages
+  for insert with check (true);
+
+-- ============================================================
+-- Column-level security on players
+-- Revoke direct SELECT on sensitive payment columns from anon and authenticated roles.
+-- The service_role bypasses all privileges and retains full access.
+-- ============================================================
+revoke select on players from anon, authenticated;
+grant select (id, name, joined_at, session_id, user_id) on players to anon, authenticated;
 
 -- Insert Globe Football Pitch venue (update owner_id after creating owner account)
 insert into venues (name, address)

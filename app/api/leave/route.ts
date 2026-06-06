@@ -3,12 +3,23 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { stripe } from '@/lib/stripe'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isValidUUID(val: unknown): val is string {
+  return typeof val === 'string' && UUID_RE.test(val)
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, phone } = await req.json()
+    const body = await req.json()
+    const { sessionId, phone } = body
 
-    if (!sessionId) {
-      return NextResponse.json({ error: 'Missing sessionId' }, { status: 400 })
+    if (!isValidUUID(sessionId)) {
+      return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 })
+    }
+
+    const trimmedPhone = typeof phone === 'string' ? phone.trim() : null
+    if (trimmedPhone && !/^\+[0-9]{7,15}$/.test(trimmedPhone)) {
+      return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
     }
 
     const supabase = await createClient()
@@ -18,7 +29,7 @@ export async function POST(req: NextRequest) {
     // Verify session exists and is still filling
     const { data: session } = await svc
       .from('sessions')
-      .select('id, status, organiser_name, organiser_phone')
+      .select('id, status, organiser_name, organiser_phone, organiser_id')
       .eq('id', sessionId)
       .single()
 
@@ -47,12 +58,12 @@ export async function POST(req: NextRequest) {
         .eq('user_id', user.id)
         .maybeSingle()
       player = data as PlayerRow | null
-    } else if (phone) {
+    } else if (trimmedPhone) {
       const { data } = await svc
         .from('players')
         .select('id, name, phone, stripe_payment_method_id, stripe_customer_id')
         .eq('session_id', sessionId)
-        .eq('phone', phone)
+        .eq('phone', trimmedPhone)
         .maybeSingle()
       player = data as PlayerRow | null
     } else {
@@ -64,10 +75,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Organisers cannot leave their own session
-    const sesh = session as { organiser_name: string | null; organiser_phone: string | null }
-    const isOrganiserByPhone = sesh.organiser_phone && player.phone && player.phone === sesh.organiser_phone
-    const isOrganiserByName = sesh.organiser_name && player.name?.toLowerCase() === sesh.organiser_name.toLowerCase()
-    if (isOrganiserByPhone || isOrganiserByName) {
+    const sesh = session as { organiser_name: string | null; organiser_phone: string | null; organiser_id: string | null }
+    const isOrganiserById = !!(user?.id && sesh.organiser_id && user.id === sesh.organiser_id)
+    const isOrganiserByPhone = !!(sesh.organiser_phone && player.phone && player.phone === sesh.organiser_phone)
+    const isOrganiserByName = !!(sesh.organiser_name && player.name?.toLowerCase() === sesh.organiser_name.toLowerCase())
+    if (isOrganiserById || isOrganiserByPhone || isOrganiserByName) {
       return NextResponse.json({ error: 'The organiser cannot leave their own session' }, { status: 403 })
     }
 
@@ -88,11 +100,10 @@ export async function POST(req: NextRequest) {
       .eq('id', player.id)
 
     if (deleteError) {
-      console.error('Player delete error:', deleteError)
+      console.error('Player delete error:', deleteError.message)
       return NextResponse.json({ error: 'Failed to leave session' }, { status: 500 })
     }
 
-    // Count players remaining (includes organiser row if they've completed setup)
     const { count: remaining } = await svc
       .from('players')
       .select('*', { count: 'exact', head: true })
@@ -102,7 +113,6 @@ export async function POST(req: NextRequest) {
     const firstName = player.name?.split(' ')[0] ?? 'A player'
     const plural = needed === 1 ? 'player' : 'players'
 
-    // Notify via messages table so the organiser is informed
     await svc.from('messages').insert({
       session_id: sessionId,
       content: `${firstName} left the game — ${needed} more ${plural} needed`,
@@ -110,8 +120,7 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ ok: true })
-  } catch (err) {
-    console.error('leave error:', err)
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

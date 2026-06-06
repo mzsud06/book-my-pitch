@@ -514,7 +514,7 @@ export default function JoinForm({
     const res = await fetch('/api/setup-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone }),
+      body: JSON.stringify({ name, phone, sessionId }),
     })
     const data = await res.json()
     if (!res.ok) {

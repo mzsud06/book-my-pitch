@@ -2,15 +2,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { stripe, PLATFORM_FEE_PENCE, STRIPE_PROCESSING_PENCE } from '@/lib/stripe'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isValidUUID(val: unknown): val is string {
+  return typeof val === 'string' && UUID_RE.test(val)
+}
+
 export async function POST(req: NextRequest) {
-  // Verify internal secret to prevent unauthorized calls
-  const secret = req.headers.get('x-internal-secret')
-  if (secret !== process.env.INTERNAL_SECRET) {
+  // Explicitly require INTERNAL_SECRET to be configured and non-empty.
+  // An unset or empty secret must never grant access.
+  const internalSecret = process.env.INTERNAL_SECRET
+  if (!internalSecret) {
+    console.error('INTERNAL_SECRET is not configured — trigger-payments endpoint is disabled')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { sessionId } = await req.json()
-  if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 })
+  const providedSecret = req.headers.get('x-internal-secret')
+  if (!providedSecret || providedSecret !== internalSecret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const { sessionId } = body
+
+  if (!isValidUUID(sessionId)) {
+    return NextResponse.json({ error: 'Invalid sessionId' }, { status: 400 })
+  }
 
   // Service-role client bypasses RLS so we can read all players' payment data,
   // update session status, and insert the booking row from a server-side context.
@@ -64,11 +80,7 @@ export async function POST(req: NextRequest) {
         confirm: true,
         off_session: true,
         description: `BookMyPitch — Globe Pitch ${slot.start_time}–${slot.end_time} ${slot.date}`,
-        // Only add Connect params when the venue has a Stripe account configured.
-        // Without them, the charge goes directly to the platform account (test fallback).
         ...(venueStripeAccountId ? {
-          // PLATFORM_FEE_PENCE is the per-player platform fee (£0.50).
-          // Each PaymentIntent covers one player, so the fee is per-intent, not ×10.
           application_fee_amount: PLATFORM_FEE_PENCE,
           transfer_data: { destination: venueStripeAccountId },
         } : {}),
@@ -89,11 +101,10 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({ success: true, message: 'All payments succeeded, session confirmed' })
   } else {
-    const failedNames = failures.map(r => r.status === 'fulfilled' ? (r.value as { player: { name: string } }).player.name : 'unknown')
+    console.error(`${failures.length} payment(s) failed for session ${sessionId}`)
     return NextResponse.json({
       success: false,
       message: 'Some payments failed',
-      failedPlayers: failedNames,
     }, { status: 422 })
   }
 }

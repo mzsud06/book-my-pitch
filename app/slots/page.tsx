@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import Nav from '@/components/Nav'
 import SlotsClient, { SessionData, DbSlot } from './SlotsClient'
 import { getSlotsForDay } from '@/lib/slots'
@@ -18,6 +19,9 @@ function ukDateStr(date: Date): string {
 
 export default async function SlotsPage() {
   const supabase = await createClient()
+  // Service client used for write operations (upsert slots, delete expired sessions/players)
+  // so these work regardless of RLS policies and the calling user's auth state.
+  const svc = createServiceClient()
 
   const today = new Date()
   const todayStr = ukDateStr(today)
@@ -65,12 +69,14 @@ export default async function SlotsPage() {
       })
     }
 
-    await supabase
+    // Use service client — slot upsert must not depend on RLS INSERT policies
+    await svc
       .from('slots')
       .upsert(slotInserts, { onConflict: 'venue_id,date,start_time', ignoreDuplicates: false })
 
     // Delete filling sessions whose slot date has passed, along with their players.
-    const { data: expiredSessions } = await supabase
+    // Service client required — no anon DELETE policy exists on sessions/players.
+    const { data: expiredSessions } = await svc
       .from('sessions')
       .select('id, slots!inner(date)')
       .eq('status', 'filling')
@@ -79,8 +85,8 @@ export default async function SlotsPage() {
 
     if (expiredSessions && expiredSessions.length > 0) {
       const expiredIds = (expiredSessions as unknown as { id: string }[]).map(s => s.id)
-      await supabase.from('players').delete().in('session_id', expiredIds)
-      await supabase.from('sessions').delete().in('id', expiredIds)
+      await svc.from('players').delete().in('session_id', expiredIds)
+      await svc.from('sessions').delete().in('id', expiredIds)
     }
   }
 

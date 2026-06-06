@@ -1,12 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isValidUUID(val: unknown): val is string {
+  return typeof val === 'string' && UUID_RE.test(val)
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { slotId, name, phone } = await req.json()
+    const body = await req.json()
+    const { slotId, name, phone } = body
 
-    if (!slotId || !name?.trim()) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    if (!isValidUUID(slotId)) {
+      return NextResponse.json({ error: 'Invalid slot ID' }, { status: 400 })
+    }
+
+    const trimmedName = typeof name === 'string' ? name.trim() : ''
+    if (!trimmedName) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    }
+    if (trimmedName.length > 100) {
+      return NextResponse.json({ error: 'Name is too long' }, { status: 400 })
+    }
+    if (!/^[A-Za-z\s'-]+$/.test(trimmedName)) {
+      return NextResponse.json({ error: 'Name contains invalid characters' }, { status: 400 })
+    }
+
+    const trimmedPhone = typeof phone === 'string' ? phone.trim() : null
+    if (trimmedPhone && !/^\+[0-9]{7,15}$/.test(trimmedPhone)) {
+      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
     }
 
     const supabase = await createClient()
@@ -46,20 +68,20 @@ export async function POST(req: NextRequest) {
       .insert({
         slot_id: slotId,
         status: 'filling',
-        organiser_name: name.trim(),
-        organiser_phone: phone?.trim() ?? null,
+        organiser_name: trimmedName,
+        organiser_phone: trimmedPhone ?? null,
+        organiser_id: user.id,
       })
       .select('id')
       .single()
 
     if (error || !session) {
-      console.error('create session error:', error)
+      console.error('create session error:', error?.message)
       return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
     }
 
     return NextResponse.json({ sessionId: session.id })
-  } catch (err) {
-    console.error('sessions route error:', err)
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

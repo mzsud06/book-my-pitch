@@ -3,20 +3,54 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { stripe, PLATFORM_FEE_PENCE, STRIPE_PROCESSING_PENCE } from '@/lib/stripe'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isValidUUID(val: unknown): val is string {
+  return typeof val === 'string' && UUID_RE.test(val)
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { slotId, sessionId, isOrganiser, name, phone, paymentMethodId, customerId } = await req.json()
+    const body = await req.json()
+    const { slotId, sessionId, isOrganiser, name, phone, paymentMethodId, customerId } = body
 
-    if (!slotId || !name || !paymentMethodId || !sessionId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    // Validate UUIDs
+    if (!isValidUUID(slotId) || !isValidUUID(sessionId)) {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+    }
+
+    // Validate Stripe IDs — must start with expected prefixes
+    if (typeof paymentMethodId !== 'string' || !paymentMethodId.startsWith('pm_')) {
+      return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 })
+    }
+    if (typeof customerId !== 'string' || !customerId.startsWith('cus_')) {
+      return NextResponse.json({ error: 'Invalid customer' }, { status: 400 })
+    }
+
+    // Server-side input validation (client also validates, but always re-validate server-side)
+    const trimmedName = typeof name === 'string' ? name.trim() : ''
+    if (!trimmedName || trimmedName.length > 100 || !/^[A-Za-z\s'-]+$/.test(trimmedName)) {
+      return NextResponse.json({ error: 'Invalid name' }, { status: 400 })
+    }
+    const trimmedPhone = typeof phone === 'string' ? phone.trim() : null
+    if (trimmedPhone && !/^\+[0-9]{7,15}$/.test(trimmedPhone)) {
+      return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
     }
 
     const supabase = await createClient()
+    const serviceSupabase = createServiceClient()
 
-    // Get authenticated user (set during auth step in the join flow)
+    // Get authenticated user (optional — guests allowed)
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Get slot info
+    // Verify from Stripe that the payment method belongs to the claimed customer.
+    // This prevents a client substituting another user's customerId in the request body.
+    const pm = await stripe.paymentMethods.retrieve(paymentMethodId)
+    const pmCustomer = typeof pm.customer === 'string' ? pm.customer : pm.customer?.id
+    if (!pmCustomer || pmCustomer !== customerId) {
+      return NextResponse.json({ error: 'Invalid payment details' }, { status: 400 })
+    }
+
+    // Get slot info — use anon client so RLS applies (slot must be publicly readable)
     const { data: slot, error: slotError } = await supabase
       .from('slots')
       .select('*')
@@ -27,20 +61,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Slot not found' }, { status: 404 })
     }
 
-    // Verify existing session
-    const { data: existingSession } = await supabase
+    // Verify session exists and is still filling — use service client to avoid RLS timing issues
+    const { data: existingSession } = await serviceSupabase
       .from('sessions')
-      .select('id, status, organiser_name')
+      .select('id, status, organiser_id')
       .eq('id', sessionId)
       .single()
 
     if (!existingSession) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
-    if (existingSession.status === 'confirmed') return NextResponse.json({ error: 'Session already confirmed' }, { status: 400 })
+    if (existingSession.status !== 'filling') {
+      return NextResponse.json({ error: 'Session is no longer accepting players' }, { status: 400 })
+    }
 
     // Duplicate-join guard — run before touching any Stripe resources.
-    // Logged-in users are identified by user_id; guests by phone number.
     if (user?.id) {
-      const { data: alreadyIn } = await supabase
+      const { data: alreadyIn } = await serviceSupabase
         .from('players')
         .select('id')
         .eq('session_id', sessionId)
@@ -49,59 +84,48 @@ export async function POST(req: NextRequest) {
       if (alreadyIn) {
         return NextResponse.json({ error: "You're already in this game" }, { status: 409 })
       }
-    } else if (phone) {
-      const { data: alreadyIn } = await supabase
+    } else if (trimmedPhone) {
+      const { data: alreadyIn } = await serviceSupabase
         .from('players')
         .select('id')
         .eq('session_id', sessionId)
-        .eq('phone', phone)
+        .eq('phone', trimmedPhone)
         .maybeSingle()
       if (alreadyIn) {
         return NextResponse.json({ error: "You're already in this game" }, { status: 409 })
       }
     }
 
-    // Use the customer created during setup-intent (avoids duplicate customer + avoids
-    // re-attaching a payment method that Stripe already attached to that customer).
-    // If no customerId provided (shouldn't happen with new flow), create one as fallback.
-    let stripeCustomerId = customerId
-    if (!stripeCustomerId) {
-      const customer = await stripe.customers.create({
-        name,
-        phone: phone ?? undefined,
-        metadata: { source: 'bookmypitch', session_id: sessionId },
-      })
-      await stripe.paymentMethods.attach(paymentMethodId, { customer: customer.id })
-      stripeCustomerId = customer.id
-    }
-    // When customerId IS provided, the payment method was already attached to that
-    // customer by stripe.confirmSetup — no need to attach again.
+    // Check the session hasn't already hit capacity before inserting
+    const { count: currentCount } = await serviceSupabase
+      .from('players')
+      .select('*', { count: 'exact', head: true })
+      .eq('session_id', sessionId)
 
-    // Add player to session
-    const { error: playerError } = await supabase
+    const capacity: number = (slot as unknown as { max_players?: number }).max_players ?? 10
+    if ((currentCount ?? 0) >= capacity) {
+      return NextResponse.json({ error: 'Session is full' }, { status: 409 })
+    }
+
+    // Use service-role client for the player insert — removes the requirement for
+    // an overly permissive RLS INSERT policy on the players table.
+    const { error: playerError } = await serviceSupabase
       .from('players')
       .insert({
         session_id: sessionId,
-        user_id: user?.id ?? null,   // Link to auth user so My Bookings works
-        name,
-        phone: phone ?? null,
+        user_id: user?.id ?? null,
+        name: trimmedName,
+        phone: trimmedPhone ?? null,
         stripe_payment_method_id: paymentMethodId,
-        stripe_customer_id: stripeCustomerId,
+        stripe_customer_id: customerId,
       })
 
     if (playerError) {
-      console.error('Player insert error:', playerError)
+      console.error('Player insert error:', playerError.message)
       return NextResponse.json({ error: 'Failed to add player' }, { status: 500 })
     }
 
-    // Use the service-role client to count players — the anon client is scoped to the
-    // current user and RLS may hide other players' rows, giving a wrong count.
-    const serviceSupabase = createServiceClient()
-
     // Count players who have provided payment details.
-    // We only trigger when every slot in the session has a paying player behind it —
-    // the organiser reserved a spot via organiser_name, but that spot only counts once
-    // they have joined via the flow and appear in the players table with a payment method.
     const { count: payingCount } = await serviceSupabase
       .from('players')
       .select('*', { count: 'exact', head: true })
@@ -109,7 +133,6 @@ export async function POST(req: NextRequest) {
       .not('stripe_payment_method_id', 'is', null)
       .not('stripe_customer_id', 'is', null)
 
-    const capacity: number = (slot as unknown as { max_players?: number }).max_players ?? 10
     const playerCount = payingCount ?? 0
 
     if (playerCount >= capacity) {
@@ -132,11 +155,8 @@ interface SlotForPayment {
 }
 
 async function triggerPayments(sessionId: string, slot: SlotForPayment) {
-  // Use service-role client so RLS doesn't block reading other players'
-  // payment info, updating session status, or inserting the booking row.
   const serviceSupabase = createServiceClient()
 
-  // Get venue stripe account — may be absent during testing before Connect is configured
   const { data: venue } = await serviceSupabase
     .from('venues')
     .select('stripe_account_id')
@@ -151,7 +171,6 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment) {
   const perPlayerPitch = Math.round((slot.price * 100) / 10)
   const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
 
-  // Get all players who have a payment method (up to capacity)
   const capacity = slot.max_players ?? 10
   const { data: players } = await serviceSupabase
     .from('players')
@@ -176,8 +195,6 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment) {
         confirm: true,
         off_session: true,
         description: `BookMyPitch — Globe Pitch ${slot.type} slot`,
-        // Only add Connect params when the venue has a Stripe account configured.
-        // Without them, the charge goes directly to the platform account (test fallback).
         ...(venueStripeAccountId ? {
           application_fee_amount: PLATFORM_FEE_PENCE,
           transfer_data: { destination: venueStripeAccountId },
@@ -207,6 +224,5 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment) {
   } else {
     const failures = results.filter(r => r.status === 'rejected')
     console.error(`${failures.length} payment(s) failed for session ${sessionId}`)
-    // TODO: notify failed players to retry
   }
 }

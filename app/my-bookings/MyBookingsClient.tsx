@@ -37,7 +37,6 @@ interface RawSlot {
 interface RawSession {
   id: string
   status: string
-  organiser_name: string | null
   slots: RawSlot | RawSlot[] | null
   players: { count: number }[]
 }
@@ -45,8 +44,6 @@ interface RawSession {
 function toCard(s: RawSession): BookingCard | null {
   const slot = Array.isArray(s.slots) ? s.slots[0] : s.slots
   if (!slot) return null
-  const organiserCount = s.organiser_name ? 1 : 0
-  const playersCount = s.players?.[0]?.count ?? 0
   return {
     sessionId: s.id,
     status: s.status,
@@ -55,7 +52,7 @@ function toCard(s: RawSession): BookingCard | null {
     endTime: slot.end_time.slice(0, 5),
     type: slot.type,
     price: slot.price,
-    playerCount: organiserCount + playersCount,
+    playerCount: s.players?.[0]?.count ?? 0,
     venueName: slot.venues?.name ?? 'Globe Football Pitch',
   }
 }
@@ -76,7 +73,7 @@ export default function MyBookingsClient() {
           .select(`
             joined_at,
             sessions(
-              id, status, organiser_name,
+              id, status,
               slots(date, start_time, end_time, type, price, venues(name)),
               players(count)
             )
@@ -103,7 +100,7 @@ export default function MyBookingsClient() {
           const { data } = await supabase
             .from('sessions')
             .select(`
-              id, status, organiser_name,
+              id, status,
               slots!inner(date, start_time, end_time, type, price, venues(name)),
               players(count)
             `)
