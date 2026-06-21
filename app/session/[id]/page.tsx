@@ -18,6 +18,7 @@ interface SessionData {
   team_name: string | null
   game_type: string | null
   matched_session_id: string | null
+  is_public: boolean
   slots: {
     id: string
     date: string
@@ -50,7 +51,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
     supabase
       .from('sessions')
       .select(`
-        id, status, created_at, organiser_name, organiser_phone, organiser_id, team_name, game_type, matched_session_id,
+        id, status, created_at, organiser_name, organiser_phone, organiser_id, team_name, game_type, matched_session_id, is_public,
         slots(id, date, start_time, end_time, type, price, max_players,
           venues(id, name, address, stripe_account_id)
         )
@@ -87,6 +88,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
     team_name: (rawSession as unknown as { team_name: string | null }).team_name ?? null,
     game_type: (rawSession as unknown as { game_type: string | null }).game_type ?? null,
     matched_session_id: (rawSession as unknown as { matched_session_id: string | null }).matched_session_id ?? null,
+    is_public: (rawSession as unknown as { is_public: boolean }).is_public ?? false,
     slots: {
       ...(slot as SessionData['slots']),
       venues: venue as SessionData['slots']['venues'],
