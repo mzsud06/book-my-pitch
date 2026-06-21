@@ -9,9 +9,11 @@ function isValidUUID(val: unknown): val is string {
 }
 
 export async function POST(req: NextRequest) {
+  const reqTs = new Date().toISOString()
   try {
     const body = await req.json()
-    const { name, phone, sessionId } = body
+    const { name, phone, sessionId, slotId } = body
+    console.log(`[setup-intent] POST at ${reqTs} slotId=${slotId ?? 'none'} sessionId=${sessionId ?? 'none'} name=${typeof name === 'string' ? name : '?'}`)
 
     const trimmedName = typeof name === 'string' ? name.trim() : ''
     if (!trimmedName || trimmedName.length > 100) {
@@ -26,28 +28,45 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Valid phone number is required' }, { status: 400 })
     }
 
-    // Validate that the session exists and is still accepting players.
-    // This prevents Stripe customers/SetupIntents being created for invalid sessions.
-    if (!isValidUUID(sessionId)) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 400 })
-    }
-
     const supabase = await createClient()
-    const { data: session } = await supabase
-      .from('sessions')
-      .select('id, status')
-      .eq('id', sessionId)
-      .maybeSingle()
 
-    if (!session || session.status !== 'filling') {
-      return NextResponse.json({ error: 'Session not found or no longer accepting players' }, { status: 404 })
+    // Validate either an existing session (join flow) or a slot (creation flow).
+    let stripeMetaExtra: Record<string, string>
+    if (sessionId) {
+      if (!isValidUUID(sessionId)) {
+        return NextResponse.json({ error: 'Invalid session' }, { status: 400 })
+      }
+      const { data: session } = await supabase
+        .from('sessions')
+        .select('id, status')
+        .eq('id', sessionId)
+        .maybeSingle()
+      if (!session || session.status !== 'filling') {
+        return NextResponse.json({ error: 'Session not found or no longer accepting players' }, { status: 404 })
+      }
+      stripeMetaExtra = { session_id: sessionId }
+    } else if (slotId) {
+      if (!isValidUUID(slotId)) {
+        return NextResponse.json({ error: 'Invalid slot' }, { status: 400 })
+      }
+      const { data: slot } = await supabase
+        .from('slots')
+        .select('id')
+        .eq('id', slotId)
+        .maybeSingle()
+      if (!slot) {
+        return NextResponse.json({ error: 'Slot not found' }, { status: 404 })
+      }
+      stripeMetaExtra = { slot_id: slotId }
+    } else {
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
     // Create Stripe customer
     const customer = await stripe.customers.create({
       name: trimmedName,
       phone: trimmedPhone,
-      metadata: { source: 'bookmypitch', session_id: sessionId },
+      metadata: { source: 'bookmypitch', ...stripeMetaExtra },
     })
 
     // Create SetupIntent for saving payment method.
@@ -61,6 +80,7 @@ export async function POST(req: NextRequest) {
       usage: 'off_session',
     })
 
+    console.log(`[setup-intent] created customer=${customer.id} intent=${setupIntent.id} at ${new Date().toISOString()}`)
     return NextResponse.json({
       clientSecret: setupIntent.client_secret,
       customerId: customer.id,

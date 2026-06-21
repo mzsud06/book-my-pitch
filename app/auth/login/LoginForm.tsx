@@ -9,7 +9,7 @@ export default function LoginForm() {
   const supabase = createClient()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') ?? '/my-bookings'
+  const redirectTo = searchParams.get('redirect') ?? '/slots'
   const message = searchParams.get('message')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

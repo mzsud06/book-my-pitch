@@ -58,7 +58,7 @@ export default function SignupPage() {
     }
 
     router.refresh()
-    router.push('/my-bookings')
+    router.push('/slots')
   }
 
   const inputStyle = {

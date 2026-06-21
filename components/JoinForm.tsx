@@ -99,6 +99,8 @@ function PaymentStep({
   hasRival,
   onBack,
   onSuccess,
+  onConfirmError,
+  parentDisabled,
 }: {
   slot: SlotData
   sessionId: string | null
@@ -111,24 +113,38 @@ function PaymentStep({
   hasRival: boolean
   onBack: () => void
   onSuccess: (dest: string) => void
+  // Called when stripe.confirmSetup fails — parent fetches a fresh SetupIntent.
+  onConfirmError: (message: string) => void
+  // True while the parent is fetching a replacement intent; disables the button.
+  parentDisabled: boolean
 }) {
   const stripe = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [submitError, setSubmitError] = useState('')
 
   const pitchPerPlayer = slot.price / 10
   const bookingFee = 0.50
   const handling = 0.30
   const totalPerPlayer = (pitchPerPlayer + bookingFee + handling).toFixed(2)
+  const isDisabled = loading || parentDisabled || !stripe
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!stripe || !elements) return
+    if (isDisabled || !elements) return
     setLoading(true)
-    setError('')
+    setSubmitError('')
 
     try {
+      // elements.submit() validates the form and collects wallet data.
+      // Required in Stripe.js v5+. submitError means the intent is still pristine.
+      const { error: elError } = await elements.submit()
+      if (elError) {
+        console.error('elements.submit error:', JSON.stringify(elError, Object.getOwnPropertyNames(elError)))
+        setSubmitError(elError.message ?? 'Please check your card details.')
+        return
+      }
+
       const { error: confirmError, setupIntent } = await stripe.confirmSetup({
         elements,
         redirect: 'if_required',
@@ -138,18 +154,14 @@ function PaymentStep({
       })
 
       if (confirmError) {
-        console.error('stripe.confirmSetup error:', {
-          type: confirmError.type,
-          code: confirmError.code,
-          declineCode: (confirmError as { decline_code?: string }).decline_code,
-          message: confirmError.message,
-        })
-        setError(confirmError.message ?? 'Payment setup failed')
+        // Signal the parent to fetch a fresh SetupIntent before the next attempt.
+        console.error('stripe.confirmSetup error:', JSON.stringify(confirmError, Object.getOwnPropertyNames(confirmError)))
+        onConfirmError(confirmError.message ?? 'Payment setup failed')
         return
       }
 
       if (!setupIntent?.payment_method) {
-        setError('Could not save payment method')
+        setSubmitError('Could not save payment method')
         return
       }
 
@@ -159,7 +171,7 @@ function PaymentStep({
           : setupIntent.payment_method.id
 
       if (!paymentMethodId) {
-        setError('Could not read payment method ID')
+        setSubmitError('Could not read payment method ID')
         return
       }
 
@@ -179,7 +191,7 @@ function PaymentStep({
 
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error ?? 'Failed to join session')
+        setSubmitError(data.error ?? 'Failed to join session')
         return
       }
 
@@ -310,7 +322,7 @@ function PaymentStep({
         />
       </div>
 
-      {error && (
+      {submitError && (
         <div
           style={{
             background: 'rgba(255,68,68,0.08)',
@@ -323,23 +335,23 @@ function PaymentStep({
             fontWeight: 600,
           }}
         >
-          {error}
+          {submitError}
         </div>
       )}
 
       <button
         type="submit"
-        disabled={loading || !stripe}
-        className={!loading && stripe ? 'btn-g' : ''}
+        disabled={isDisabled}
+        className={!isDisabled ? 'btn-g' : ''}
         style={{
           width: '100%',
           padding: '1rem',
           fontSize: '16px',
           borderRadius: '12px',
           border: 'none',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          background: loading ? 'var(--surface2)' : 'var(--green)',
-          color: loading ? 'var(--muted)' : 'var(--black)',
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
+          background: isDisabled ? 'var(--surface2)' : 'var(--green)',
+          color: isDisabled ? 'var(--muted)' : 'var(--black)',
           fontFamily: "'Archivo Black', sans-serif",
           fontWeight: 900,
           letterSpacing: '-0.025em',
@@ -348,7 +360,7 @@ function PaymentStep({
           lineHeight: 1,
         }}
       >
-        {loading ? 'Processing...' : `Join — only £${totalPerPlayer} if confirmed`}
+        {loading ? 'Processing...' : parentDisabled ? 'Refreshing payment form…' : `Join — only £${totalPerPlayer} if confirmed`}
       </button>
 
       <div
@@ -415,6 +427,12 @@ export default function JoinForm({
   const [customerId, setCustomerId] = useState('')
   const [loadingSetup, setLoadingSetup] = useState(false)
   const [setupError, setSetupError] = useState('')
+  // setupKey increments on each fresh SetupIntent so <Elements> fully remounts.
+  const [setupKey, setSetupKey] = useState(0)
+  // paymentError survives <Elements> remounts — shown above the card form.
+  const [paymentError, setPaymentError] = useState('')
+  // True while fetching a replacement SetupIntent after a confirmSetup failure.
+  const [refreshingIntent, setRefreshingIntent] = useState(false)
   const [nameError, setNameError] = useState('')
   const [phoneError, setPhoneError] = useState('')
 
@@ -526,6 +544,30 @@ export default function JoinForm({
     setCustomerId(data.customerId)
     setLoadingSetup(false)
     goToPayment()
+  }
+
+  // Called by PaymentStep when stripe.confirmSetup fails.
+  // Fetches a fresh SetupIntent so the next attempt doesn't reuse a spent one.
+  async function handleConfirmError(message: string) {
+    setPaymentError(message)
+    setRefreshingIntent(true)
+    try {
+      const res = await fetch('/api/setup-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, sessionId }),
+      })
+      const data = await res.json()
+      if (res.ok && data.clientSecret && data.customerId) {
+        setClientSecret(data.clientSecret)
+        setCustomerId(data.customerId)
+        setSetupKey(k => k + 1)
+      }
+    } catch {
+      // Leave the form in place; user can go back and retry.
+    } finally {
+      setRefreshingIntent(false)
+    }
   }
 
   async function handleDetailsContinue(e: React.FormEvent) {
@@ -985,21 +1027,43 @@ export default function JoinForm({
 
       {/* Payment step */}
       {step === 'payment' && clientSecret && (
-        <Elements stripe={stripePromise} options={{ clientSecret, appearance }}>
-          <PaymentStep
-            slot={slot}
-            sessionId={sessionId}
-            isOrganiser={isOrganiser}
-            clientSecret={clientSecret}
-            customerId={customerId}
-            name={name}
-            phone={phone}
-            existingPlayerCount={existingPlayerCount}
-            hasRival={hasRival}
-            onBack={goToDetails}
-            onSuccess={handleJoinSuccess}
-          />
-        </Elements>
+        <>
+          {paymentError && (
+            <div
+              style={{
+                background: 'rgba(255,68,68,0.08)',
+                border: '1px solid rgba(255,68,68,0.2)',
+                borderRadius: '10px',
+                padding: '0.85rem 1rem',
+                marginBottom: '1rem',
+                fontSize: '13px',
+                color: 'var(--red)',
+                fontWeight: 600,
+              }}
+            >
+              {paymentError}
+            </div>
+          )}
+          {/* key={setupKey} forces a full remount when a fresh SetupIntent arrives,
+              preventing reuse of a spent intent on retry. */}
+          <Elements key={setupKey} stripe={stripePromise} options={{ clientSecret, appearance }}>
+            <PaymentStep
+              slot={slot}
+              sessionId={sessionId}
+              isOrganiser={isOrganiser}
+              clientSecret={clientSecret}
+              customerId={customerId}
+              name={name}
+              phone={phone}
+              existingPlayerCount={existingPlayerCount}
+              hasRival={hasRival}
+              onBack={goToDetails}
+              onSuccess={handleJoinSuccess}
+              onConfirmError={handleConfirmError}
+              parentDisabled={refreshingIntent}
+            />
+          </Elements>
+        </>
       )}
     </div>
   )

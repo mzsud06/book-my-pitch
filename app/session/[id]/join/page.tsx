@@ -30,9 +30,9 @@ export default async function JoinSessionPage({ params, searchParams }: Props) {
   const { data: session } = await supabase
     .from('sessions')
     .select(`
-      id, status, organiser_name,
+      id, status, organiser_name, organiser_id,
       slots(id, date, start_time, end_time, type, price, max_players),
-      players(id, name)
+      players(id, name, user_id)
     `)
     .eq('id', id)
     .single()
@@ -52,16 +52,26 @@ export default async function JoinSessionPage({ params, searchParams }: Props) {
     if (alreadyIn) redirect(`/session/${id}?already=1`)
   }
 
-  const organiserCount = (session as unknown as { organiser_name: string | null }).organiser_name ? 1 : 0
-  const playerCount = organiserCount + (Array.isArray(session.players) ? session.players.length : 0)
-  if (playerCount >= 10) redirect(`/session/${id}`)
-
   // Get the slot ID safely
   const slots = session.slots
   const slot = Array.isArray(slots) ? slots[0] : slots
   const slotId = (slot as SlotData)?.id
-
   if (!slotId) notFound()
+
+  const maxPlayers = (slot as SlotData)?.max_players ?? 10
+  const sessionOrganiserId = (session as unknown as { organiser_id: string | null }).organiser_id
+  const sessionPlayers = Array.isArray(session.players)
+    ? (session.players as { id: string; name: string; user_id: string | null }[])
+    : []
+  // If the organiser hasn't completed payment yet (no player row), they hold a reserved
+  // slot. Don't count them twice if they already have a player row.
+  const organiserHasPlayerRow = sessionOrganiserId
+    ? sessionPlayers.some(p => p.user_id === sessionOrganiserId)
+    : true
+  const organiserReserved = !organiserHasPlayerRow && !!sessionOrganiserId
+  if (sessionPlayers.length >= (organiserReserved ? maxPlayers - 1 : maxPlayers)) redirect(`/session/${id}`)
+  // Display count for JoinForm fill grid: paid player rows + 1 for any reserved organiser slot
+  const playerCount = sessionPlayers.length + (organiserReserved ? 1 : 0)
 
   // Check for rival sessions
   const { data: rivals } = await supabase

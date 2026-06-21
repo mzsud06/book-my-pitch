@@ -72,8 +72,6 @@ export default function CreateSessionForm({ slot }: Props) {
   const [phone, setPhone] = useState('')
   const [countryCode, setCountryCode] = useState('+44')
   const [localNumber, setLocalNumber] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [nameError, setNameError] = useState('')
   const [phoneError, setPhoneError] = useState('')
   const [teamName, setTeamName] = useState('')
@@ -155,7 +153,7 @@ export default function CreateSessionForm({ slot }: Props) {
   const startTime = slot.start_time.slice(0, 5)
   const endTime = slot.end_time.slice(0, 5)
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     let valid = true
     if (!name.trim() || !/^[A-Za-z ]+$/.test(name.trim())) {
@@ -167,24 +165,13 @@ export default function CreateSessionForm({ slot }: Props) {
       valid = false
     }
     if (!valid) return
-    setLoading(true)
-    setError('')
-
-    const res = await fetch('/api/sessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slotId: slot.id, name: name.trim(), phone: phone.trim(), teamName: gameType === 'looking_for_opposition' ? teamName.trim() : '', gameType, ...(challengeSessionId ? { matchedSessionId: challengeSessionId } : {}) }),
-    })
-    const data = await res.json()
-
-    if (!res.ok) {
-      setError(data.error ?? 'Failed to create session')
-      setLoading(false)
-      return
-    }
-
-    sessionStorage.setItem('join_details', JSON.stringify({ name: name.trim(), phone: phone.trim() }))
-    router.replace(`/session/${data.sessionId}/join?organiser=1`)
+    sessionStorage.setItem('bmp_create_details', JSON.stringify({
+      name: name.trim(),
+      phone: phone.trim(),
+      gameType,
+      teamName: gameType === 'looking_for_opposition' ? teamName.trim() : '',
+    }))
+    router.push(`/slots/${slot.id}/create/payment${challengeSessionId ? `?challenge=${challengeSessionId}` : ''}`)
   }
 
   const isReady = name.trim() && localNumber.trim()
@@ -681,34 +668,18 @@ export default function CreateSessionForm({ slot }: Props) {
           </div>
         )}
 
-        {error && (
-          <div
-            style={{
-              background: 'rgba(255,68,68,0.08)',
-              border: '1px solid rgba(255,68,68,0.2)',
-              borderRadius: '10px',
-              padding: '0.85rem 1rem',
-              fontSize: '13px',
-              color: 'var(--red)',
-              fontWeight: 600,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
         <button
           type="submit"
-          disabled={loading || !isReady}
-          className={!loading && isReady ? 'btn-g' : ''}
+          disabled={!isReady}
+          className={isReady ? 'btn-g' : ''}
           style={{
             width: '100%',
             padding: '1rem',
             borderRadius: '12px',
             border: 'none',
-            cursor: loading || !isReady ? 'not-allowed' : 'pointer',
-            background: loading || !isReady ? 'var(--surface2)' : 'var(--green)',
-            color: loading || !isReady ? 'var(--muted)' : 'var(--black)',
+            cursor: !isReady ? 'not-allowed' : 'pointer',
+            background: !isReady ? 'var(--surface2)' : 'var(--green)',
+            color: !isReady ? 'var(--muted)' : 'var(--black)',
             fontFamily: "'Archivo Black', sans-serif",
             fontWeight: 900,
             fontSize: '16px',
@@ -718,12 +689,8 @@ export default function CreateSessionForm({ slot }: Props) {
             lineHeight: 1,
           }}
         >
-          {loading ? 'Creating game…' : 'Create game →'}
+          Continue to payment →
         </button>
-
-        <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
-          No payment needed now — only charged when all 10 players join
-        </div>
       </form>
     </div>
   )

@@ -13,26 +13,41 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { slotId, sessionId, isOrganiser, name, phone, paymentMethodId, customerId } = body
 
+    console.log('[join] POST body received:', JSON.stringify({
+      slotId,
+      sessionId,
+      isOrganiser,
+      name,
+      phone,
+      paymentMethodId: typeof paymentMethodId === 'string' ? paymentMethodId : paymentMethodId,
+      customerId: typeof customerId === 'string' ? customerId : customerId,
+    }))
+
     // Validate UUIDs
     if (!isValidUUID(slotId) || !isValidUUID(sessionId)) {
+      console.warn('[join] 400 uuid-check: slotId valid=', isValidUUID(slotId), 'sessionId valid=', isValidUUID(sessionId))
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
     // Validate Stripe IDs — must start with expected prefixes
     if (typeof paymentMethodId !== 'string' || !paymentMethodId.startsWith('pm_')) {
+      console.warn('[join] 400 paymentMethodId failed: type=', typeof paymentMethodId, 'value=', paymentMethodId)
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 })
     }
     if (typeof customerId !== 'string' || !customerId.startsWith('cus_')) {
+      console.warn('[join] 400 customerId failed: type=', typeof customerId, 'value=', customerId)
       return NextResponse.json({ error: 'Invalid customer' }, { status: 400 })
     }
 
     // Server-side input validation (client also validates, but always re-validate server-side)
     const trimmedName = typeof name === 'string' ? name.trim() : ''
     if (!trimmedName || trimmedName.length > 100 || !/^[A-Za-z\s'-]+$/.test(trimmedName)) {
+      console.warn('[join] 400 name failed: trimmedName=', JSON.stringify(trimmedName), 'length=', trimmedName.length)
       return NextResponse.json({ error: 'Invalid name' }, { status: 400 })
     }
     const trimmedPhone = typeof phone === 'string' ? phone.trim() : null
     if (trimmedPhone && !/^\+[0-9]{7,15}$/.test(trimmedPhone)) {
+      console.warn('[join] 400 phone failed: trimmedPhone=', trimmedPhone)
       return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
     }
 
@@ -47,6 +62,7 @@ export async function POST(req: NextRequest) {
     const pm = await stripe.paymentMethods.retrieve(paymentMethodId)
     const pmCustomer = typeof pm.customer === 'string' ? pm.customer : pm.customer?.id
     if (!pmCustomer || pmCustomer !== customerId) {
+      console.warn('[join] 400 stripe-ownership: pm.customer=', pmCustomer, 'claimed customerId=', customerId)
       return NextResponse.json({ error: 'Invalid payment details' }, { status: 400 })
     }
 
@@ -70,6 +86,7 @@ export async function POST(req: NextRequest) {
 
     if (!existingSession) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
     if (existingSession.status !== 'filling') {
+      console.warn('[join] 400 session-status: sessionId=', sessionId, 'status=', existingSession.status)
       return NextResponse.json({ error: 'Session is no longer accepting players' }, { status: 400 })
     }
 
@@ -104,8 +121,25 @@ export async function POST(req: NextRequest) {
 
     const capacity: number = (slot as unknown as { max_players?: number }).max_players ?? 10
     const sessionMatchedIdEarly = (existingSession as unknown as { matched_session_id: string | null }).matched_session_id
-    const joinCap = sessionMatchedIdEarly ? 5 : capacity
+    const organiserId = (existingSession as unknown as { organiser_id: string | null }).organiser_id
+
+    // For non-matched sessions where the current joiner is not the organiser:
+    // reserve one slot for the organiser if they haven't completed payment yet,
+    // so they can't be locked out by non-organisers filling all capacity first.
+    let joinCap = sessionMatchedIdEarly ? 5 : capacity
+    if (!sessionMatchedIdEarly && organiserId && user?.id !== organiserId) {
+      const { count: organiserRowCount } = await serviceSupabase
+        .from('players')
+        .select('*', { count: 'exact', head: true })
+        .eq('session_id', sessionId)
+        .eq('user_id', organiserId)
+      if ((organiserRowCount ?? 0) === 0) {
+        joinCap = capacity - 1
+      }
+    }
+
     if ((currentCount ?? 0) >= joinCap) {
+      console.warn('[join] 400/409 capacity: currentCount=', currentCount, 'joinCap=', joinCap, 'matched=', !!sessionMatchedIdEarly)
       return NextResponse.json({
         error: sessionMatchedIdEarly ? 'This team is already full.' : 'Session is full',
       }, { status: sessionMatchedIdEarly ? 400 : 409 })
@@ -154,7 +188,22 @@ export async function POST(req: NextRequest) {
         }
       }
     } else if (playerCount >= capacity) {
-      await triggerPayments(sessionId, slot as unknown as SlotForPayment)
+      // Only trigger if the organiser has also completed payment (has a player row with
+      // a payment method). Prevents confirming when the organiser's slot is counted via
+      // organiser_name but they have no payment method on file.
+      let organiserReady = true
+      if (organiserId) {
+        const { count: organiserPaidCount } = await serviceSupabase
+          .from('players')
+          .select('*', { count: 'exact', head: true })
+          .eq('session_id', sessionId)
+          .eq('user_id', organiserId)
+          .not('stripe_payment_method_id', 'is', null)
+        organiserReady = (organiserPaidCount ?? 0) > 0
+      }
+      if (organiserReady) {
+        await triggerPayments(sessionId, slot as unknown as SlotForPayment)
+      }
     }
 
     return NextResponse.json({ sessionId, playerCount })

@@ -23,6 +23,7 @@ interface BookingCard {
   price: number
   playerCount: number
   venueName: string
+  gameType: string
 }
 
 interface RawSlot {
@@ -37,8 +38,64 @@ interface RawSlot {
 interface RawSession {
   id: string
   status: string
+  game_type: string
   slots: RawSlot | RawSlot[] | null
   players: { count: number }[]
+}
+
+function gameTypeBadge(gameType: string) {
+  if (gameType === 'looking_for_opposition') {
+    return (
+      <span style={{
+        display: 'inline-block',
+        fontSize: '11px',
+        fontWeight: 700,
+        padding: '3px 8px',
+        borderRadius: '6px',
+        background: 'rgba(198,241,53,0.08)',
+        color: '#C6F135',
+        border: '1px solid rgba(198,241,53,0.18)',
+        letterSpacing: '0.01em',
+        marginTop: '5px',
+      }}>
+        ⚡ Looking for opposition
+      </span>
+    )
+  }
+  if (gameType === 'open') {
+    return (
+      <span style={{
+        display: 'inline-block',
+        fontSize: '11px',
+        fontWeight: 700,
+        padding: '3px 8px',
+        borderRadius: '6px',
+        background: 'rgba(34,197,94,0.08)',
+        color: '#22c55e',
+        border: '1px solid rgba(34,197,94,0.18)',
+        letterSpacing: '0.01em',
+        marginTop: '5px',
+      }}>
+        🟢 Open game
+      </span>
+    )
+  }
+  return (
+    <span style={{
+      display: 'inline-block',
+      fontSize: '11px',
+      fontWeight: 700,
+      padding: '3px 8px',
+      borderRadius: '6px',
+      background: 'rgba(255,255,255,0.05)',
+      color: 'var(--muted)',
+      border: '1px solid rgba(255,255,255,0.09)',
+      letterSpacing: '0.01em',
+      marginTop: '5px',
+    }}>
+      Private
+    </span>
+  )
 }
 
 function toCard(s: RawSession): BookingCard | null {
@@ -54,6 +111,7 @@ function toCard(s: RawSession): BookingCard | null {
     price: slot.price,
     playerCount: s.players?.[0]?.count ?? 0,
     venueName: slot.venues?.name ?? 'Globe Football Pitch',
+    gameType: s.game_type ?? 'private',
   }
 }
 
@@ -73,7 +131,7 @@ export default function MyBookingsClient() {
           .select(`
             joined_at,
             sessions(
-              id, status,
+              id, status, game_type,
               slots(date, start_time, end_time, type, price, venues(name)),
               players(count)
             )
@@ -100,7 +158,7 @@ export default function MyBookingsClient() {
           const { data } = await supabase
             .from('sessions')
             .select(`
-              id, status,
+              id, status, game_type,
               slots!inner(date, start_time, end_time, type, price, venues(name)),
               players(count)
             `)
@@ -123,8 +181,11 @@ export default function MyBookingsClient() {
   }, [])
 
   const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date())
-  const upcoming = cards.filter(c => c.status !== 'cancelled' && c.date >= todayStr)
-  const past = cards.filter(c => c.status === 'confirmed' && c.date < todayStr)
+  const byDate = (a: BookingCard, b: BookingCard) =>
+    (a.date + 'T' + a.startTime).localeCompare(b.date + 'T' + b.startTime)
+  const upcoming = cards.filter(c => c.status !== 'cancelled' && c.date >= todayStr).sort(byDate)
+  const cancelled = cards.filter(c => c.status === 'cancelled').sort((a, b) => b.date.localeCompare(a.date))
+  const past = cards.filter(c => c.status === 'confirmed' && c.date < todayStr).sort(byDate)
 
   if (loading) {
     return (
@@ -308,6 +369,7 @@ export default function MyBookingsClient() {
                         <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
                           {c.venueName} · {formatDate(c.date)}
                         </div>
+                        {gameTypeBadge(c.gameType)}
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
                         <div
@@ -358,6 +420,102 @@ export default function MyBookingsClient() {
                     </div>
                   </div>
                 </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Cancelled */}
+      {cancelled.length > 0 && (
+        <div style={{ marginBottom: '2.5rem' }}>
+          <div
+            style={{
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--red)',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              opacity: 0.7,
+            }}
+          >
+            <span style={{ width: '18px', height: '2px', background: 'var(--red)', display: 'block', borderRadius: '2px', opacity: 0.5 }} />
+            Cancelled
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', opacity: 0.6 }}>
+            {cancelled.map(c => {
+              const perPlayer = (c.price / 10 + 0.50 + 0.30).toFixed(2)
+              return (
+                <div
+                  key={c.sessionId}
+                  style={{
+                    background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+                    border: '1px solid rgba(255,68,68,0.14)',
+                    borderRadius: '16px',
+                    padding: '1.25rem 1.5rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: "'Archivo Black', sans-serif",
+                          fontSize: '22px',
+                          letterSpacing: '-0.04em',
+                          lineHeight: 1,
+                          marginBottom: '6px',
+                          color: 'var(--muted)',
+                        }}
+                      >
+                        {c.startTime} – {c.endTime}
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
+                        {c.venueName} · {formatDate(c.date)}
+                      </div>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          background: 'rgba(255,68,68,0.08)',
+                          color: 'var(--red)',
+                          border: '1px solid rgba(255,68,68,0.18)',
+                          letterSpacing: '0.01em',
+                          marginTop: '6px',
+                        }}
+                      >
+                        Cancelled — another team got there first
+                      </span>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
+                      <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
+                        £{perPlayer} if full
+                      </div>
+                    </div>
+                  </div>
+                  <Link
+                    href="/slots"
+                    style={{ textDecoration: 'none' }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <span
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        color: 'var(--green)',
+                        letterSpacing: '-0.01em',
+                      }}
+                    >
+                      Find another game →
+                    </span>
+                  </Link>
+                </div>
               )
             })}
           </div>
@@ -421,6 +579,7 @@ export default function MyBookingsClient() {
                       <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
                         {c.venueName} · {formatDate(c.date)}
                       </div>
+                      {gameTypeBadge(c.gameType)}
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 700, letterSpacing: '0.04em' }}>

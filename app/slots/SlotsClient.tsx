@@ -158,6 +158,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
     }
   })
 
+  // Count active challengers per LFO session (sessions pointing at an LFO via matched_session_id)
+  const challengerCounts = new Map<string, number>()
+  sessions.forEach(s => {
+    if (s.matched_session_id && s.status === 'filling') {
+      challengerCounts.set(s.matched_session_id, (challengerCounts.get(s.matched_session_id) ?? 0) + 1)
+    }
+  })
+
   function getSlotStatus(template: SlotTemplate) {
     const slotSessions = daySessionMap.get(template.startTime) ?? []
     const slotId = slotIdMap.get(`${dayStr}_${template.startTime}`) ?? null
@@ -186,9 +194,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
   }
 
   function totalCount(s: SessionData): number {
-    const organiserCount = s.organiser_name ? 1 : 0
-    const playersCount = (Array.isArray(s.players) ? s.players[0]?.count : 0) ?? 0
-    return organiserCount + playersCount
+    return (Array.isArray(s.players) ? s.players[0]?.count : 0) ?? 0
   }
 
   return (
@@ -384,7 +390,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
         {slotTemplates.map((template, idx) => {
           const info = getSlotStatus(template)
           const booked = info.status === 'booked'
-          const filling = info.status === 'filling'
           const typeColor = template.type === 'peak' ? '#FF6B6B' : template.type === 'weekend' ? '#00B4FF' : 'var(--green)'
           const typeBg = template.type === 'peak' ? 'rgba(255,68,68,0.12)' : template.type === 'weekend' ? 'rgba(0,180,255,0.09)' : 'rgba(198,241,53,0.09)'
           const perPlayerPitch = (template.priceGBP / 10).toFixed(2)
@@ -402,10 +407,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
             animationDelay: `${80 + idx * 50}ms`,
           }
 
-          const fillCount = booked ? 10 : filling ? info.playerCount : 0
-          const isAmberState = fillCount >= 7 && fillCount < 10
-          const segColor = booked ? 'lit-red' : isAmberState ? 'lit-amber' : filling ? 'lit-green' : 'lit-green'
-
           const borderColor = booked ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.07)'
 
           const cardStyle: React.CSSProperties = {
@@ -418,16 +419,20 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
             position: 'relative',
             overflow: 'hidden',
             opacity: booked ? 0.32 : 1,
-            boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+            boxShadow: userSessionId
+            ? '0 0 0 1.5px rgba(198,241,53,0.4), 0 4px 20px rgba(198,241,53,0.08)'
+            : '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
           }
 
           const oppositionSessions = (daySessionMap.get(template.startTime) ?? []).filter(
-            s => s.is_public && s.status === 'filling' && !s.matched_session_id && (s.game_type === 'looking_for_opposition' || s.game_type === null)
+            s => s.is_public && s.status === 'filling' && !s.matched_session_id && (s.game_type === 'looking_for_opposition' || s.game_type === null) && s.id !== userSessionId
           )
           const openSessions = (daySessionMap.get(template.startTime) ?? []).filter(
             s => s.status === 'filling' && !s.matched_session_id && s.game_type === 'open'
           )
+          const fillingFast = !booked && [...oppositionSessions, ...openSessions].some(s => totalCount(s) >= 7)
           const dropOpen = openDropdown === template.startTime
+          const slotTimeLabel = `${template.startTime}–${template.endTime} · ${DAY_NAMES[selectedDate.getDay()]} ${selectedDate.getDate()} ${MONTH_NAMES[selectedDate.getMonth()]}`
 
           const cardContent = (
             <>
@@ -440,11 +445,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                     display: 'flex',
                     alignItems: 'center',
                     gap: '5px',
-                    background: 'rgba(198,241,53,0.12)',
-                    border: '1px solid rgba(198,241,53,0.28)',
-                    borderRadius: '6px',
-                    padding: '3px 8px',
-                    fontSize: '9px',
+                    background: 'rgba(198,241,53,0.18)',
+                    border: '1.5px solid rgba(198,241,53,0.6)',
+                    borderRadius: '8px',
+                    padding: '6px 12px',
+                    fontSize: '11px',
                     fontWeight: 700,
                     color: '#C6F135',
                     letterSpacing: '0.08em',
@@ -453,7 +458,24 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                     pointerEvents: 'none',
                   }}
                 >
-                  <span style={{ fontSize: '8px', lineHeight: 1 }}>✓</span>
+                  <span
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '50%',
+                      background: '#C6F135',
+                      color: '#000',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '8px',
+                      fontWeight: 900,
+                      flexShrink: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ✓
+                  </span>
                   Your game
                 </div>
               )}
@@ -464,7 +486,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
                   marginBottom: '1.1rem',
-                  ...(userSessionId ? { paddingTop: '1.5rem' } : {}),
+                  ...(userSessionId ? { paddingTop: '1.75rem' } : {}),
                 }}
               >
                 <div>
@@ -525,20 +547,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                 </div>
               </div>
 
-              {/* Segmented fill bar */}
-              <div className="seg-bar" style={{ marginBottom: '10px' }}>
-                {Array.from({ length: 10 }, (_, i) => {
-                  const lit = i < fillCount
-                  return (
-                    <div
-                      key={i}
-                      className={`seg-bar-seg ${lit ? segColor : 'unlit'}`}
-                      style={{ transitionDelay: `${i * 25}ms` }}
-                    />
-                  )
-                })}
-              </div>
-
               {/* Status row */}
               <div
                 style={{
@@ -551,15 +559,15 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
               >
                 {booked ? (
                   <span style={{ color: 'var(--red)', letterSpacing: '0.02em' }}>Slot taken</span>
-                ) : filling ? (
-                  <>
-                    <span style={{ color: 'var(--amber)' }}>⚡ Another group is racing for this</span>
-                    <span style={{ color: 'var(--green)', letterSpacing: '0.02em' }}>Create game →</span>
-                  </>
                 ) : (
-                  <span style={{ color: 'var(--green)', letterSpacing: '0.02em', marginLeft: 'auto' }}>
-                    Create game →
-                  </span>
+                  <>
+                    {fillingFast && (
+                      <span style={{ color: 'var(--amber)', fontWeight: 500, fontSize: '11px' }}>Filling fast</span>
+                    )}
+                    <span style={{ color: 'var(--green)', letterSpacing: '0.02em', marginLeft: 'auto' }}>
+                      Create game →
+                    </span>
+                  </>
                 )}
               </div>
             </>
@@ -583,7 +591,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
               )}
 
               {oppositionSessions.length > 0 && !booked && (
-                <div style={{ marginTop: '6px' }}>
+                <div style={{ marginTop: '0' }}>
                   <button
                     onClick={() => setOpenDropdown(o => o === template.startTime ? null : template.startTime)}
                     style={{
@@ -619,77 +627,99 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   >
                     <div
                       style={{
-                        background: '#111111',
-                        border: '1px solid #222222',
-                        borderRadius: '12px',
-                        marginTop: '4px',
-                        overflow: 'hidden',
+                        marginLeft: '12px',
+                        borderLeft: '2px solid rgba(198,241,53,0.18)',
+                        paddingLeft: '10px',
+                        paddingTop: '6px',
                       }}
                     >
-                      {oppositionSessions.map((s, i) => {
-                        const count = Math.min(totalCount(s), 5)
-                        const teamLabel = s.team_name || 'Team A'
-                        return (
-                          <div
-                            key={s.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '0.9rem 1rem',
-                              borderBottom: i < oppositionSessions.length - 1 ? '1px solid #1a1a1a' : 'none',
-                            }}
-                          >
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: '14px',
-                                  fontWeight: 700,
-                                  color: 'var(--text)',
-                                  fontFamily: "'Archivo', sans-serif",
-                                  letterSpacing: '-0.01em',
-                                }}
-                              >
-                                {teamLabel}
-                              </div>
-                              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 500 }}>
-                                {count}/5 players
-                              </div>
-                            </div>
-                            {info.slotId && (
-                              <Link
-                                href={`/slots/${info.slotId}/create?challenge=${s.id}`}
-                                style={{ textDecoration: 'none' }}
-                              >
-                                <button
+                      <div
+                        style={{
+                          background: '#111111',
+                          border: '1px solid #222222',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {oppositionSessions.map((s, i) => {
+                          const count = Math.min(totalCount(s), 5)
+                          const teamLabel = s.team_name || s.organiser_name || 'Team A'
+                          const rivals = challengerCounts.get(s.id) ?? 0
+                          return (
+                            <div
+                              key={s.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '0.9rem 1rem',
+                                borderBottom: i < oppositionSessions.length - 1 ? '1px solid #1a1a1a' : 'none',
+                              }}
+                            >
+                              <div>
+                                <div
                                   style={{
-                                    background: '#C6F135',
-                                    color: '#000',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    padding: '0.6rem 1.1rem',
-                                    fontSize: '13px',
-                                    fontWeight: 900,
-                                    fontFamily: "'Archivo Black', sans-serif",
-                                    cursor: 'pointer',
-                                    letterSpacing: '-0.015em',
-                                    lineHeight: 1,
+                                    fontSize: '14px',
+                                    fontWeight: 700,
+                                    color: 'var(--text)',
+                                    fontFamily: "'Archivo', sans-serif",
+                                    letterSpacing: '-0.01em',
                                   }}
                                 >
-                                  Challenge →
-                                </button>
-                              </Link>
-                            )}
-                          </div>
-                        )
-                      })}
+                                  {teamLabel}
+                                </div>
+                                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 500 }}>
+                                  ⚡ Looking for opposition · {count}/5 in their team
+                                </div>
+                                {rivals > 0 && (
+                                  <div style={{ fontSize: '11px', color: 'var(--amber)', fontWeight: 500, marginTop: '3px' }}>
+                                    {rivals === 1 ? '1 other team also challenging' : `${rivals} other teams also challenging`}
+                                  </div>
+                                )}
+                              </div>
+                              {info.slotId && (
+                                <Link
+                                  href={`/slots/${info.slotId}/create?challenge=${s.id}`}
+                                  style={{ textDecoration: 'none' }}
+                                >
+                                  <button
+                                    style={{
+                                      background: '#C6F135',
+                                      color: '#000',
+                                      border: 'none',
+                                      borderRadius: '8px',
+                                      padding: '0.6rem 1.1rem',
+                                      fontSize: '13px',
+                                      fontWeight: 900,
+                                      fontFamily: "'Archivo Black', sans-serif",
+                                      cursor: 'pointer',
+                                      letterSpacing: '-0.015em',
+                                      lineHeight: 1,
+                                    }}
+                                  >
+                                    Challenge →
+                                  </button>
+                                </Link>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
               {openSessions.length > 0 && !booked && (
-                <div style={{ marginTop: '6px' }}>
+                <div
+                  style={{
+                    marginTop: '0',
+                    marginLeft: '12px',
+                    borderLeft: '2px solid rgba(198,241,53,0.18)',
+                    paddingLeft: '10px',
+                    paddingTop: '6px',
+                  }}
+                >
                   <div
                     style={{
                       background: '#111111',
@@ -721,10 +751,10 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                                 letterSpacing: '-0.01em',
                               }}
                             >
-                              🟢 Open game
+                              {s.organiser_name || 'Open game'}
                             </div>
                             <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 500 }}>
-                              {count}/10 players
+                              🟢 Open game · {count}/10 players
                             </div>
                           </div>
                           <Link href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
