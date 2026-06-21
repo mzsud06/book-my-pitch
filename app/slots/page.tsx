@@ -90,6 +90,8 @@ export default async function SlotsPage() {
     }
   }
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const [{ data: sessions }, { data: dbSlots }] = await Promise.all([
     supabase
       .from('sessions')
@@ -98,6 +100,10 @@ export default async function SlotsPage() {
         slot_id,
         status,
         organiser_name,
+        team_name,
+        is_public,
+        game_type,
+        matched_session_id,
         slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id),
         players(count)
       `)
@@ -113,6 +119,27 @@ export default async function SlotsPage() {
       .lte('date', endStr),
   ])
 
+  // Build a map of slot_id → session_id for slots where the current user
+  // already has an active session (as organiser or as a player).
+  let userSlotSessionMap: Record<string, string> = {}
+  if (user) {
+    const [{ data: asOrganiser }, { data: asPlayer }] = await Promise.all([
+      supabase
+        .from('sessions')
+        .select('id, slot_id')
+        .eq('organiser_id', user.id)
+        .in('status', ['filling', 'confirmed']),
+      supabase
+        .from('sessions')
+        .select('id, slot_id, players!inner(user_id)')
+        .eq('players.user_id', user.id)
+        .in('status', ['filling', 'confirmed']),
+    ])
+    asOrganiser?.forEach(s => { userSlotSessionMap[s.slot_id] = s.id })
+    ;(asPlayer as unknown as { id: string; slot_id: string }[] | null)
+      ?.forEach(s => { userSlotSessionMap[s.slot_id] = s.id })
+  }
+
   return (
     <>
       <Nav />
@@ -120,6 +147,7 @@ export default async function SlotsPage() {
         initialSessions={(sessions ?? []) as unknown as SessionData[]}
         dbSlots={(dbSlots ?? []) as DbSlot[]}
         venueId={venueId}
+        userSlotSessionMap={userSlotSessionMap}
       />
     </>
   )

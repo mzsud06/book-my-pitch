@@ -33,7 +33,9 @@
       "Bash(Sort-Object FullName)",
       "Bash(Get-ChildItem *)",
       "Bash(ping -n 4 127.0.0.1)",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "PowerShell(npm run *)",
+      "Skill(run)"
     ]
   }
 }

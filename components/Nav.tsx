@@ -287,22 +287,6 @@ export default function Nav() {
         ) : (
           <>
             <Link
-              href="/my-bookings"
-              className="nav-link-ghost"
-              style={{
-                fontFamily: "'Archivo', sans-serif",
-                fontWeight: 600,
-                fontSize: '13px',
-                color: 'var(--muted)',
-                textDecoration: 'none',
-                transition: 'color 0.15s ease',
-                whiteSpace: 'nowrap',
-                letterSpacing: '-0.01em',
-              }}
-            >
-              My bookings
-            </Link>
-            <Link
               href="/auth/login"
               className="nav-link-ghost"
               style={{

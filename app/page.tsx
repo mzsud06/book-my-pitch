@@ -206,7 +206,7 @@ export default function HomePage() {
                 label: 'Weekend',
                 labelColor: '#00B4FF',
                 labelBg: 'rgba(0,180,255,0.09)',
-                time: '11:00 – 12:00',
+                time: '09:30 – 10:30',
                 pp: '£4.00',
                 players: 2,
                 rival: false,
@@ -434,18 +434,6 @@ export default function HomePage() {
                 </div>
 
                 <div style={{ position: 'relative', zIndex: 1 }}>
-                  <div
-                    style={{
-                      fontSize: '9px',
-                      fontWeight: 700,
-                      color: 'var(--green)',
-                      letterSpacing: '0.16em',
-                      textTransform: 'uppercase',
-                      marginBottom: '1.5rem',
-                    }}
-                  >
-                    Step {step.n}
-                  </div>
                   <div
                     style={{
                       fontFamily: "'Archivo Black', sans-serif",

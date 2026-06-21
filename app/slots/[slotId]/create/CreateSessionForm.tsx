@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 const COUNTRY_CODES = [
   { code: '+44',  label: '🇬🇧 +44' },
@@ -64,6 +66,8 @@ const labelStyle: React.CSSProperties = {
 
 export default function CreateSessionForm({ slot }: Props) {
   const router = useRouter()
+  const [existingSessionId, setExistingSessionId] = useState<string | null>(null)
+  const [checking, setChecking] = useState(true)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [countryCode, setCountryCode] = useState('+44')
@@ -72,6 +76,77 @@ export default function CreateSessionForm({ slot }: Props) {
   const [error, setError] = useState('')
   const [nameError, setNameError] = useState('')
   const [phoneError, setPhoneError] = useState('')
+  const [teamName, setTeamName] = useState('')
+  const [gameType, setGameType] = useState<'private' | 'looking_for_opposition' | 'open'>('private')
+
+  const searchParams = useSearchParams()
+  const challengeSessionId = searchParams.get('challenge')
+  const [challengedTeamName, setChallengedTeamName] = useState<string | null>(null)
+  const [challengedPlayerCount, setChallengedPlayerCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    async function checkExisting() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setChecking(false); return }
+
+      // Check as organiser
+      const { data: asOrganiser } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('slot_id', slot.id)
+        .eq('organiser_id', user.id)
+        .in('status', ['filling', 'confirmed'])
+        .maybeSingle()
+
+      if (asOrganiser) {
+        setExistingSessionId(asOrganiser.id)
+        setChecking(false)
+        return
+      }
+
+      // Check as player in any active session for this slot
+      const { data: activeForSlot } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('slot_id', slot.id)
+        .in('status', ['filling', 'confirmed'])
+
+      if (activeForSlot && activeForSlot.length > 0) {
+        const { data: asPlayer } = await supabase
+          .from('players')
+          .select('session_id')
+          .eq('user_id', user.id)
+          .in('session_id', activeForSlot.map(s => s.id))
+          .maybeSingle()
+
+        if (asPlayer) {
+          setExistingSessionId((asPlayer as { session_id: string }).session_id)
+          setChecking(false)
+          return
+        }
+      }
+
+      setChecking(false)
+    }
+    checkExisting()
+  }, [slot.id])
+
+  useEffect(() => {
+    if (!challengeSessionId) return
+    const supabase = createClient()
+    supabase
+      .from('sessions')
+      .select('id, team_name, players(count)')
+      .eq('id', challengeSessionId)
+      .single()
+      .then(({ data }) => {
+        if (!data) return
+        setChallengedTeamName((data as unknown as { team_name: string | null }).team_name)
+        const players = (data as unknown as { players: { count: number }[] }).players
+        setChallengedPlayerCount(players?.[0]?.count ?? 0)
+      })
+  }, [challengeSessionId])
 
   const perPlayer = (slot.price / 10).toFixed(2)
   const typeLabel = slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'
@@ -98,7 +173,7 @@ export default function CreateSessionForm({ slot }: Props) {
     const res = await fetch('/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slotId: slot.id, name: name.trim(), phone: phone.trim() }),
+      body: JSON.stringify({ slotId: slot.id, name: name.trim(), phone: phone.trim(), teamName: gameType === 'looking_for_opposition' ? teamName.trim() : '', gameType, ...(challengeSessionId ? { matchedSessionId: challengeSessionId } : {}) }),
     })
     const data = await res.json()
 
@@ -113,6 +188,43 @@ export default function CreateSessionForm({ slot }: Props) {
   }
 
   const isReady = name.trim() && localNumber.trim()
+
+  if (checking) return null
+
+  if (existingSessionId) return (
+    <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
+      <div
+        style={{
+          fontFamily: "'Archivo Black', sans-serif",
+          fontSize: 'clamp(22px, 4vw, 30px)',
+          letterSpacing: '-0.04em',
+          lineHeight: 1,
+          marginBottom: '1rem',
+        }}
+      >
+        You already have a game for this slot.
+      </div>
+      <Link href={`/session/${existingSessionId}`} style={{ textDecoration: 'none' }}>
+        <button
+          style={{
+            padding: '0.9rem 2rem',
+            borderRadius: '12px',
+            border: 'none',
+            background: 'var(--green)',
+            color: 'var(--black)',
+            fontFamily: "'Archivo Black', sans-serif",
+            fontWeight: 900,
+            fontSize: '15px',
+            letterSpacing: '-0.025em',
+            cursor: 'pointer',
+            lineHeight: 1,
+          }}
+        >
+          View your game →
+        </button>
+      </Link>
+    </div>
+  )
 
   return (
     <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
@@ -142,7 +254,7 @@ export default function CreateSessionForm({ slot }: Props) {
             flexShrink: 0,
           }}
         />
-        Create your game
+        {challengeSessionId ? 'Join the challenge' : 'Create your game'}
       </div>
       <div
         className="anim-fade-up d-80"
@@ -162,6 +274,36 @@ export default function CreateSessionForm({ slot }: Props) {
       >
         {formatDate(slot.date)} · {typeLabel} · {slot.venue?.name ?? 'Globe Football Pitch'}
       </div>
+
+      {challengeSessionId && (
+        <div
+          className="anim-fade-up d-180"
+          style={{
+            background: '#C6F135',
+            borderRadius: '12px',
+            padding: '1rem 1.1rem',
+            color: '#000',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'Archivo Black', sans-serif",
+              fontSize: '15px',
+              letterSpacing: '-0.025em',
+              lineHeight: 1.3,
+              marginBottom: '5px',
+            }}
+          >
+            ⚡ You&apos;re challenging {challengedTeamName || 'Team A'} — fill your team of 5 to lock in the match.
+          </div>
+          {challengedPlayerCount !== null && (
+            <div style={{ fontSize: '12px', fontWeight: 600, opacity: 0.65 }}>
+              They currently have {challengedPlayerCount}/5 players.
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Slot summary card */}
       <div
@@ -288,74 +430,78 @@ export default function CreateSessionForm({ slot }: Props) {
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
-            <div
-              style={{
-                fontSize: '7px',
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.12)',
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                flexShrink: 0,
-              }}
-            >
-              5-a-side
-            </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
-          </div>
-
-          <div style={{ display: 'flex', gap: '5px' }}>
-            {Array.from({ length: 5 }, (_, i) => (
-              <div
-                key={i + 5}
-                style={{
-                  position: 'relative',
-                  flex: 1,
-                  height: '58px',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '4px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px dashed rgba(255,255,255,0.07)',
-                }}
-              >
+          {!challengeSessionId && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
                 <div
                   style={{
-                    position: 'absolute',
-                    top: '4px',
-                    right: '6px',
                     fontSize: '7px',
-                    fontWeight: 900,
-                    fontFamily: "'Archivo Black', sans-serif",
-                    color: 'rgba(255,255,255,0.06)',
-                    lineHeight: 1,
+                    fontWeight: 700,
+                    color: 'rgba(255,255,255,0.12)',
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                    flexShrink: 0,
                   }}
                 >
-                  {i + 6}
+                  5-a-side
                 </div>
-                <div
-                  style={{
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.04)',
-                  }}
-                />
-                <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(255,255,255,0.1)' }}>
-                  +{i + 6}
-                </div>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
               </div>
-            ))}
-          </div>
+
+              <div style={{ display: 'flex', gap: '5px' }}>
+                {Array.from({ length: 5 }, (_, i) => (
+                  <div
+                    key={i + 5}
+                    style={{
+                      position: 'relative',
+                      flex: 1,
+                      height: '58px',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px dashed rgba(255,255,255,0.07)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '6px',
+                        fontSize: '7px',
+                        fontWeight: 900,
+                        fontFamily: "'Archivo Black', sans-serif",
+                        color: 'rgba(255,255,255,0.06)',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {i + 6}
+                    </div>
+                    <div
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.04)',
+                      }}
+                    />
+                    <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(255,255,255,0.1)' }}>
+                      +{i + 6}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Segmented bar — 1/10 lit */}
+        {/* Segmented bar */}
         <div className="seg-bar" style={{ marginBottom: '10px' }}>
-          {Array.from({ length: 10 }, (_, i) => (
+          {Array.from({ length: challengeSessionId ? 5 : 10 }, (_, i) => (
             <div
               key={i}
               className={`seg-bar-seg ${i === 0 ? 'lit-green' : 'unlit'}`}
@@ -364,8 +510,17 @@ export default function CreateSessionForm({ slot }: Props) {
           ))}
         </div>
         <div style={{ fontSize: '13px', color: 'var(--muted)', textAlign: 'center', fontWeight: 500 }}>
-          <strong style={{ color: 'var(--text)', fontWeight: 800 }}>1/10 players</strong>
-          {' '}— 9 more needed to confirm
+          {challengeSessionId ? (
+            <>
+              <strong style={{ color: 'var(--text)', fontWeight: 800 }}>1/5 players</strong>
+              {' '}— 4 more needed to lock in the match
+            </>
+          ) : (
+            <>
+              <strong style={{ color: 'var(--text)', fontWeight: 800 }}>1/10 players</strong>
+              {' '}— 9 more needed to confirm
+            </>
+          )}
         </div>
       </div>
 
@@ -470,6 +625,61 @@ export default function CreateSessionForm({ slot }: Props) {
           </div>
           {phoneError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{phoneError}</div>}
         </div>
+        {!challengeSessionId && (
+          <div>
+            <label style={labelStyle}>Game type</label>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {(
+                [
+                  ['private', 'Private'],
+                  ['looking_for_opposition', 'Looking for opposition'],
+                  ['open', 'Open to anyone'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => {
+                    setGameType(value)
+                    if (value !== 'looking_for_opposition') setTeamName('')
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '0.65rem 0.3rem',
+                    borderRadius: '8px',
+                    border: gameType === value ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                    background: gameType === value ? '#C6F135' : '#1a1a1a',
+                    color: gameType === value ? '#000' : '#fff',
+                    fontFamily: "'Archivo', sans-serif",
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    lineHeight: 1.2,
+                    textAlign: 'center',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {gameType === 'looking_for_opposition' && !challengeSessionId && (
+          <div>
+            <label style={labelStyle}>Team name (optional)</label>
+            <input
+              className="field-input"
+              type="text"
+              value={teamName}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, '')
+                setTeamName(cleaned.slice(0, 30))
+              }}
+              placeholder="e.g. Sunday Ballers"
+              style={inputStyle}
+            />
+          </div>
+        )}
 
         {error && (
           <div

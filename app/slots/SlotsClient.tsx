@@ -10,6 +10,10 @@ export interface SessionData {
   slot_id: string
   status: string
   organiser_name: string | null
+  team_name: string | null
+  is_public: boolean
+  game_type: string | null
+  matched_session_id: string | null
   slots: {
     id: string
     date: string
@@ -33,6 +37,7 @@ interface Props {
   initialSessions: SessionData[]
   dbSlots: DbSlot[]
   venueId: string
+  userSlotSessionMap: Record<string, string>
 }
 
 function formatDate(date: Date): string {
@@ -57,11 +62,12 @@ function startOfDay(date: Date): Date {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props) {
+export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlotSessionMap }: Props) {
   const supabase = createClient()
   const [sessions, setSessions] = useState<SessionData[]>(initialSessions)
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
   const [weekOffset, setWeekOffset] = useState(0)
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
   const [slotIdMap, setSlotIdMap] = useState<Map<string, string>>(
     () => new Map(dbSlots.map(s => [`${s.date}_${s.start_time.slice(0, 5)}`, s.id]))
@@ -85,7 +91,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
       const endStr = formatDate(addDays(startOfDay(new Date()), 14))
       supabase
         .from('sessions')
-        .select('id, slot_id, status, organiser_name, slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id), players(count)')
+        .select('id, slot_id, status, organiser_name, team_name, is_public, game_type, matched_session_id, slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id), players(count)')
         .eq('slots.venue_id', venueId)
         .gte('slots.date', nowStr)
         .lte('slots.date', endStr)
@@ -291,7 +297,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
                 onClick={() => { if (!isPast) setSelectedDate(startOfDay(day)) }}
                 disabled={isPast}
                 style={{
-                  flexShrink: 0,
+                  flex: 1,
+                  minWidth: '52px',
                   padding: '0.65rem 0.85rem',
                   borderRadius: '12px',
                   border: active ? 'none' : '1px solid var(--border)',
@@ -300,7 +307,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
                   cursor: isPast ? 'not-allowed' : 'pointer',
                   transition: 'border-color 0.18s ease, color 0.18s ease, background 0.18s ease, transform 0.12s ease',
                   textAlign: 'center',
-                  minWidth: '52px',
                   lineHeight: 1,
                 }}
               >
@@ -383,7 +389,10 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
           const typeBg = template.type === 'peak' ? 'rgba(255,68,68,0.12)' : template.type === 'weekend' ? 'rgba(0,180,255,0.09)' : 'rgba(198,241,53,0.09)'
           const perPlayerPitch = (template.priceGBP / 10).toFixed(2)
 
-          const href = !booked && info.slotId ? `/slots/${info.slotId}/create` : undefined
+          const userSessionId = info.slotId ? userSlotSessionMap[info.slotId] : undefined
+          const href = userSessionId
+            ? `/session/${userSessionId}`
+            : (!booked && info.slotId ? `/slots/${info.slotId}/create` : undefined)
 
           const staggerStyle: React.CSSProperties = {
             animationName: 'fadeUp',
@@ -412,8 +421,42 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
             boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
           }
 
+          const oppositionSessions = (daySessionMap.get(template.startTime) ?? []).filter(
+            s => s.is_public && s.status === 'filling' && !s.matched_session_id && (s.game_type === 'looking_for_opposition' || s.game_type === null)
+          )
+          const openSessions = (daySessionMap.get(template.startTime) ?? []).filter(
+            s => s.status === 'filling' && !s.matched_session_id && s.game_type === 'open'
+          )
+          const dropOpen = openDropdown === template.startTime
+
           const cardContent = (
             <>
+              {userSessionId && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '12px',
+                    left: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: 'rgba(198,241,53,0.12)',
+                    border: '1px solid rgba(198,241,53,0.28)',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    fontSize: '9px',
+                    fontWeight: 700,
+                    color: '#C6F135',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    zIndex: 1,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <span style={{ fontSize: '8px', lineHeight: 1 }}>✓</span>
+                  Your game
+                </div>
+              )}
               {/* Header row */}
               <div
                 style={{
@@ -421,6 +464,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
                   marginBottom: '1.1rem',
+                  ...(userSessionId ? { paddingTop: '1.5rem' } : {}),
                 }}
               >
                 <div>
@@ -521,23 +565,193 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId }: Props
             </>
           )
 
-          return href ? (
-            <Link
-              key={template.startTime}
-              href={href}
-              style={{ textDecoration: 'none', color: 'inherit', display: 'block', ...staggerStyle }}
-            >
-              <div className="slot-pick" style={cardStyle}>
-                {cardContent}
-              </div>
-            </Link>
-          ) : (
-            <div
-              key={template.startTime}
-              className={booked ? 'taken' : ''}
-              style={{ ...cardStyle, ...staggerStyle }}
-            >
-              {cardContent}
+          return (
+            <div key={template.startTime} style={staggerStyle}>
+              {href ? (
+                <Link
+                  href={href}
+                  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                >
+                  <div className="slot-pick" style={cardStyle}>
+                    {cardContent}
+                  </div>
+                </Link>
+              ) : (
+                <div className={booked ? 'taken' : ''} style={cardStyle}>
+                  {cardContent}
+                </div>
+              )}
+
+              {oppositionSessions.length > 0 && !booked && (
+                <div style={{ marginTop: '6px' }}>
+                  <button
+                    onClick={() => setOpenDropdown(o => o === template.startTime ? null : template.startTime)}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 1rem',
+                      background: 'transparent',
+                      border: '1px solid rgba(198,241,53,0.2)',
+                      borderRadius: '10px',
+                      color: 'var(--green)',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: "'Archivo', sans-serif",
+                      letterSpacing: '0.02em',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'border-color 0.15s ease, background 0.15s ease',
+                      lineHeight: 1,
+                    }}
+                  >
+                    ⚡ {oppositionSessions.length} team{oppositionSessions.length !== 1 ? 's' : ''} looking for opposition
+                    <span style={{ opacity: 0.5, fontSize: '10px', marginLeft: '2px' }}>{dropOpen ? '▲' : '▼'}</span>
+                  </button>
+
+                  <div
+                    style={{
+                      maxHeight: dropOpen ? '400px' : '0px',
+                      overflow: 'hidden',
+                      transition: 'max-height 0.3s ease',
+                    }}
+                  >
+                    <div
+                      style={{
+                        background: '#111111',
+                        border: '1px solid #222222',
+                        borderRadius: '12px',
+                        marginTop: '4px',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {oppositionSessions.map((s, i) => {
+                        const count = Math.min(totalCount(s), 5)
+                        const teamLabel = s.team_name || 'Team A'
+                        return (
+                          <div
+                            key={s.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '0.9rem 1rem',
+                              borderBottom: i < oppositionSessions.length - 1 ? '1px solid #1a1a1a' : 'none',
+                            }}
+                          >
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: '14px',
+                                  fontWeight: 700,
+                                  color: 'var(--text)',
+                                  fontFamily: "'Archivo', sans-serif",
+                                  letterSpacing: '-0.01em',
+                                }}
+                              >
+                                {teamLabel}
+                              </div>
+                              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 500 }}>
+                                {count}/5 players
+                              </div>
+                            </div>
+                            {info.slotId && (
+                              <Link
+                                href={`/slots/${info.slotId}/create?challenge=${s.id}`}
+                                style={{ textDecoration: 'none' }}
+                              >
+                                <button
+                                  style={{
+                                    background: '#C6F135',
+                                    color: '#000',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '0.6rem 1.1rem',
+                                    fontSize: '13px',
+                                    fontWeight: 900,
+                                    fontFamily: "'Archivo Black', sans-serif",
+                                    cursor: 'pointer',
+                                    letterSpacing: '-0.015em',
+                                    lineHeight: 1,
+                                  }}
+                                >
+                                  Challenge →
+                                </button>
+                              </Link>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {openSessions.length > 0 && !booked && (
+                <div style={{ marginTop: '6px' }}>
+                  <div
+                    style={{
+                      background: '#111111',
+                      border: '1px solid #222222',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {openSessions.map((s, i) => {
+                      const count = Math.min(totalCount(s), 10)
+                      return (
+                        <div
+                          key={s.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.9rem 1rem',
+                            borderBottom: i < openSessions.length - 1 ? '1px solid #1a1a1a' : 'none',
+                          }}
+                        >
+                          <div>
+                            <div
+                              style={{
+                                fontSize: '14px',
+                                fontWeight: 700,
+                                color: 'var(--text)',
+                                fontFamily: "'Archivo', sans-serif",
+                                letterSpacing: '-0.01em',
+                              }}
+                            >
+                              🟢 Open game
+                            </div>
+                            <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 500 }}>
+                              {count}/10 players
+                            </div>
+                          </div>
+                          <Link href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
+                            <button
+                              style={{
+                                background: '#C6F135',
+                                color: '#000',
+                                border: 'none',
+                                borderRadius: '8px',
+                                padding: '0.6rem 1.1rem',
+                                fontSize: '13px',
+                                fontWeight: 900,
+                                fontFamily: "'Archivo Black', sans-serif",
+                                cursor: 'pointer',
+                                letterSpacing: '-0.015em',
+                                lineHeight: 1,
+                              }}
+                            >
+                              Join →
+                            </button>
+                          </Link>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )
         })}

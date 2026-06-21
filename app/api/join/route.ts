@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     // Verify session exists and is still filling — use service client to avoid RLS timing issues
     const { data: existingSession } = await serviceSupabase
       .from('sessions')
-      .select('id, status, organiser_id')
+      .select('id, status, organiser_id, matched_session_id')
       .eq('id', sessionId)
       .single()
 
@@ -103,8 +103,12 @@ export async function POST(req: NextRequest) {
       .eq('session_id', sessionId)
 
     const capacity: number = (slot as unknown as { max_players?: number }).max_players ?? 10
-    if ((currentCount ?? 0) >= capacity) {
-      return NextResponse.json({ error: 'Session is full' }, { status: 409 })
+    const sessionMatchedIdEarly = (existingSession as unknown as { matched_session_id: string | null }).matched_session_id
+    const joinCap = sessionMatchedIdEarly ? 5 : capacity
+    if ((currentCount ?? 0) >= joinCap) {
+      return NextResponse.json({
+        error: sessionMatchedIdEarly ? 'This team is already full.' : 'Session is full',
+      }, { status: sessionMatchedIdEarly ? 400 : 409 })
     }
 
     // Use service-role client for the player insert — removes the requirement for
@@ -134,8 +138,22 @@ export async function POST(req: NextRequest) {
       .not('stripe_customer_id', 'is', null)
 
     const playerCount = payingCount ?? 0
+    const sessionMatchedId = (existingSession as unknown as { matched_session_id: string | null }).matched_session_id
 
-    if (playerCount >= capacity) {
+    if (sessionMatchedId) {
+      if (playerCount >= 5) {
+        const { count: matchedCount } = await serviceSupabase
+          .from('players')
+          .select('*', { count: 'exact', head: true })
+          .eq('session_id', sessionMatchedId)
+          .not('stripe_payment_method_id', 'is', null)
+          .not('stripe_customer_id', 'is', null)
+        if ((matchedCount ?? 0) >= 5) {
+          await triggerPayments(sessionId, slot as unknown as SlotForPayment)
+          await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment)
+        }
+      }
+    } else if (playerCount >= capacity) {
       await triggerPayments(sessionId, slot as unknown as SlotForPayment)
     }
 
@@ -157,6 +175,14 @@ interface SlotForPayment {
 async function triggerPayments(sessionId: string, slot: SlotForPayment) {
   const serviceSupabase = createServiceClient()
 
+  // Short-circuit if already confirmed (e.g. the partner session's trigger call got here first)
+  const { data: sessionRow } = await serviceSupabase
+    .from('sessions')
+    .select('id, status, matched_session_id')
+    .eq('id', sessionId)
+    .single()
+  if (!sessionRow || sessionRow.status === 'confirmed') return
+
   const { data: venue } = await serviceSupabase
     .from('venues')
     .select('stripe_account_id')
@@ -171,22 +197,37 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment) {
   const perPlayerPitch = Math.round((slot.price * 100) / 10)
   const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
 
-  const capacity = slot.max_players ?? 10
+  const matchedId: string | null = (sessionRow as unknown as { matched_session_id: string | null }).matched_session_id
+  const perSessionLimit = matchedId ? 5 : (slot.max_players ?? 10)
+
   const { data: players } = await serviceSupabase
     .from('players')
     .select('id, stripe_customer_id, stripe_payment_method_id, name')
     .eq('session_id', sessionId)
     .not('stripe_payment_method_id', 'is', null)
     .not('stripe_customer_id', 'is', null)
-    .limit(capacity)
+    .limit(perSessionLimit)
 
-  if (!players || players.length === 0) {
+  let matchedPlayers: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }[] = []
+  if (matchedId) {
+    const { data: mp } = await serviceSupabase
+      .from('players')
+      .select('id, stripe_customer_id, stripe_payment_method_id, name')
+      .eq('session_id', matchedId)
+      .not('stripe_payment_method_id', 'is', null)
+      .not('stripe_customer_id', 'is', null)
+      .limit(5)
+    matchedPlayers = (mp ?? []) as typeof matchedPlayers
+  }
+
+  const allPlayers = [...(players ?? []), ...matchedPlayers]
+  if (allPlayers.length === 0) {
     console.error('No players with payment methods found for session', sessionId)
     return
   }
 
   const results = await Promise.allSettled(
-    players.map(async (player: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }) => {
+    allPlayers.map(async (player: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }) => {
       return stripe.paymentIntents.create({
         amount: totalPerPlayer,
         currency: 'gbp',
@@ -209,18 +250,21 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment) {
   )
 
   if (allSucceeded) {
-    await serviceSupabase
-      .from('sessions')
-      .update({ status: 'confirmed' })
-      .eq('id', sessionId)
-
-    await serviceSupabase
-      .from('bookings')
-      .insert({
-        session_id: sessionId,
-        slot_id: slot.id,
-        confirmed_at: new Date().toISOString(),
-      })
+    const sessionIds = matchedId ? [sessionId, matchedId] : [sessionId]
+    await Promise.all(
+      sessionIds.map(sid =>
+        serviceSupabase.from('sessions').update({ status: 'confirmed' }).eq('id', sid)
+      )
+    )
+    await Promise.all(
+      sessionIds.map(sid =>
+        serviceSupabase.from('bookings').insert({
+          session_id: sid,
+          slot_id: slot.id,
+          confirmed_at: new Date().toISOString(),
+        })
+      )
+    )
   } else {
     const failures = results.filter(r => r.status === 'rejected')
     console.error(`${failures.length} payment(s) failed for session ${sessionId}`)

@@ -40,6 +40,10 @@ interface Session {
   organiser_name: string | null
   organiser_phone: string | null
   organiser_id?: string | null
+  team_name: string | null
+  game_type: string | null
+  matched_session_id: string | null
+  is_public: boolean
   slots: {
     id: string
     date: string
@@ -53,6 +57,13 @@ interface Session {
   players: Player[]
 }
 
+interface MatchedSession {
+  id: string
+  team_name: string | null
+  status: string
+  players: { count: number }[]
+}
+
 interface Props {
   session: Session
   hasRival: boolean
@@ -60,6 +71,7 @@ interface Props {
   justJoined: boolean
   justCreated: boolean
   alreadyIn: boolean
+  matchedSession: MatchedSession | null
 }
 
 function formatDate(dateStr: string): string {
@@ -101,6 +113,7 @@ export default function SessionClient({
   justJoined,
   justCreated,
   alreadyIn,
+  matchedSession,
 }: Props) {
   const supabase = createClient()
   const router = useRouter()
@@ -126,6 +139,13 @@ export default function SessionClient({
   const [leaveError, setLeaveError] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [localAlreadyIn, setLocalAlreadyIn] = useState(alreadyIn)
+  const [isPublicLocal, setIsPublicLocal] = useState(initialSession.is_public ?? false)
+  const [teamNameLocal, setTeamNameLocal] = useState(initialSession.team_name ?? '')
+  const teamNameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => { if (teamNameDebounceRef.current) clearTimeout(teamNameDebounceRef.current) }
+  }, [])
 
   useEffect(() => {
     setShareUrl(`${window.location.origin}/session/${session.id}`)
@@ -208,10 +228,11 @@ export default function SessionClient({
           )
           if (matched) {
             setMyPlayer({ id: matched.id, name: matched.name })
-            setLocalAlreadyIn(true)
+            if (user?.id !== initialSession.organiser_id) {
+              setLocalAlreadyIn(true)
+            }
           } else if (initialSession.organiser_name?.toLowerCase() === entry.name.toLowerCase()) {
             setMyPlayer({ id: 'organiser', name: entry.name })
-            setLocalAlreadyIn(true)
           }
         }
       } catch {}
@@ -223,13 +244,14 @@ export default function SessionClient({
         )
         if (matchedById) {
           setMyPlayer({ id: matchedById.id, name: matchedById.name })
-          setLocalAlreadyIn(true)
+          if (user.id !== initialSession.organiser_id) {
+            setLocalAlreadyIn(true)
+          }
         } else {
           const userName: string = user.user_metadata?.name ?? ''
           if (userName) {
             if (initialSession.organiser_name?.toLowerCase() === userName.toLowerCase()) {
               setMyPlayer({ id: 'organiser', name: userName })
-              setLocalAlreadyIn(true)
             }
           }
         }
@@ -237,6 +259,21 @@ export default function SessionClient({
     }
     init()
   }, [])
+
+  async function handlePublicToggle() {
+    const next = !isPublicLocal
+    setIsPublicLocal(next)
+    await supabase.from('sessions').update({ is_public: next }).eq('id', session.id)
+  }
+
+  function handleTeamNameChange(val: string) {
+    const cleaned = val.replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 30)
+    setTeamNameLocal(cleaned)
+    if (teamNameDebounceRef.current) clearTimeout(teamNameDebounceRef.current)
+    teamNameDebounceRef.current = setTimeout(async () => {
+      await supabase.from('sessions').update({ team_name: cleaned || null }).eq('id', session.id)
+    }, 600)
+  }
 
   function toggleLookup() {
     setLookupOpen(o => {
@@ -684,6 +721,43 @@ export default function SessionClient({
         )}
       </div>
 
+      {/* Opposition "vs" section — matched game only */}
+      {matchedSession && (
+        <div
+          className="anim-fade-up d-150"
+          style={{
+            background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+            border: '1px solid rgba(198,241,53,0.15)',
+            borderRadius: '18px',
+            padding: '1.25rem 1.5rem',
+            marginBottom: '1.25rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Your team</div>
+              <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '-0.025em' }}>
+                {session.team_name || 'Team A'}
+              </div>
+            </div>
+            <div style={{ fontSize: '22px', fontFamily: "'Archivo Black', sans-serif", color: '#C6F135', letterSpacing: '-0.04em', padding: '0 1rem', flexShrink: 0 }}>
+              VS
+            </div>
+            <div style={{ flex: 1, textAlign: 'right' }}>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Opposition</div>
+              <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '16px', letterSpacing: '-0.025em' }}>
+                {matchedSession.team_name || 'Team B'}
+              </div>
+            </div>
+          </div>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', textAlign: 'center', fontWeight: 600 }}>
+            {isConfirmed && matchedSession.status === 'confirmed'
+              ? 'Match confirmed — good luck! ⚡'
+              : `They have ${Math.min(matchedSession.players?.[0]?.count ?? 0, 5)}/5 players`}
+          </div>
+        </div>
+      )}
+
       {/* Rival alert */}
       {hasRival && isFilling && (
         <div
@@ -859,6 +933,86 @@ export default function SessionClient({
               </button>
             </div>
           </div>
+
+          {/* Opposition toggle — organiser only, ≤ 5 players */}
+          {isOrganiserUser && playerCount <= 5 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div
+                onClick={handlePublicToggle}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: 'var(--surface2)',
+                  border: `1px solid ${isPublicLocal ? 'rgba(198,241,53,0.3)' : 'var(--border)'}`,
+                  borderRadius: '10px',
+                  padding: '0.85rem 1rem',
+                  cursor: 'pointer',
+                  transition: 'border-color 0.15s ease',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', fontFamily: "'Archivo', sans-serif" }}>
+                    Looking for opposition?
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '3px', fontWeight: 500 }}>
+                    Make this game public so another team can challenge you
+                  </div>
+                </div>
+                <div
+                  style={{
+                    width: '44px',
+                    height: '24px',
+                    borderRadius: '100px',
+                    background: isPublicLocal ? '#C6F135' : 'rgba(255,255,255,0.08)',
+                    border: isPublicLocal ? 'none' : '1px solid var(--border)',
+                    position: 'relative',
+                    flexShrink: 0,
+                    marginLeft: '1rem',
+                    transition: 'background 0.2s ease, border 0.2s ease',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '3px',
+                      left: isPublicLocal ? 'calc(100% - 21px)' : '3px',
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      background: isPublicLocal ? 'var(--black)' : 'var(--muted)',
+                      transition: 'left 0.2s ease, background 0.2s ease',
+                    }}
+                  />
+                </div>
+              </div>
+              {isPublicLocal && initialSession.team_name === null && (
+                <input
+                  className="field-input"
+                  type="text"
+                  value={teamNameLocal}
+                  onChange={(e) => handleTeamNameChange(e.target.value)}
+                  placeholder="Team name (optional)"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    marginTop: '8px',
+                    background: 'var(--surface2)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '10px',
+                    padding: '0.8rem 1rem',
+                    color: 'var(--text)',
+                    fontFamily: "'Archivo', sans-serif",
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    outline: 'none',
+                    transition: 'border-color 0.15s ease',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              )}
+            </div>
+          )}
 
           {/* Join CTA */}
           {!localAlreadyIn && (

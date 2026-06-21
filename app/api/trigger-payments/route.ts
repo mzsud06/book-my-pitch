@@ -56,7 +56,10 @@ export async function POST(req: NextRequest) {
   const perPlayerPitch = Math.round((slot.price * 100) / 10)
   const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
 
-  const capacity: number = slot.max_players ?? 10
+  const matchedSessionId: string | null = (session as unknown as { matched_session_id: string | null }).matched_session_id
+  const isMatchedGame = !!matchedSessionId
+  const perSessionLimit = isMatchedGame ? 5 : (slot.max_players ?? 10)
+  const expectedTotal = isMatchedGame ? 10 : (slot.max_players ?? 10)
 
   const { data: players } = await supabase
     .from('players')
@@ -64,14 +67,28 @@ export async function POST(req: NextRequest) {
     .eq('session_id', sessionId)
     .not('stripe_payment_method_id', 'is', null)
     .not('stripe_customer_id', 'is', null)
-    .limit(capacity)
+    .limit(perSessionLimit)
 
-  if (!players || players.length < capacity) {
+  let matchedPlayers: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }[] = []
+  if (isMatchedGame && matchedSessionId) {
+    const { data: mp } = await supabase
+      .from('players')
+      .select('id, stripe_customer_id, stripe_payment_method_id, name')
+      .eq('session_id', matchedSessionId)
+      .not('stripe_payment_method_id', 'is', null)
+      .not('stripe_customer_id', 'is', null)
+      .limit(5)
+    matchedPlayers = (mp ?? []) as typeof matchedPlayers
+  }
+
+  const allPlayers = [...(players ?? []), ...matchedPlayers]
+
+  if (allPlayers.length < expectedTotal) {
     return NextResponse.json({ error: 'Not enough players' }, { status: 400 })
   }
 
   const results = await Promise.allSettled(
-    players.map(async (player: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }) => {
+    allPlayers.map(async (player: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }) => {
       const pi = await stripe.paymentIntents.create({
         amount: totalPerPlayer,
         currency: 'gbp',
@@ -93,12 +110,17 @@ export async function POST(req: NextRequest) {
   const failures = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as { pi: { status: string } }).pi.status !== 'succeeded'))
 
   if (failures.length === 0) {
-    await supabase.from('sessions').update({ status: 'confirmed' }).eq('id', sessionId)
-    await supabase.from('bookings').insert({
-      session_id: sessionId,
-      slot_id: slot.id,
-      confirmed_at: new Date().toISOString(),
-    })
+    const sessionIds = isMatchedGame ? [sessionId, matchedSessionId!] : [sessionId]
+    await Promise.all(
+      sessionIds.map(sid => supabase.from('sessions').update({ status: 'confirmed' }).eq('id', sid))
+    )
+    await Promise.all(
+      sessionIds.map(sid => supabase.from('bookings').insert({
+        session_id: sid,
+        slot_id: slot.id,
+        confirmed_at: new Date().toISOString(),
+      }))
+    )
     return NextResponse.json({ success: true, message: 'All payments succeeded, session confirmed' })
   } else {
     console.error(`${failures.length} payment(s) failed for session ${sessionId}`)

@@ -15,6 +15,9 @@ interface SessionData {
   organiser_name: string | null
   organiser_phone: string | null
   organiser_id: string | null
+  team_name: string | null
+  game_type: string | null
+  matched_session_id: string | null
   slots: {
     id: string
     date: string
@@ -47,7 +50,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
     supabase
       .from('sessions')
       .select(`
-        id, status, created_at, organiser_name, organiser_phone, organiser_id,
+        id, status, created_at, organiser_name, organiser_phone, organiser_id, team_name, game_type, matched_session_id,
         slots(id, date, start_time, end_time, type, price, max_players,
           venues(id, name, address, stripe_account_id)
         )
@@ -81,6 +84,9 @@ export default async function SessionPage({ params, searchParams }: Props) {
     organiser_name: (rawSession as unknown as { organiser_name: string | null }).organiser_name ?? null,
     organiser_phone: (rawSession as unknown as { organiser_phone: string | null }).organiser_phone ?? null,
     organiser_id: (rawSession as unknown as { organiser_id: string | null }).organiser_id ?? null,
+    team_name: (rawSession as unknown as { team_name: string | null }).team_name ?? null,
+    game_type: (rawSession as unknown as { game_type: string | null }).game_type ?? null,
+    matched_session_id: (rawSession as unknown as { matched_session_id: string | null }).matched_session_id ?? null,
     slots: {
       ...(slot as SessionData['slots']),
       venues: venue as SessionData['slots']['venues'],
@@ -108,6 +114,18 @@ export default async function SessionPage({ params, searchParams }: Props) {
     .order('created_at', { ascending: true })
     .limit(100)
 
+  let matchedSession: { id: string; team_name: string | null; status: string; players: { count: number }[] } | null = null
+  if (normalizedSession.matched_session_id) {
+    const { data: matchedData } = await supabase
+      .from('sessions')
+      .select('id, team_name, status, players(count)')
+      .eq('id', normalizedSession.matched_session_id)
+      .single()
+    if (matchedData) {
+      matchedSession = matchedData as unknown as typeof matchedSession
+    }
+  }
+
   return (
     <>
       <Nav />
@@ -117,7 +135,8 @@ export default async function SessionPage({ params, searchParams }: Props) {
         initialMessages={messages ?? []}
         justJoined={joined === '1'}
         justCreated={created === '1'}
-        alreadyIn={already === '1' || !!memberRow}
+        alreadyIn={(already === '1' || !!memberRow) && user?.id !== normalizedSession.organiser_id}
+        matchedSession={matchedSession}
       />
     </>
   )
