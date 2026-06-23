@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     // Verify session exists and is still filling
     const { data: session } = await svc
       .from('sessions')
-      .select('id, status, organiser_name, organiser_phone, organiser_id')
+      .select('id, status, organiser_name, organiser_phone, organiser_id, game_type')
       .eq('id', sessionId)
       .single()
 
@@ -74,12 +74,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'You are not in this session' }, { status: 404 })
     }
 
-    // Organisers cannot leave their own session
-    const sesh = session as { organiser_name: string | null; organiser_phone: string | null; organiser_id: string | null }
+    const sesh = session as { organiser_name: string | null; organiser_phone: string | null; organiser_id: string | null; game_type: string | null }
     const isOrganiserById = !!(user?.id && sesh.organiser_id && user.id === sesh.organiser_id)
     const isOrganiserByPhone = !!(sesh.organiser_phone && player.phone && player.phone === sesh.organiser_phone)
     const isOrganiserByName = !!(sesh.organiser_name && player.name?.toLowerCase() === sesh.organiser_name.toLowerCase())
-    if (isOrganiserById || isOrganiserByPhone || isOrganiserByName) {
+    const leavingAsOrganiser = isOrganiserById || isOrganiserByPhone || isOrganiserByName
+    // Organiser may leave private and open sessions — the game continues without them.
+    // All other types (LFO, matched) keep the block.
+    const organiserLeaveAllowed = isOrganiserById && (sesh.game_type === 'private' || sesh.game_type === 'open')
+    if (leavingAsOrganiser && !organiserLeaveAllowed) {
       return NextResponse.json({ error: 'The organiser cannot leave their own session' }, { status: 403 })
     }
 
@@ -104,13 +107,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to leave session' }, { status: 500 })
     }
 
-    const { count: remaining } = await svc
+    // If the organiser is leaving, detach them as organiser so the session runs leaderless.
+    if (organiserLeaveAllowed) {
+      await svc.from('sessions').update({
+        organiser_id: null,
+        organiser_name: null,
+        organiser_phone: null,
+      }).eq('id', sessionId)
+    }
+
+    const { count: afterCount } = await svc
       .from('players')
       .select('*', { count: 'exact', head: true })
       .eq('session_id', sessionId)
 
-    const needed = Math.max(1, 10 - (remaining ?? 0))
+    // Auto-cancel empty open or private sessions so they disappear immediately
+    if ((afterCount ?? 0) === 0 && (sesh.game_type === 'open' || sesh.game_type === 'private')) {
+      await svc.from('sessions').update({ status: 'cancelled', is_public: false }).eq('id', sessionId)
+      return NextResponse.json({ ok: true })
+    }
+
     const firstName = player.name?.split(' ')[0] ?? 'A player'
+    const needed = Math.max(1, 10 - (afterCount ?? 0))
     const plural = needed === 1 ? 'player' : 'players'
 
     await svc.from('messages').insert({

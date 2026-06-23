@@ -259,8 +259,10 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
   }
   .share-copy:hover  { background: rgba(198,241,53,0.88) !important; transform: translateY(-2px) !important; box-shadow: 0 8px 22px rgba(198,241,53,0.28) !important; }
   .share-wa:hover    { background: rgba(37,211,102,0.9) !important; transform: translateY(-2px) !important; box-shadow: 0 8px 22px rgba(37,211,102,0.28) !important; }
-  .leave-btn:hover   { background: rgba(229,57,53,0.88) !important; transform: translateY(-2px) !important; box-shadow: 0 8px 22px rgba(229,57,53,0.28) !important; }
-  .join-btn:hover    { border-color: rgba(255,255,255,0.16) !important; background: rgba(255,255,255,0.05) !important; transform: translateY(-2px) !important; box-shadow: 0 10px 28px rgba(0,0,0,0.45) !important; }
+  .leave-btn:hover   { background: rgba(229,57,53,0.88) !important; color: #fff !important; transform: translateY(-2px) !important; box-shadow: 0 8px 22px rgba(229,57,53,0.28) !important; }
+  .cancel-btn:hover  { background: rgba(229,57,53,0.88) !important; color: #fff !important; transform: translateY(-2px) !important; box-shadow: 0 8px 22px rgba(229,57,53,0.28) !important; }
+  /* join-btn = ghost "Log in to join" button only; lime join uses btn-g */
+  .join-btn:hover    { border-color: rgba(255,255,255,0.22) !important; background: rgba(255,255,255,0.06) !important; transform: translateY(-2px) !important; box-shadow: 0 10px 28px rgba(0,0,0,0.45) !important; }
 }
 
 .btn-g:active {
@@ -272,6 +274,7 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 .share-copy:active { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
 .share-wa:active   { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
 .leave-btn:active  { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
+.cancel-btn:active { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
 .join-btn:active   { transform: scale(0.97) translateY(0) !important; transition-duration: 0.06s !important; }
 
 /* ============================================================
@@ -582,6 +585,50 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 @media (hover: hover) and (pointer: fine) {
   .dash-session-row:hover { background: var(--surface3) !important; }
 }
+
+.dropdown-row {
+  transition: background 0.15s ease;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dropdown-row:hover { background: rgba(255,255,255,0.06) !important; }
+}
+
+/* Slot dropdown toggle ("See X other games") */
+.games-toggle {
+  transition: color 0.15s ease, background 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .games-toggle:hover { background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.13) !important; }
+}
+.games-toggle:active { transform: scale(0.98) !important; transition-duration: 0.06s !important; }
+
+/* Challenge / Join action buttons inside slot dropdown */
+.dropdown-action-btn {
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .dropdown-action-btn:hover {
+    background: #aace2c !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(198,241,53,0.3) !important;
+  }
+}
+.dropdown-action-btn:active { transform: scale(0.96) !important; transition-duration: 0.06s !important; }
+
+/* Organiser game-settings option buttons */
+.settings-btn {
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .settings-btn:hover {
+    border-color: rgba(255,255,255,0.2) !important;
+    color: var(--text) !important;
+    background: rgba(255,255,255,0.06) !important;
+  }
+}
+.settings-btn:active { transform: scale(0.97) !important; transition-duration: 0.06s !important; }
 
 /* ============================================================
    MISC UTILITIES

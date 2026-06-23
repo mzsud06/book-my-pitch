@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     // Verify session exists and is still filling — use service client to avoid RLS timing issues
     const { data: existingSession } = await serviceSupabase
       .from('sessions')
-      .select('id, status, organiser_id, matched_session_id')
+      .select('id, status, organiser_id, matched_session_id, game_type')
       .eq('id', sessionId)
       .single()
 
@@ -121,13 +121,22 @@ export async function POST(req: NextRequest) {
 
     const capacity: number = (slot as unknown as { max_players?: number }).max_players ?? 10
     const sessionMatchedIdEarly = (existingSession as unknown as { matched_session_id: string | null }).matched_session_id
+    const sessionGameType = (existingSession as unknown as { game_type: string | null }).game_type
     const organiserId = (existingSession as unknown as { organiser_id: string | null }).organiser_id
 
-    // For non-matched sessions where the current joiner is not the organiser:
-    // reserve one slot for the organiser if they haven't completed payment yet,
-    // so they can't be locked out by non-organisers filling all capacity first.
-    let joinCap = sessionMatchedIdEarly ? 5 : capacity
-    if (!sessionMatchedIdEarly && organiserId && user?.id !== organiserId) {
+    // Open games require an authenticated user — block guests at the API level too.
+    if (sessionGameType === 'open' && !user) {
+      return NextResponse.json({ error: 'You must be logged in to join an open game.' }, { status: 401 })
+    }
+
+    // Team sessions (LFO or challenger) are always capped at 5 per side.
+    // Open/private 10-player sessions use the slot's full max_players capacity.
+    const isTeamSession = !!sessionMatchedIdEarly || sessionGameType === 'looking_for_opposition'
+    let joinCap = isTeamSession ? 5 : capacity
+
+    // For non-team sessions: reserve one slot for the organiser if they haven't paid yet
+    // so they can't be locked out by non-organisers filling all 10 spots first.
+    if (!isTeamSession && organiserId && user?.id !== organiserId) {
       const { count: organiserRowCount } = await serviceSupabase
         .from('players')
         .select('*', { count: 'exact', head: true })
@@ -139,10 +148,10 @@ export async function POST(req: NextRequest) {
     }
 
     if ((currentCount ?? 0) >= joinCap) {
-      console.warn('[join] 400/409 capacity: currentCount=', currentCount, 'joinCap=', joinCap, 'matched=', !!sessionMatchedIdEarly)
+      console.warn('[join] 400/409 capacity: currentCount=', currentCount, 'joinCap=', joinCap, 'isTeam=', isTeamSession)
       return NextResponse.json({
-        error: sessionMatchedIdEarly ? 'This team is already full.' : 'Session is full',
-      }, { status: sessionMatchedIdEarly ? 400 : 409 })
+        error: isTeamSession ? 'This team is already full.' : 'Session is full',
+      }, { status: isTeamSession ? 400 : 409 })
     }
 
     // Use service-role client for the player insert — removes the requirement for
@@ -175,22 +184,92 @@ export async function POST(req: NextRequest) {
     const sessionMatchedId = (existingSession as unknown as { matched_session_id: string | null }).matched_session_id
 
     if (sessionMatchedId) {
+      // This session has a partner. Two scenarios:
+      // (a) Challenger — matched_session_id was set at creation, pointing at the LFO.
+      // (b) Original LFO — matched_session_id was set later when a challenger won the race.
       if (playerCount >= 5) {
-        const { count: matchedCount } = await serviceSupabase
-          .from('players')
-          .select('*', { count: 'exact', head: true })
-          .eq('session_id', sessionMatchedId)
-          .not('stripe_payment_method_id', 'is', null)
-          .not('stripe_customer_id', 'is', null)
-        if ((matchedCount ?? 0) >= 5) {
-          await triggerPayments(sessionId, slot as unknown as SlotForPayment)
-          await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment)
+        const { data: partnerData } = await serviceSupabase
+          .from('sessions')
+          .select('id, status, matched_session_id')
+          .eq('id', sessionMatchedId)
+          .single()
+        const partner = partnerData as unknown as { id: string; status: string; matched_session_id: string | null } | null
+
+        if (!partner || partner.status !== 'filling') {
+          // Partner gone or already confirmed — we're too late.
+          await serviceSupabase.from('sessions').update({ status: 'cancelled' }).eq('id', sessionId)
+          return NextResponse.json({ error: 'The spot was taken. Your session has been cancelled.' }, { status: 409 })
+        }
+
+        if (partner.matched_session_id === null) {
+          // We're a challenger; the LFO hasn't been claimed yet. Race to claim it atomically.
+          // The WHERE ... IS NULL guard means only one concurrent UPDATE can succeed.
+          const { data: claimedRows, error: claimError } = await serviceSupabase
+            .from('sessions')
+            .update({ matched_session_id: sessionId })
+            .eq('id', sessionMatchedId)
+            .is('matched_session_id', null)
+            .select('id')
+
+          if (claimError || !claimedRows || claimedRows.length === 0) {
+            // Another challenger claimed it between our read and our write — we lost.
+            await serviceSupabase.from('sessions').update({ status: 'cancelled' }).eq('id', sessionId)
+            await serviceSupabase
+              .from('sessions')
+              .update({ status: 'cancelled' })
+              .eq('matched_session_id', sessionMatchedId)
+              .eq('status', 'filling')
+              .neq('id', sessionId)
+            return NextResponse.json({ error: 'Another team got there first. Your session has been cancelled.' }, { status: 409 })
+          }
+
+          // We claimed it! Cancel all other competing challengers.
+          await serviceSupabase
+            .from('sessions')
+            .update({ status: 'cancelled' })
+            .eq('matched_session_id', sessionMatchedId)
+            .eq('status', 'filling')
+            .neq('id', sessionId)
+
+          // If the LFO already has 5 paying players, trigger payments for both sides now.
+          const { count: lfoCount } = await serviceSupabase
+            .from('players')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', sessionMatchedId)
+            .not('stripe_payment_method_id', 'is', null)
+            .not('stripe_customer_id', 'is', null)
+          if ((lfoCount ?? 0) >= 5) {
+            await triggerPayments(sessionId, slot as unknown as SlotForPayment)
+            await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment)
+          }
+          // If LFO isn't at 5 yet, payments fire when their 5th player joins
+          // (they'll see partner.matched_session_id === sessionId → mutual-match path below).
+
+        } else if (partner.matched_session_id === sessionId) {
+          // Mutual match — partner already points back at this session (we are the confirmed
+          // winner and the LFO is now filling their side). Trigger if both teams are at 5.
+          const { count: partnerCount } = await serviceSupabase
+            .from('players')
+            .select('*', { count: 'exact', head: true })
+            .eq('session_id', sessionMatchedId)
+            .not('stripe_payment_method_id', 'is', null)
+            .not('stripe_customer_id', 'is', null)
+          if ((partnerCount ?? 0) >= 5) {
+            await triggerPayments(sessionId, slot as unknown as SlotForPayment)
+            await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment)
+          }
+
+        } else {
+          // Partner's matched_session_id points at a different session — another challenger won.
+          await serviceSupabase.from('sessions').update({ status: 'cancelled' }).eq('id', sessionId)
+          return NextResponse.json({ error: 'Another team got there first. Your session has been cancelled.' }, { status: 409 })
         }
       }
-    } else if (playerCount >= capacity) {
-      // Only trigger if the organiser has also completed payment (has a player row with
-      // a payment method). Prevents confirming when the organiser's slot is counted via
-      // organiser_name but they have no payment method on file.
+
+    } else if (sessionGameType !== 'looking_for_opposition' && playerCount >= capacity) {
+      // Regular 10-player open/private session — trigger when full.
+      // Unclaimed LFO sessions (game_type === 'looking_for_opposition') are intentionally
+      // excluded: their trigger fires when a winning challenger claims the spot.
       let organiserReady = true
       if (organiserId) {
         const { count: organiserPaidCount } = await serviceSupabase
@@ -224,13 +303,13 @@ interface SlotForPayment {
 async function triggerPayments(sessionId: string, slot: SlotForPayment) {
   const serviceSupabase = createServiceClient()
 
-  // Short-circuit if already confirmed (e.g. the partner session's trigger call got here first)
+  // Short-circuit if already confirmed or cancelled to avoid double-charging.
   const { data: sessionRow } = await serviceSupabase
     .from('sessions')
     .select('id, status, matched_session_id')
     .eq('id', sessionId)
     .single()
-  if (!sessionRow || sessionRow.status === 'confirmed') return
+  if (!sessionRow || sessionRow.status === 'confirmed' || sessionRow.status === 'cancelled') return
 
   const { data: venue } = await serviceSupabase
     .from('venues')

@@ -111,7 +111,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
 
   const { data: messages } = await supabase
     .from('messages')
-    .select('id, content, created_at, user_id')
+    .select('id, content, created_at, user_id, sender_name')
     .eq('session_id', id)
     .order('created_at', { ascending: true })
     .limit(100)
@@ -125,6 +125,20 @@ export default async function SessionPage({ params, searchParams }: Props) {
       .single()
     if (matchedData) {
       matchedSession = matchedData as unknown as typeof matchedSession
+    }
+  } else if (normalizedSession.game_type === 'looking_for_opposition') {
+    // Unclaimed LFO: find the earliest active challenger so the LFO organiser
+    // can see the opposing team forming before the race-claim fires.
+    const { data: challengerData } = await supabase
+      .from('sessions')
+      .select('id, team_name, status, players(count)')
+      .eq('matched_session_id', id)
+      .eq('status', 'filling')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+    if (challengerData) {
+      matchedSession = challengerData as unknown as typeof matchedSession
     }
   }
 

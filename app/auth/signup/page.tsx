@@ -1,12 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirect') ?? '/slots'
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -58,7 +60,7 @@ export default function SignupPage() {
     }
 
     router.refresh()
-    router.push('/slots')
+    router.push(redirectTo)
   }
 
   const inputStyle = {
@@ -195,7 +197,7 @@ export default function SignupPage() {
                 Click the link to activate your account, then come back to log in.
               </div>
               <Link
-                href="/auth/login"
+                href={`/auth/login${redirectTo !== '/slots' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
                 style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, textDecoration: 'none', letterSpacing: '-0.01em' }}
               >
                 Go to login →
@@ -217,7 +219,10 @@ export default function SignupPage() {
           </div>
           <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '2rem', fontWeight: 500 }}>
             Already have an account?{' '}
-            <Link href="/auth/login" style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 700 }}>
+            <Link
+              href={`/auth/login${redirectTo !== '/slots' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+              style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 700 }}
+            >
               Log in
             </Link>
           </div>

@@ -98,6 +98,7 @@ export default async function SlotsPage() {
       .select(`
         id,
         slot_id,
+        organiser_id,
         status,
         organiser_name,
         team_name,
@@ -119,9 +120,12 @@ export default async function SlotsPage() {
       .lte('date', endStr),
   ])
 
-  // Build a map of slot_id → session_id for slots where the current user
-  // already has an active session (as organiser or as a player).
+  // userSlotSessionMap: slot_id → session_id only for sessions the user ORGANISES.
+  // Used to show "YOUR GAME" badge and redirect the card click to their own session.
+  // userSessionIds: all session ids the user is in (organiser OR player).
+  // Used for the "✓ Joined" pill in dropdown rows.
   let userSlotSessionMap: Record<string, string> = {}
+  let userSessionIds: string[] = []
   if (user) {
     const [{ data: asOrganiser }, { data: asPlayer }] = await Promise.all([
       supabase
@@ -135,9 +139,9 @@ export default async function SlotsPage() {
         .eq('players.user_id', user.id)
         .in('status', ['filling', 'confirmed']),
     ])
-    asOrganiser?.forEach(s => { userSlotSessionMap[s.slot_id] = s.id })
+    asOrganiser?.forEach(s => { userSlotSessionMap[s.slot_id] = s.id; userSessionIds.push(s.id) })
     ;(asPlayer as unknown as { id: string; slot_id: string }[] | null)
-      ?.forEach(s => { userSlotSessionMap[s.slot_id] = s.id })
+      ?.forEach(s => { userSessionIds.push(s.id) })
   }
 
   return (
@@ -148,6 +152,8 @@ export default async function SlotsPage() {
         dbSlots={(dbSlots ?? []) as DbSlot[]}
         venueId={venueId}
         userSlotSessionMap={userSlotSessionMap}
+        userSessionIds={userSessionIds}
+        userId={user?.id ?? null}
       />
     </>
   )

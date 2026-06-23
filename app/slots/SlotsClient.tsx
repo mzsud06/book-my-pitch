@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getSlotsForDay, SlotTemplate } from '@/lib/slots'
@@ -8,6 +9,7 @@ import { getSlotsForDay, SlotTemplate } from '@/lib/slots'
 export interface SessionData {
   id: string
   slot_id: string
+  organiser_id: string | null
   status: string
   organiser_name: string | null
   team_name: string | null
@@ -38,6 +40,8 @@ interface Props {
   dbSlots: DbSlot[]
   venueId: string
   userSlotSessionMap: Record<string, string>
+  userSessionIds: string[]
+  userId: string | null
 }
 
 function formatDate(date: Date): string {
@@ -62,7 +66,9 @@ function startOfDay(date: Date): Date {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlotSessionMap }: Props) {
+export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlotSessionMap, userSessionIds, userId }: Props) {
+  const userSessionSet = new Set(userSessionIds)
+  const router = useRouter()
   const supabase = createClient()
   const [sessions, setSessions] = useState<SessionData[]>(initialSessions)
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
@@ -91,7 +97,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
       const endStr = formatDate(addDays(startOfDay(new Date()), 14))
       supabase
         .from('sessions')
-        .select('id, slot_id, status, organiser_name, team_name, is_public, game_type, matched_session_id, slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id), players(count)')
+        .select('id, slot_id, organiser_id, status, organiser_name, team_name, is_public, game_type, matched_session_id, slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id), players(count)')
         .eq('slots.venue_id', venueId)
         .gte('slots.date', nowStr)
         .lte('slots.date', endStr)
@@ -386,7 +392,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
       {/* ============================================================
           SLOT LIST
           ============================================================ */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {slotTemplates.map((template, idx) => {
           const info = getSlotStatus(template)
           const booked = info.status === 'booked'
@@ -394,10 +400,32 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
           const typeBg = template.type === 'peak' ? 'rgba(255,68,68,0.12)' : template.type === 'weekend' ? 'rgba(0,180,255,0.09)' : 'rgba(198,241,53,0.09)'
           const perPlayerPitch = (template.priceGBP / 10).toFixed(2)
 
-          const userSessionId = info.slotId ? userSlotSessionMap[info.slotId] : undefined
-          const href = userSessionId
-            ? `/session/${userSessionId}`
-            : (!booked && info.slotId ? `/slots/${info.slotId}/create` : undefined)
+          const slotSessionsForTime = daySessionMap.get(template.startTime) ?? []
+          const userSlotSessions = slotSessionsForTime.filter(s => userSessionSet.has(s.id))
+          const oppositionSessions = slotSessionsForTime.filter(
+            s => s.is_public && s.status === 'filling' && !s.matched_session_id &&
+                 (s.game_type === 'looking_for_opposition' || s.game_type === null) && !userSessionSet.has(s.id)
+          )
+          const openSessions = slotSessionsForTime.filter(
+            s => s.status === 'filling' && !s.matched_session_id && s.game_type === 'open' && !userSessionSet.has(s.id)
+          )
+          const allPublicSessions = [...oppositionSessions, ...openSessions]
+            .sort((a, b) => totalCount(b) - totalCount(a))
+
+          // Identify the current user's organiser session for this slot (if any) directly
+          // from organiser_id — more reliable than the slotIdMap lookup.
+          const userSessionId = userId
+            ? userSlotSessions.find(s => s.organiser_id === userId)?.id
+            : undefined
+          if (userSlotSessions.length > 0) {
+            console.log('[SlotsClient] slot', template.startTime, '| userId:', userId, '| sessions:', userSlotSessions.map(s => ({ id: s.id, organiser_id: s.organiser_id })), '| resolved userSessionId:', userSessionId)
+          }
+          // Card navigates to create unless booked or the current user is organiser of this slot
+          const href = !booked && !userSessionId && info.slotId ? `/slots/${info.slotId}/create` : undefined
+
+          const hasBelow = !booked && (userSlotSessions.length > 0 || allPublicSessions.length > 0)
+          const fillingFast = !booked && !userSessionId && allPublicSessions.some(s => totalCount(s) >= 7)
+          const dropOpen = openDropdown === template.startTime
 
           const staggerStyle: React.CSSProperties = {
             animationName: 'fadeUp',
@@ -412,27 +440,17 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
           const cardStyle: React.CSSProperties = {
             background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
             border: `1px solid ${borderColor}`,
-            borderRadius: '18px',
+            borderRadius: hasBelow ? '18px 18px 0 0' : '18px',
             padding: '1.4rem 1.6rem',
-            cursor: booked ? 'not-allowed' : 'pointer',
+            cursor: booked ? 'not-allowed' : userSessionId ? 'default' : 'pointer',
             transition: 'transform 0.25s var(--ease-out), border-color 0.25s ease, box-shadow 0.25s var(--ease-out)',
             position: 'relative',
             overflow: 'hidden',
             opacity: booked ? 0.32 : 1,
             boxShadow: userSessionId
-            ? '0 0 0 1.5px rgba(198,241,53,0.4), 0 4px 20px rgba(198,241,53,0.08)'
-            : '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+              ? '0 0 0 1.5px rgba(198,241,53,0.4), 0 4px 20px rgba(198,241,53,0.08)'
+              : '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
           }
-
-          const oppositionSessions = (daySessionMap.get(template.startTime) ?? []).filter(
-            s => s.is_public && s.status === 'filling' && !s.matched_session_id && (s.game_type === 'looking_for_opposition' || s.game_type === null) && s.id !== userSessionId
-          )
-          const openSessions = (daySessionMap.get(template.startTime) ?? []).filter(
-            s => s.status === 'filling' && !s.matched_session_id && s.game_type === 'open'
-          )
-          const fillingFast = !booked && [...oppositionSessions, ...openSessions].some(s => totalCount(s) >= 7)
-          const dropOpen = openDropdown === template.startTime
-          const slotTimeLabel = `${template.startTime}–${template.endTime} · ${DAY_NAMES[selectedDate.getDay()]} ${selectedDate.getDate()} ${MONTH_NAMES[selectedDate.getMonth()]}`
 
           const cardContent = (
             <>
@@ -559,14 +577,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
               >
                 {booked ? (
                   <span style={{ color: 'var(--red)', letterSpacing: '0.02em' }}>Slot taken</span>
-                ) : (
+                ) : userSessionId ? null : (
                   <>
                     {fillingFast && (
                       <span style={{ color: 'var(--amber)', fontWeight: 500, fontSize: '11px' }}>Filling fast</span>
                     )}
-                    <span style={{ color: 'var(--green)', letterSpacing: '0.02em', marginLeft: 'auto' }}>
-                      Create game →
-                    </span>
+                    {info.slotId && (
+                      <span style={{ color: 'var(--green)', letterSpacing: '0.02em', marginLeft: 'auto' }}>Create game →</span>
+                    )}
                   </>
                 )}
               </div>
@@ -576,210 +594,144 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
           return (
             <div key={template.startTime} style={staggerStyle}>
               {href ? (
-                <Link
-                  href={href}
-                  style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-                >
+                <Link href={href} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                   <div className="slot-pick" style={cardStyle}>
                     {cardContent}
                   </div>
                 </Link>
               ) : (
-                <div className={booked ? 'taken' : ''} style={cardStyle}>
+                <div className={booked ? 'taken' : userSessionId ? 'user-session' : ''} style={cardStyle}>
                   {cardContent}
                 </div>
               )}
 
-              {oppositionSessions.length > 0 && !booked && (
-                <div style={{ marginTop: '0' }}>
-                  <button
-                    onClick={() => setOpenDropdown(o => o === template.startTime ? null : template.startTime)}
-                    style={{
-                      width: '100%',
-                      padding: '0.65rem 1rem',
-                      background: 'transparent',
-                      border: '1px solid rgba(198,241,53,0.2)',
-                      borderRadius: '10px',
-                      color: 'var(--green)',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      fontFamily: "'Archivo', sans-serif",
-                      letterSpacing: '0.02em',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      transition: 'border-color 0.15s ease, background 0.15s ease',
-                      lineHeight: 1,
-                    }}
-                  >
-                    ⚡ {oppositionSessions.length} team{oppositionSessions.length !== 1 ? 's' : ''} looking for opposition
-                    <span style={{ opacity: 0.5, fontSize: '10px', marginLeft: '2px' }}>{dropOpen ? '▲' : '▼'}</span>
-                  </button>
-
-                  <div
-                    style={{
-                      maxHeight: dropOpen ? '400px' : '0px',
-                      overflow: 'hidden',
-                      transition: 'max-height 0.3s ease',
-                    }}
-                  >
-                    <div
-                      style={{
-                        marginLeft: '12px',
-                        borderLeft: '2px solid rgba(198,241,53,0.18)',
-                        paddingLeft: '10px',
-                        paddingTop: '6px',
-                      }}
-                    >
+              {/* Unified below-card section */}
+              {hasBelow && (
+                <div
+                  style={{
+                    borderLeft: '3px solid rgba(198,241,53,0.4)',
+                    background: '#111111',
+                    borderRadius: '0 0 14px 14px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {/* User's own sessions — always visible */}
+                  {userSlotSessions.map((s, i) => {
+                    const isOrganiser = !!userId && s.organiser_id === userId
+                    const isLFO = s.game_type === 'looking_for_opposition' || s.game_type === null
+                    const isOpen = s.game_type === 'open'
+                    const cap = isLFO ? 5 : 10
+                    const count = Math.min(totalCount(s), cap)
+                    const icon = isLFO ? '⚡' : isOpen ? '🟢' : '🔒'
+                    const nameLabel = s.team_name || s.organiser_name || (isOrganiser ? 'Your team' : 'Game')
+                    const subtext = isLFO
+                      ? `Looking for opposition · ${count}/${cap}`
+                      : isOpen
+                        ? `Open game · ${count}/${cap} players`
+                        : `Private game · ${count}/${cap} players`
+                    const showDivider = i < userSlotSessions.length - 1 || allPublicSessions.length > 0
+                    return (
                       <div
-                        style={{
-                          background: '#111111',
-                          border: '1px solid #222222',
-                          borderRadius: '12px',
-                          overflow: 'hidden',
-                        }}
+                        key={s.id}
+                        className="dropdown-row"
+                        onClick={() => router.push(`/session/${s.id}`)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderBottom: showDivider ? '1px solid #1a1a1a' : 'none' }}
                       >
-                        {oppositionSessions.map((s, i) => {
-                          const count = Math.min(totalCount(s), 5)
-                          const teamLabel = s.team_name || s.organiser_name || 'Team A'
-                          const rivals = challengerCounts.get(s.id) ?? 0
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                          <span style={{ fontSize: '13px', flexShrink: 0 }}>{icon}</span>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: isOrganiser ? '#C6F135' : 'var(--text)' }}>{nameLabel}</span>
+                            </div>
+                            <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 500 }}>{subtext}</div>
+                          </div>
+                        </div>
+                        <span onClick={e => e.stopPropagation()} style={{ flexShrink: 0, marginLeft: '12px' }}>
+                          <Link href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: '#C6F135', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>→ View game</span>
+                          </Link>
+                        </span>
+                      </div>
+                    )
+                  })}
+
+                  {/* Other public sessions — subtle toggle */}
+                  {allPublicSessions.length > 0 && (
+                    <>
+                      <div style={{ padding: userSlotSessions.length > 0 ? '6px 8px 8px' : '8px 8px 8px' }}>
+                        <button
+                          className="games-toggle"
+                          onClick={() => setOpenDropdown(o => o === template.startTime ? null : template.startTime)}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            background: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: '8px',
+                            textAlign: 'left',
+                            color: 'var(--text)',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            fontFamily: "'Archivo', sans-serif",
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            lineHeight: 1,
+                          }}
+                        >
+                          <span>See {allPublicSessions.length} other game{allPublicSessions.length !== 1 ? 's' : ''} for this slot</span>
+                          <span style={{ fontSize: '11px', opacity: 0.5, flexShrink: 0, marginLeft: '8px' }}>{dropOpen ? '▲' : '▼'}</span>
+                        </button>
+                      </div>
+
+                      <div style={{ maxHeight: dropOpen ? '600px' : '0px', overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
+                        {allPublicSessions.map((s, i) => {
+                          const isLast = i === allPublicSessions.length - 1
+                          const isLFO = s.game_type === 'looking_for_opposition' || s.game_type === null
+                          const cap = isLFO ? 5 : 10
+                          const count = Math.min(totalCount(s), cap)
+                          const icon = isLFO ? '⚡' : '🟢'
+                          const label = s.team_name || s.organiser_name || (isLFO ? 'Team A' : 'Open game')
+                          const subtext = isLFO
+                            ? `Looking for opposition · ${count}/${cap}`
+                            : `Open game · ${count}/${cap} players`
+                          const rivals = isLFO ? (challengerCounts.get(s.id) ?? 0) : 0
                           return (
                             <div
                               key={s.id}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '0.9rem 1rem',
-                                borderBottom: i < oppositionSessions.length - 1 ? '1px solid #1a1a1a' : 'none',
-                              }}
+                              className="dropdown-row"
+                              onClick={() => router.push(`/session/${s.id}`)}
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderTop: '1px solid #1a1a1a', borderBottom: isLast ? 'none' : 'none' }}
                             >
-                              <div>
-                                <div
-                                  style={{
-                                    fontSize: '14px',
-                                    fontWeight: 700,
-                                    color: 'var(--text)',
-                                    fontFamily: "'Archivo', sans-serif",
-                                    letterSpacing: '-0.01em',
-                                  }}
-                                >
-                                  {teamLabel}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                                <span style={{ fontSize: '13px', flexShrink: 0 }}>{icon}</span>
+                                <div style={{ minWidth: 0 }}>
+                                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
+                                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 500 }}>{subtext}</div>
+                                  {rivals > 0 && (
+                                    <div style={{ fontSize: '11px', color: 'var(--amber)', fontWeight: 500, marginTop: '2px' }}>
+                                      {rivals === 1 ? '1 team also challenging' : `${rivals} teams also challenging`}
+                                    </div>
+                                  )}
                                 </div>
-                                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 500 }}>
-                                  ⚡ Looking for opposition · {count}/5 in their team
-                                </div>
-                                {rivals > 0 && (
-                                  <div style={{ fontSize: '11px', color: 'var(--amber)', fontWeight: 500, marginTop: '3px' }}>
-                                    {rivals === 1 ? '1 other team also challenging' : `${rivals} other teams also challenging`}
-                                  </div>
-                                )}
                               </div>
-                              {info.slotId && (
+                              <span onClick={e => e.stopPropagation()} style={{ flexShrink: 0, marginLeft: '12px' }}>
                                 <Link
-                                  href={`/slots/${info.slotId}/create?challenge=${s.id}`}
+                                  href={isLFO && info.slotId ? `/slots/${info.slotId}/create?challenge=${s.id}` : `/session/${s.id}`}
                                   style={{ textDecoration: 'none' }}
                                 >
-                                  <button
-                                    style={{
-                                      background: '#C6F135',
-                                      color: '#000',
-                                      border: 'none',
-                                      borderRadius: '8px',
-                                      padding: '0.6rem 1.1rem',
-                                      fontSize: '13px',
-                                      fontWeight: 900,
-                                      fontFamily: "'Archivo Black', sans-serif",
-                                      cursor: 'pointer',
-                                      letterSpacing: '-0.015em',
-                                      lineHeight: 1,
-                                    }}
-                                  >
-                                    Challenge →
+                                  <button className="dropdown-action-btn" style={{ background: '#C6F135', color: '#000', border: 'none', borderRadius: '8px', padding: '0.5rem 0.9rem', fontSize: '12px', fontWeight: 900, fontFamily: "'Archivo Black', sans-serif", cursor: 'pointer', letterSpacing: '-0.015em', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                                    {isLFO ? 'Challenge →' : 'Join →'}
                                   </button>
                                 </Link>
-                              )}
+                              </span>
                             </div>
                           )
                         })}
                       </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {openSessions.length > 0 && !booked && (
-                <div
-                  style={{
-                    marginTop: '0',
-                    marginLeft: '12px',
-                    borderLeft: '2px solid rgba(198,241,53,0.18)',
-                    paddingLeft: '10px',
-                    paddingTop: '6px',
-                  }}
-                >
-                  <div
-                    style={{
-                      background: '#111111',
-                      border: '1px solid #222222',
-                      borderRadius: '12px',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {openSessions.map((s, i) => {
-                      const count = Math.min(totalCount(s), 10)
-                      return (
-                        <div
-                          key={s.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '0.9rem 1rem',
-                            borderBottom: i < openSessions.length - 1 ? '1px solid #1a1a1a' : 'none',
-                          }}
-                        >
-                          <div>
-                            <div
-                              style={{
-                                fontSize: '14px',
-                                fontWeight: 700,
-                                color: 'var(--text)',
-                                fontFamily: "'Archivo', sans-serif",
-                                letterSpacing: '-0.01em',
-                              }}
-                            >
-                              {s.organiser_name || 'Open game'}
-                            </div>
-                            <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px', fontWeight: 500 }}>
-                              🟢 Open game · {count}/10 players
-                            </div>
-                          </div>
-                          <Link href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
-                            <button
-                              style={{
-                                background: '#C6F135',
-                                color: '#000',
-                                border: 'none',
-                                borderRadius: '8px',
-                                padding: '0.6rem 1.1rem',
-                                fontSize: '13px',
-                                fontWeight: 900,
-                                fontFamily: "'Archivo Black', sans-serif",
-                                cursor: 'pointer',
-                                letterSpacing: '-0.015em',
-                                lineHeight: 1,
-                              }}
-                            >
-                              Join →
-                            </button>
-                          </Link>
-                        </div>
-                      )
-                    })}
-                  </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

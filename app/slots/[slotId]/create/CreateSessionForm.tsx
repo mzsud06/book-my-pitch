@@ -64,8 +64,16 @@ const labelStyle: React.CSSProperties = {
   letterSpacing: '0.12em',
 }
 
+function parsePhone(full: string): { countryCode: string; localNumber: string } {
+  const sorted = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length)
+  const match = sorted.find(({ code }) => full.startsWith(code))
+  if (match) return { countryCode: match.code, localNumber: full.slice(match.code.length) }
+  return { countryCode: '+44', localNumber: full.replace(/[^0-9]/g, '') }
+}
+
 export default function CreateSessionForm({ slot }: Props) {
   const router = useRouter()
+  const supabase = createClient()
   const [existingSessionId, setExistingSessionId] = useState<string | null>(null)
   const [checking, setChecking] = useState(true)
   const [name, setName] = useState('')
@@ -83,51 +91,63 @@ export default function CreateSessionForm({ slot }: Props) {
   const [challengedPlayerCount, setChallengedPlayerCount] = useState<number | null>(null)
 
   useEffect(() => {
-    const supabase = createClient()
-    async function checkExisting() {
+    async function init() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setChecking(false); return }
 
-      // Check as organiser
-      const { data: asOrganiser } = await supabase
-        .from('sessions')
-        .select('id')
-        .eq('slot_id', slot.id)
-        .eq('organiser_id', user.id)
-        .in('status', ['filling', 'confirmed'])
-        .maybeSingle()
-
-      if (asOrganiser) {
-        setExistingSessionId(asOrganiser.id)
+      if (!challengeSessionId && user) {
+        // Check as organiser for existing session on this slot
+        const { data: asOrganiser } = await supabase
+          .from('sessions')
+          .select('id')
+          .eq('slot_id', slot.id)
+          .eq('organiser_id', user.id)
+          .in('status', ['filling', 'confirmed'])
+          .maybeSingle()
+        if (asOrganiser) {
+          setExistingSessionId(asOrganiser.id)
+          setChecking(false)
+          return
+        }
+      } else if (!challengeSessionId && !user) {
         setChecking(false)
         return
       }
 
-      // Check as player in any active session for this slot
-      const { data: activeForSlot } = await supabase
-        .from('sessions')
-        .select('id')
-        .eq('slot_id', slot.id)
-        .in('status', ['filling', 'confirmed'])
+      // Autofill for logged-in users
+      if (user) {
+        const meta = user.user_metadata as Record<string, unknown>
+        const metaName = typeof meta?.name === 'string' ? meta.name : ''
+        if (metaName) setName(metaName)
 
-      if (activeForSlot && activeForSlot.length > 0) {
-        const { data: asPlayer } = await supabase
-          .from('players')
-          .select('session_id')
-          .eq('user_id', user.id)
-          .in('session_id', activeForSlot.map(s => s.id))
-          .maybeSingle()
-
-        if (asPlayer) {
-          setExistingSessionId((asPlayer as { session_id: string }).session_id)
-          setChecking(false)
-          return
+        const metaPhone = typeof meta?.phone === 'string' ? meta.phone : ''
+        if (metaPhone) {
+          const parsed = parsePhone(metaPhone)
+          setCountryCode(parsed.countryCode)
+          setLocalNumber(parsed.localNumber)
+          setPhone(metaPhone)
+        } else {
+          // Fall back to most recent player row for this user
+          const { data: latestPlayer } = await supabase
+            .from('players')
+            .select('phone')
+            .eq('user_id', user.id)
+            .not('phone', 'is', null)
+            .order('joined_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          const storedPhone = (latestPlayer as unknown as { phone: string | null } | null)?.phone
+          if (storedPhone) {
+            const parsed = parsePhone(storedPhone)
+            setCountryCode(parsed.countryCode)
+            setLocalNumber(parsed.localNumber)
+            setPhone(storedPhone)
+          }
         }
       }
 
       setChecking(false)
     }
-    checkExisting()
+    init()
   }, [slot.id])
 
   useEffect(() => {
@@ -165,12 +185,17 @@ export default function CreateSessionForm({ slot }: Props) {
       valid = false
     }
     if (!valid) return
+    const trimmedPhone = phone.trim()
     sessionStorage.setItem('bmp_create_details', JSON.stringify({
       name: name.trim(),
-      phone: phone.trim(),
+      phone: trimmedPhone,
       gameType,
       teamName: gameType === 'looking_for_opposition' ? teamName.trim() : '',
     }))
+    // Ensure JoinForm on the create payment page can read the same values
+    sessionStorage.setItem('join_details', JSON.stringify({ name: name.trim(), phone: trimmedPhone }))
+    // Persist phone to user metadata for future autofill (fire-and-forget)
+    supabase.auth.updateUser({ data: { phone: trimmedPhone } }).catch(() => {})
     router.push(`/slots/${slot.id}/create/payment${challengeSessionId ? `?challenge=${challengeSessionId}` : ''}`)
   }
 

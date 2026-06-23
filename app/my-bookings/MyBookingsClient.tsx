@@ -24,6 +24,7 @@ interface BookingCard {
   playerCount: number
   venueName: string
   gameType: string
+  matchedSessionId: string | null
 }
 
 interface RawSlot {
@@ -39,6 +40,7 @@ interface RawSession {
   id: string
   status: string
   game_type: string
+  matched_session_id?: string | null
   slots: RawSlot | RawSlot[] | null
   players: { count: number }[]
 }
@@ -112,6 +114,7 @@ function toCard(s: RawSession): BookingCard | null {
     playerCount: s.players?.[0]?.count ?? 0,
     venueName: slot.venues?.name ?? 'Globe Football Pitch',
     gameType: s.game_type ?? 'private',
+    matchedSessionId: s.matched_session_id ?? null,
   }
 }
 
@@ -131,7 +134,7 @@ export default function MyBookingsClient() {
           .select(`
             joined_at,
             sessions(
-              id, status, game_type,
+              id, status, game_type, matched_session_id,
               slots(date, start_time, end_time, type, price, venues(name)),
               players(count)
             )
@@ -158,7 +161,7 @@ export default function MyBookingsClient() {
           const { data } = await supabase
             .from('sessions')
             .select(`
-              id, status, game_type,
+              id, status, game_type, matched_session_id,
               slots!inner(date, start_time, end_time, type, price, venues(name)),
               players(count)
             `)
@@ -402,7 +405,7 @@ export default function MyBookingsClient() {
                     </div>
 
                     {/* Player count */}
-                    <div className="seg-bar" style={{ marginBottom: '6px' }}>
+                    <div className="seg-bar" style={{ marginTop: '2px', marginBottom: '8px' }}>
                       {Array.from({ length: 10 }, (_, i) => (
                         <div
                           key={i}
@@ -490,7 +493,9 @@ export default function MyBookingsClient() {
                           marginTop: '6px',
                         }}
                       >
-                        Cancelled — another team got there first
+                        {c.matchedSessionId
+                          ? 'Cancelled — another team got there first'
+                          : 'Cancelled by organiser'}
                       </span>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
@@ -39,6 +39,9 @@ function formatDate(dateStr: string): string {
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`
 }
 
+// Module-level guard — persists across Strict Mode double-mounts unlike useRef.
+let isConfirmingGlobal = false
+
 function CardStep({
   slot,
   details,
@@ -62,8 +65,6 @@ function CardStep({
   const [loading, setLoading] = useState(false)
   // submitError is for form-validation failures (intent still pristine, no refresh needed).
   const [submitError, setSubmitError] = useState('')
-  // Guard against Strict-Mode or rapid double-submit firing confirmSetup twice on the same intent.
-  const isConfirmingRef = useRef(false)
 
   const pitchPerPlayer = (slot.price / slot.max_players).toFixed(2)
   const total = (slot.price / slot.max_players + 0.50 + 0.30).toFixed(2)
@@ -71,13 +72,13 @@ function CardStep({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    console.log(`[CardStep] handleSubmit entered at ${new Date().toISOString()} | isConfirming=${isConfirmingRef.current} | isDisabled=${isDisabled}`)
+    console.log(`[CardStep] handleSubmit entered at ${new Date().toISOString()} | isConfirmingGlobal=${isConfirmingGlobal} | isDisabled=${isDisabled}`)
     if (isDisabled || !elements) return
-    if (isConfirmingRef.current) {
+    if (isConfirmingGlobal) {
       console.warn('[CardStep] handleSubmit: confirmSetup already in flight — ignoring duplicate call')
       return
     }
-    isConfirmingRef.current = true
+    isConfirmingGlobal = true
     setLoading(true)
     setSubmitError('')
 
@@ -171,7 +172,7 @@ function CardStep({
       sessionStorage.removeItem('bmp_create_details')
       router.replace(`/session/${sessionData.sessionId}?created=1`)
     } finally {
-      isConfirmingRef.current = false
+      isConfirmingGlobal = false
       setLoading(false)
     }
   }

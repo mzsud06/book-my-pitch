@@ -47,6 +47,7 @@ interface Props {
   existingPlayerCount?: number
   hasRival?: boolean
   isLoggedIn?: boolean
+  gameType?: string
 }
 
 function formatDate(dateStr: string): string {
@@ -410,6 +411,7 @@ export default function JoinForm({
   existingPlayerCount = 0,
   hasRival = false,
   isLoggedIn = false,
+  gameType,
 }: Props) {
   const router = useRouter()
   const pathname = usePathname()
@@ -440,33 +442,71 @@ export default function JoinForm({
   const [joinDest, setJoinDest] = useState<string | null>(null)
 
   useEffect(() => {
-    const ss = sessionStorage.getItem('join_details')
-    if (ss) {
-      try {
-        const { name: n, phone: p } = JSON.parse(ss)
-        if (n) setName(n)
-        if (p) {
-          const parsed = parsePhone(p)
+    async function autofill() {
+      // Highest priority: sessionStorage set in the current flow (e.g. coming back from payment)
+      const ss = sessionStorage.getItem('join_details')
+      if (ss) {
+        try {
+          const { name: n, phone: p } = JSON.parse(ss)
+          if (n) setName(n)
+          if (p) {
+            const parsed = parsePhone(p)
+            setCountryCode(parsed.countryCode)
+            setLocalNumber(parsed.localNumber)
+            setPhone(p)
+          }
+          return
+        } catch { /* ignore */ }
+      }
+
+      // Logged-in user: autofill from auth metadata, then fall back to players table
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const meta = user.user_metadata as Record<string, unknown>
+        const metaName = typeof meta?.name === 'string' ? meta.name : ''
+        if (metaName) setName(metaName)
+        const metaPhone = typeof meta?.phone === 'string' ? meta.phone : ''
+        if (metaPhone) {
+          const parsed = parsePhone(metaPhone)
           setCountryCode(parsed.countryCode)
           setLocalNumber(parsed.localNumber)
-          setPhone(p)
+          setPhone(metaPhone)
+        } else {
+          const { data: latestPlayer } = await supabase
+            .from('players')
+            .select('phone')
+            .eq('user_id', user.id)
+            .not('phone', 'is', null)
+            .order('joined_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          const storedPhone = (latestPlayer as unknown as { phone: string | null } | null)?.phone
+          if (storedPhone) {
+            const parsed = parsePhone(storedPhone)
+            setCountryCode(parsed.countryCode)
+            setLocalNumber(parsed.localNumber)
+            setPhone(storedPhone)
+          }
         }
         return
+      }
+
+      // Guest: fall back to localStorage
+      try {
+        const ls = localStorage.getItem(LS_KEY)
+        if (ls) {
+          const { name: n, phone: p } = JSON.parse(ls)
+          if (n) setName(n)
+          if (p) {
+            const parsed = parsePhone(p)
+            setCountryCode(parsed.countryCode)
+            setLocalNumber(parsed.localNumber)
+            setPhone(p)
+          }
+        }
       } catch { /* ignore */ }
     }
-    try {
-      const ls = localStorage.getItem(LS_KEY)
-      if (ls) {
-        const { name: n, phone: p } = JSON.parse(ls)
-        if (n) setName(n)
-        if (p) {
-          const parsed = parsePhone(p)
-          setCountryCode(parsed.countryCode)
-          setLocalNumber(parsed.localNumber)
-          setPhone(p)
-        }
-      }
-    } catch { /* ignore */ }
+    autofill()
   }, [])
 
   useEffect(() => {
@@ -598,8 +638,12 @@ export default function JoinForm({
             { sessionId, name, isOrganiser, joinedAt: new Date().toISOString() },
             ...existing.filter((b: { sessionId: string }) => b.sessionId !== sessionId),
           ]))
+          localStorage.setItem(`bmp_player_${sessionId}`, JSON.stringify({ phone, name, joinedAt: new Date().toISOString() }))
         }
       } catch { /* ignore */ }
+    } else {
+      // Persist phone to user metadata so it autofills on future joins (fire-and-forget)
+      supabase.auth.updateUser({ data: { phone } }).catch(() => {})
     }
     setJoinDest(dest)
   }
@@ -622,6 +666,96 @@ export default function JoinForm({
 
   const startTime = sliceTime(slot.start_time)
   const endTime = sliceTime(slot.end_time)
+
+  // Open games require an account — show a gate instead of the join form for guests
+  if (gameType === 'open' && !isLoggedIn && !isOrganiser) {
+    const encodedRedirect = encodeURIComponent(`/session/${sessionId}/join`)
+    return (
+      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
+        <div
+          style={{
+            background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
+            border: '1px solid rgba(255,255,255,0.09)',
+            borderRadius: '20px',
+            padding: '2.5rem 2rem',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ fontSize: '36px', marginBottom: '1.25rem' }}>🔒</div>
+          <div
+            style={{
+              fontFamily: "'Archivo Black', sans-serif",
+              fontSize: '22px',
+              letterSpacing: '-0.04em',
+              marginBottom: '0.75rem',
+              lineHeight: 1.1,
+            }}
+          >
+            Account required
+          </div>
+          <div
+            style={{
+              fontSize: '15px',
+              color: 'var(--muted)',
+              lineHeight: 1.7,
+              marginBottom: '2rem',
+              fontWeight: 500,
+            }}
+          >
+            This is a public open game — you need an account to join.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <a
+              href={`/auth/login?redirect=${encodedRedirect}`}
+              style={{ textDecoration: 'none' }}
+            >
+              <button
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  fontSize: '16px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: '#C6F135',
+                  color: '#000',
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontWeight: 900,
+                  letterSpacing: '-0.025em',
+                  lineHeight: 1,
+                }}
+              >
+                Log in →
+              </button>
+            </a>
+            <a
+              href={`/auth/signup?redirect=${encodedRedirect}`}
+              style={{ textDecoration: 'none' }}
+            >
+              <button
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  fontSize: '16px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  color: 'var(--text)',
+                  fontFamily: "'Archivo Black', sans-serif",
+                  fontWeight: 900,
+                  letterSpacing: '-0.025em',
+                  lineHeight: 1,
+                }}
+              >
+                Create account →
+              </button>
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (isOrganiser && step === 'details' && loadingSetup) {
     return (

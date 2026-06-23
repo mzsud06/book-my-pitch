@@ -48,12 +48,10 @@ export async function DELETE(req: NextRequest) {
 
     await svc.from('sessions').delete().eq('id', sessionId)
 
-    // If this was a challenge session, clear the back-link on the challenged session so
-    // it isn't left pointing at a now-deleted row (challenge rollback after join failure).
-    const matchedId = (session as unknown as { matched_session_id: string | null }).matched_session_id
-    if (matchedId) {
-      await svc.from('sessions').update({ matched_session_id: null }).eq('id', matchedId)
-    }
+    // In the multi-challenger race model the LFO's matched_session_id is only set when a
+    // challenger wins the race at 5 players — never at session creation. A freshly-deleted
+    // (0-player) challenger therefore never touched the LFO's matched_session_id, so
+    // there is no back-link to clear.
 
     return NextResponse.json({ ok: true })
   } catch {
@@ -124,55 +122,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Slot not found' }, { status: 404 })
     }
 
-    // One session per slot per user: check as organiser
-    const { data: asOrganiser } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('slot_id', slotId)
-      .eq('organiser_id', user.id)
-      .in('status', ['filling', 'confirmed'])
-      .maybeSingle()
-
-    if (asOrganiser) {
-      return NextResponse.json({ error: 'You already have a session for this slot.' }, { status: 400 })
-    }
-
-    // One session per slot per user: check as player in any active session for this slot
-    const { data: activeForSlot } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('slot_id', slotId)
-      .in('status', ['filling', 'confirmed'])
-
-    if (activeForSlot && activeForSlot.length > 0) {
-      const { data: asPlayer } = await supabase
-        .from('players')
+    // Challenge flows (matchedSessionId provided) are exempt from both guards below:
+    // the challenger is intentionally creating a new session on a slot where they
+    // may already be organising or playing in another session.
+    if (!matchedSessionId) {
+      // One session per slot per user: block if already organising an active session.
+      const { data: asOrganiser } = await supabase
+        .from('sessions')
         .select('id')
-        .eq('user_id', user.id)
-        .in('session_id', activeForSlot.map(s => s.id))
+        .eq('slot_id', slotId)
+        .eq('organiser_id', user.id)
+        .in('status', ['filling', 'confirmed'])
         .maybeSingle()
 
-      if (asPlayer) {
+      if (asOrganiser) {
         return NextResponse.json({ error: 'You already have a session for this slot.' }, { status: 400 })
       }
-    }
 
-    // Guard against double-submit: if this user already has a filling session they
-    // organised for this slot, return it rather than creating a duplicate.
-    // Must filter by organiser_id — returning another user's session would let the
-    // caller's join step insert them as a player in someone else's session.
-    const { data: existing } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('slot_id', slotId)
-      .eq('organiser_id', user.id)
-      .eq('status', 'filling')
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
+      // Double-submit guard: return the existing filling session idempotently so the
+      // organiser's join step targets the right session rather than creating a duplicate.
+      // Must filter by organiser_id — returning another user's session would let the
+      // caller insert themselves as a player in someone else's session.
+      const { data: existing } = await supabase
+        .from('sessions')
+        .select('id')
+        .eq('slot_id', slotId)
+        .eq('organiser_id', user.id)
+        .eq('status', 'filling')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
 
-    if (existing) {
-      return NextResponse.json({ sessionId: existing.id, existed: true })
+      if (existing) {
+        return NextResponse.json({ sessionId: existing.id, existed: true })
+      }
     }
 
     const { data: session, error } = await supabase
@@ -197,10 +180,10 @@ export async function POST(req: NextRequest) {
 
     if (matchedSessionId) {
       const svc = createServiceClient()
-      await Promise.all([
-        svc.from('sessions').update({ matched_session_id: matchedSessionId }).eq('id', session.id),
-        svc.from('sessions').update({ matched_session_id: session.id }).eq('id', matchedSessionId),
-      ])
+      // Only set the challenger's own matched_session_id pointing at the LFO session.
+      // The LFO session's matched_session_id stays null until a challenger wins the race
+      // (fills to 5 players), so multiple challengers can compete simultaneously.
+      await svc.from('sessions').update({ matched_session_id: matchedSessionId }).eq('id', session.id)
     }
 
     return NextResponse.json({ sessionId: session.id })

@@ -30,7 +30,7 @@ export default async function JoinSessionPage({ params, searchParams }: Props) {
   const { data: session } = await supabase
     .from('sessions')
     .select(`
-      id, status, organiser_name, organiser_id,
+      id, status, organiser_name, organiser_id, game_type,
       slots(id, date, start_time, end_time, type, price, max_players),
       players(id, name, user_id)
     `)
@@ -94,6 +94,7 @@ export default async function JoinSessionPage({ params, searchParams }: Props) {
           existingPlayerCount={playerCount}
           hasRival={hasRival}
           isLoggedIn={!!user}
+          gameType={(session as unknown as { game_type: string | null }).game_type ?? undefined}
         />
       </Suspense>
     </>
