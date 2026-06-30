@@ -46,25 +46,7 @@ interface RawSession {
 }
 
 function gameTypeBadge(gameType: string) {
-  if (gameType === 'looking_for_opposition') {
-    return (
-      <span style={{
-        display: 'inline-block',
-        fontSize: '11px',
-        fontWeight: 700,
-        padding: '3px 8px',
-        borderRadius: '6px',
-        background: 'rgba(198,241,53,0.08)',
-        color: '#C6F135',
-        border: '1px solid rgba(198,241,53,0.18)',
-        letterSpacing: '0.01em',
-        marginTop: '5px',
-      }}>
-        ⚡ Looking for opposition
-      </span>
-    )
-  }
-  if (gameType === 'open') {
+  if (gameType === 'looking_for_opposition' || gameType === 'open') {
     return (
       <span style={{
         display: 'inline-block',
@@ -73,12 +55,12 @@ function gameTypeBadge(gameType: string) {
         padding: '3px 8px',
         borderRadius: '6px',
         background: 'rgba(34,197,94,0.08)',
-        color: '#22c55e',
+        color: 'var(--green)',
         border: '1px solid rgba(34,197,94,0.18)',
         letterSpacing: '0.01em',
         marginTop: '5px',
       }}>
-        🟢 Open game
+        Public
       </span>
     )
   }
@@ -90,7 +72,7 @@ function gameTypeBadge(gameType: string) {
       padding: '3px 8px',
       borderRadius: '6px',
       background: 'rgba(255,255,255,0.05)',
-      color: 'var(--muted)',
+      color: 'var(--text-secondary)',
       border: '1px solid rgba(255,255,255,0.09)',
       letterSpacing: '0.01em',
       marginTop: '5px',
@@ -193,7 +175,7 @@ export default function MyBookingsClient() {
   if (loading) {
     return (
       <div style={{ maxWidth: '640px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
-        <div style={{ color: 'var(--muted)', fontSize: '14px', fontWeight: 500 }}>Loading…</div>
+        <div style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}>Loading…</div>
       </div>
     )
   }
@@ -206,7 +188,7 @@ export default function MyBookingsClient() {
         <div
           className="anim-fade-up"
           style={{
-            fontFamily: "'Archivo Black', sans-serif",
+            fontFamily: 'var(--font-display)',
             fontSize: 'clamp(24px, 5vw, 32px)',
             letterSpacing: '-0.04em',
             lineHeight: 0.95,
@@ -215,7 +197,7 @@ export default function MyBookingsClient() {
         >
           My bookings
         </div>
-        <div className="anim-fade-up d-80" style={{ fontSize: '14px', color: 'var(--muted)', fontWeight: 500 }}>
+        <div className="anim-fade-up d-80" style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
           Games you&apos;ve joined
         </div>
       </div>
@@ -231,7 +213,7 @@ export default function MyBookingsClient() {
             padding: '0.9rem 1.1rem',
             marginBottom: '1.5rem',
             fontSize: '13px',
-            color: 'var(--muted)',
+            color: 'var(--text-secondary)',
             fontWeight: 500,
             lineHeight: 1.6,
           }}
@@ -275,7 +257,7 @@ export default function MyBookingsClient() {
           </div>
           <div
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: '22px',
               letterSpacing: '-0.03em',
               marginBottom: '0.6rem',
@@ -284,8 +266,8 @@ export default function MyBookingsClient() {
           >
             No bookings yet
           </div>
-          <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '2rem', fontWeight: 500, lineHeight: 1.6 }}>
-            Find a game time and join a game to get started.
+          <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '2rem', fontWeight: 500, lineHeight: 1.6 }}>
+            Find a game and join to get started.
           </div>
           <Link href="/slots" style={{ textDecoration: 'none' }}>
             <button
@@ -296,8 +278,8 @@ export default function MyBookingsClient() {
                 border: 'none',
                 padding: '0.9rem 2rem',
                 borderRadius: '10px',
-                fontFamily: "'Archivo Black', sans-serif",
-                fontWeight: 900,
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
                 fontSize: '15px',
                 letterSpacing: '-0.025em',
                 cursor: 'pointer',
@@ -305,7 +287,7 @@ export default function MyBookingsClient() {
                 lineHeight: 1,
               }}
             >
-              Find a game time →
+              Find a game tonight →
             </button>
           </Link>
         </div>
@@ -318,8 +300,9 @@ export default function MyBookingsClient() {
             style={{
               fontSize: '10px',
               fontWeight: 700,
-              letterSpacing: '0.14em',
+              letterSpacing: '0.16em',
               textTransform: 'uppercase',
+              fontFamily: 'var(--font-sans)',
               color: 'var(--green)',
               marginBottom: '1rem',
               display: 'flex',
@@ -360,7 +343,7 @@ export default function MyBookingsClient() {
                       <div>
                         <div
                           style={{
-                            fontFamily: "'Archivo Black', sans-serif",
+                            fontFamily: 'var(--font-display)',
                             fontSize: '22px',
                             letterSpacing: '-0.04em',
                             lineHeight: 1,
@@ -369,7 +352,7 @@ export default function MyBookingsClient() {
                         >
                           {c.startTime} – {c.endTime}
                         </div>
-                        <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                           {c.venueName} · {formatDate(c.date)}
                         </div>
                         {gameTypeBadge(c.gameType)}
@@ -398,7 +381,7 @@ export default function MyBookingsClient() {
                           {isFilling && <span className="live-dot" style={{ width: '6px', height: '6px' }} />}
                           {isConfirmed ? 'Confirmed' : 'Filling…'}
                         </div>
-                        <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
+                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                           £{perPlayer} if full
                         </div>
                       </div>
@@ -413,7 +396,7 @@ export default function MyBookingsClient() {
                         />
                       ))}
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600 }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
                       <strong style={{ color: 'var(--text)', fontWeight: 800 }}>{c.playerCount}/10 players</strong>
                       {c.playerCount === 9
                         ? ' — last spot!'
@@ -436,8 +419,9 @@ export default function MyBookingsClient() {
             style={{
               fontSize: '10px',
               fontWeight: 700,
-              letterSpacing: '0.14em',
+              letterSpacing: '0.16em',
               textTransform: 'uppercase',
+              fontFamily: 'var(--font-sans)',
               color: 'var(--red)',
               marginBottom: '1rem',
               display: 'flex',
@@ -466,17 +450,17 @@ export default function MyBookingsClient() {
                     <div>
                       <div
                         style={{
-                          fontFamily: "'Archivo Black', sans-serif",
+                          fontFamily: 'var(--font-display)',
                           fontSize: '22px',
                           letterSpacing: '-0.04em',
                           lineHeight: 1,
                           marginBottom: '6px',
-                          color: 'var(--muted)',
+                          color: 'var(--text-secondary)',
                         }}
                       >
                         {c.startTime} – {c.endTime}
                       </div>
-                      <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                         {c.venueName} · {formatDate(c.date)}
                       </div>
                       <span
@@ -499,7 +483,7 @@ export default function MyBookingsClient() {
                       </span>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                         £{perPlayer} if full
                       </div>
                     </div>
@@ -534,9 +518,10 @@ export default function MyBookingsClient() {
             style={{
               fontSize: '10px',
               fontWeight: 700,
-              letterSpacing: '0.14em',
+              letterSpacing: '0.16em',
               textTransform: 'uppercase',
-              color: 'var(--muted)',
+              fontFamily: 'var(--font-sans)',
+              color: 'var(--text-secondary)',
               marginBottom: '1rem',
               display: 'flex',
               alignItems: 'center',
@@ -572,7 +557,7 @@ export default function MyBookingsClient() {
                     <div>
                       <div
                         style={{
-                          fontFamily: "'Archivo Black', sans-serif",
+                          fontFamily: 'var(--font-display)',
                           fontSize: '18px',
                           letterSpacing: '-0.03em',
                           lineHeight: 1,
@@ -581,7 +566,7 @@ export default function MyBookingsClient() {
                       >
                         {c.startTime} – {c.endTime}
                       </div>
-                      <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                         {c.venueName} · {formatDate(c.date)}
                       </div>
                       {gameTypeBadge(c.gameType)}
@@ -590,7 +575,7 @@ export default function MyBookingsClient() {
                       <div style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 700, letterSpacing: '0.04em' }}>
                         Played ✓
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500, marginTop: '2px' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '2px' }}>
                         {c.playerCount}/10 players
                       </div>
                     </div>

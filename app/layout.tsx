@@ -3,8 +3,8 @@ import { GeistSans } from 'geist/font/sans';
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BookMyPitch — Need 10 players? We've got you.",
-  description: "Share one link at Globe Pitch. When 10 players join, everyone pays their share automatically. No bank transfers. No chasing.",
+  title: "BookMyPitch — Play football tonight at Globe Pitch",
+  description: "Find a game at Globe Pitch, Bethnal Green, or start one in under a minute. No bank transfers — everyone pays automatically when the team is full.",
 };
 
 export const viewport: Viewport = {

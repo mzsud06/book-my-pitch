@@ -929,6 +929,21 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 }
 
 /* ============================================================
+   PUBLIC GAMES PAGE — 1-col mobile / 2-col desktop card grid
+   ============================================================ */
+.public-games-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .public-games-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+}
+
+/* ============================================================
    SLOTS PAGE — time slot grid + open games scroller
    ============================================================ */
 .slots-grid {

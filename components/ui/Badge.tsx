@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-type BadgeVariant = 'peak' | 'offpeak' | 'neutral'
+type BadgeVariant = 'peak' | 'offpeak' | 'neutral' | 'public'
 
 interface BadgeProps {
   variant?: BadgeVariant
@@ -23,6 +23,11 @@ const styles: Record<BadgeVariant, React.CSSProperties> = {
     background: 'rgba(255,255,255,0.06)',
     border: '1px solid var(--border)',
     color: 'var(--text-secondary)',
+  },
+  public: {
+    background: 'rgba(198,241,53,0.12)',
+    border: '1px solid rgba(198,241,53,0.3)',
+    color: 'var(--green)',
   },
 }
 

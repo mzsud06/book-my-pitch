@@ -85,7 +85,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
   )
 
   const today = startOfDay(new Date())
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(today, i))
+  const weekDays = Array.from({ length: 14 }, (_, i) => addDays(today, i))
 
   useEffect(() => {
     const channel = supabase
@@ -502,7 +502,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
             const openSessions = slotSessionsForTime.filter(
               s => s.status === 'filling' && !s.matched_session_id && s.game_type === 'open' && !userSessionSet.has(s.id)
             )
-            const allPublicSessions = [...oppositionSessions, ...openSessions]
+            const allPublicSessions = [...openSessions]
               .sort((a, b) => totalCount(b) - totalCount(a))
 
             const userSessionId = userId
@@ -623,9 +623,9 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                     const icon = isLFO ? '⚡' : isOpen ? '🟢' : '🔒'
                     const nameLabel = s.team_name || s.organiser_name || (isOrganiser ? 'Your team' : 'Game')
                     const subtext = isLFO
-                      ? `Looking for opposition · ${count}/${cap}`
+                      ? `Public · ${count}/${cap} players`
                       : isOpen
-                        ? `Open game · ${count}/${cap} players`
+                        ? `Public · ${count}/${cap} players`
                         : `Private game · ${count}/${cap} players`
                     const showDivider = i < userSlotSessions.length - 1 || allPublicSessions.length > 0 || !!href
                     return (
@@ -672,10 +672,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                           const cap = isLFO ? 5 : 10
                           const count = Math.min(totalCount(s), cap)
                           const icon = isLFO ? '⚡' : '🟢'
-                          const label = s.team_name || s.organiser_name || (isLFO ? 'Team A' : 'Open game')
-                          const subtext = isLFO
-                            ? `Looking for opposition · ${count}/${cap}`
-                            : `Open game · ${count}/${cap} players`
+                          const label = s.team_name || s.organiser_name || 'Public game'
+                          const subtext = `Public · ${count}/${cap} players`
                           const rivals = isLFO ? (challengerCounts.get(s.id) ?? 0) : 0
                           return (
                             <div
@@ -701,7 +699,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                                   href={isLFO && selectedInfo.slotId ? `/slots/${selectedInfo.slotId}/create?challenge=${s.id}` : `/session/${s.id}`}
                                   style={{ textDecoration: 'none' }}
                                 >
-                                  <button className="dropdown-action-btn" style={{ background: 'var(--green)', color: 'var(--black)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '0.5rem 0.9rem', fontSize: '12px', fontWeight: 900, fontFamily: 'var(--font-display)', cursor: 'pointer', letterSpacing: '-0.015em', lineHeight: 1, whiteSpace: 'nowrap' }}>
+                                  <button className="dropdown-action-btn" style={{ background: 'var(--green)', color: 'var(--black)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '0.5rem 0.9rem', fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-display)', cursor: 'pointer', letterSpacing: '-0.015em', lineHeight: 1, whiteSpace: 'nowrap' }}>
                                     {isLFO ? 'Challenge →' : 'Join →'}
                                   </button>
                                 </Link>
@@ -746,7 +744,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
           <div className="anim-fade-up d-150">
             <div style={{ marginBottom: '1.25rem' }}>
               <SectionHeading
-                eyebrow="Open Games"
+                eyebrow="Public Games"
                 heading="Join a game"
               />
             </div>
@@ -768,7 +766,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   <path d="M10 16h12M16 10v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0, fontWeight: 400 }}>
-                  No open games today — create one above
+                  No public games today — create one above
                 </p>
               </div>
             ) : (
@@ -779,7 +777,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   const maxPlayers = slot.max_players
                   const spotsLeft = Math.max(0, maxPlayers - playerCount)
                   const perPlayer = (slot.price / maxPlayers).toFixed(2)
-                  const title = s.team_name || s.organiser_name || 'Open game'
+                  const title = s.team_name || s.organiser_name || 'Public game'
                   const fillPct = Math.min((playerCount / maxPlayers) * 100, 100)
                   const isHot = playerCount >= 7
                   const isPeakSlot = slot.type === 'peak'

@@ -373,7 +373,7 @@ export default function Nav() {
                     gap: '5px',
                   }}
                 >
-                  Find a game time
+                  Find a game tonight
                   <span aria-hidden="true">→</span>
                 </button>
               </Link>

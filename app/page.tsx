@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { SectionHeading } from '@/components/ui/SectionHeading'
+import { FaqAccordion } from '@/components/FaqAccordion'
 
 // ─── Image swap — edit these two spots when photos are ready ─────────
 //
@@ -26,8 +27,6 @@ const PREVIEW_CARDS = [
     time: '18:30 – 19:30',
     price: '£5.00',
     players: 8,
-    rival: true,
-    urgency: '⚡ Another group racing for this',
   },
   {
     image: null as string | null,   // swap → '/images/offpeak.jpg'
@@ -36,8 +35,6 @@ const PREVIEW_CARDS = [
     time: '16:30 – 17:30',
     price: '£3.00',
     players: 4,
-    rival: false,
-    urgency: null,
   },
   {
     image: null as string | null,   // swap → '/images/weekend.jpg'
@@ -46,11 +43,17 @@ const PREVIEW_CARDS = [
     time: '09:30 – 10:30',
     price: '£4.00',
     players: 2,
-    rival: false,
-    urgency: null,
   },
 ]
 // ─────────────────────────────────────────────────────────────────────
+
+const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function fmtSlotDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${DAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`
+}
 
 const STATS = [
   { n: '10',  l: 'players needed' },
@@ -67,7 +70,7 @@ const MARQUEE_ITEMS = [
 ]
 
 export default async function HomePage() {
-  // ── Fetch real open games (future dates only) ──────────────────────────
+  // ── Fetch real public games (future dates only) ──────────────────────────
   const today = new Date().toISOString().slice(0, 10)
   const { data: rawGames } = await createServiceClient()
     .from('sessions')
@@ -76,7 +79,6 @@ export default async function HomePage() {
     .eq('status', 'filling')
     .eq('is_public', true)
     .gte('slots.date', today)
-    .limit(10)
 
   type LiveGameRow = {
     id: string
@@ -85,7 +87,7 @@ export default async function HomePage() {
     players: { count: number }[]
   }
 
-  const liveGames = ((rawGames as unknown as LiveGameRow[]) ?? [])
+  const allPublicGames = ((rawGames as unknown as LiveGameRow[]) ?? [])
     .map(s => {
       const slot = Array.isArray(s.slots) ? s.slots[0] : s.slots
       const playerCount = (Array.isArray(s.players) ? s.players[0]?.count : 0) ?? 0
@@ -93,6 +95,7 @@ export default async function HomePage() {
       return {
         id: s.id,
         time: `${slot.start_time.slice(0, 5)} – ${slot.end_time.slice(0, 5)}`,
+        date: fmtSlotDate(slot.date),
         price: `£${(slot.price / 10).toFixed(2)}`,
         playerCount,
         type,
@@ -101,9 +104,17 @@ export default async function HomePage() {
       }
     })
     .sort((a, b) => b.playerCount - a.playerCount)
-    .slice(0, 3)
+
+  const liveGames = allPublicGames.slice(0, 3)
 
   const exampleCards = PREVIEW_CARDS.slice(0, Math.max(0, 3 - liveGames.length))
+
+  // Compute plausible near-future dates for example cards (today, tomorrow, day after)
+  const exampleDates = PREVIEW_CARDS.map((_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() + i)
+    return fmtSlotDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+  })
   // ──────────────────────────────────────────────────────────────────────
 
   return (
@@ -176,7 +187,7 @@ export default async function HomePage() {
                   </span>
                 </div>
 
-                {/* Headline — two lines, existing copy verbatim */}
+                {/* Headline */}
                 <h1
                   className="anim-fade-up d-80"
                   style={{
@@ -185,25 +196,11 @@ export default async function HomePage() {
                     lineHeight: 0.95,
                     letterSpacing: '-0.015em',
                     fontWeight: 700,
-                    margin: '0 0 0.06em',
+                    margin: '0 0 1.75rem',
                     color: 'var(--text)',
                   }}
                 >
-                  Need 10 players?
-                </h1>
-                <h1
-                  className="anim-fade-up d-150"
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: 'var(--text-hero)',
-                    lineHeight: 0.95,
-                    letterSpacing: '-0.015em',
-                    fontWeight: 700,
-                    margin: '0 0 1.75rem',
-                    color: 'var(--green)',
-                  }}
-                >
-                  We&apos;ve got you.
+                  Play football tonight.
                 </h1>
 
                 {/* Subcopy */}
@@ -219,13 +216,13 @@ export default async function HomePage() {
                     fontWeight: 400,
                   }}
                 >
-                  Share one link. Nobody pays until the game is full.
+                  Find games near you or start one in under a minute.
                 </p>
 
                 {/* Primary CTA */}
                 <div className="anim-fade-up d-300" style={{ marginBottom: '3.5rem' }}>
                   <Link href="/slots" style={{ textDecoration: 'none' }}>
-                    <Button size="lg" arrow>Find a game time</Button>
+                    <Button size="lg" arrow>Find a game tonight</Button>
                   </Link>
                 </div>
 
@@ -367,8 +364,16 @@ export default async function HomePage() {
             SLOT PREVIEW CARDS
             ============================================================ */}
         <section style={{ paddingTop: 'clamp(2.5rem, 5vh, 3.5rem)', paddingBottom: 'clamp(2.5rem, 5vh, 3.5rem)' }}>
+          <Container>
+            <div className="reveal-scroll" style={{ marginBottom: '1.75rem' }}>
+              <SectionHeading
+                eyebrow="Live now"
+                heading="Public games"
+              />
+            </div>
+          </Container>
           <div className="preview-cards-scroller">
-            {/* ── Real open games ── */}
+            {/* ── Real public games ── */}
             {liveGames.map((game, idx) => (
               <Link
                 key={game.id}
@@ -418,9 +423,15 @@ export default async function HomePage() {
                   <div style={{ padding: '1.2rem 1.35rem 1.3rem' }}>
                     <div className="tabular" style={{
                       fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                      letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1, marginBottom: '0.85rem',
+                      letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1, marginBottom: '3px',
                     }}>
                       {game.time}
+                    </div>
+                    <div style={{
+                      fontFamily: 'var(--font-sans)', fontSize: '11px',
+                      color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.75rem', opacity: 0.7,
+                    }}>
+                      {game.date}
                     </div>
                     <div style={{
                       height: '3px', borderRadius: '99px',
@@ -529,9 +540,15 @@ export default async function HomePage() {
                     <div style={{ padding: '1.2rem 1.35rem 1.3rem' }}>
                       <div className="tabular" style={{
                         fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                        letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1, marginBottom: '0.85rem',
+                        letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1, marginBottom: '3px',
                       }}>
                         {card.time}
+                      </div>
+                      <div style={{
+                        fontFamily: 'var(--font-sans)', fontSize: '11px',
+                        color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.75rem', opacity: 0.7,
+                      }}>
+                        {exampleDates[i]}
                       </div>
                       <div style={{
                         height: '3px', borderRadius: '99px',
@@ -550,21 +567,12 @@ export default async function HomePage() {
                           transition: 'width 0.6s var(--ease-out)',
                         }} />
                       </div>
-                      {card.rival ? (
-                        <div style={{
-                          fontFamily: 'var(--font-sans)', fontSize: '11px',
-                          color: 'var(--amber)', fontWeight: 700, letterSpacing: '0.01em',
-                        }}>
-                          {card.urgency}
-                        </div>
-                      ) : (
-                        <div style={{
-                          fontFamily: 'var(--font-sans)', fontSize: '11px',
-                          color: 'var(--text-secondary)', fontWeight: 500,
-                        }}>
-                          {card.players}/10 joined · {10 - card.players} spots left
-                        </div>
-                      )}
+                      <div style={{
+                        fontFamily: 'var(--font-sans)', fontSize: '11px',
+                        color: 'var(--text-secondary)', fontWeight: 500,
+                      }}>
+                        {card.players}/10 joined · {10 - card.players} spots left
+                      </div>
                     </div>
                   </Card>
                 </div>
@@ -579,17 +587,7 @@ export default async function HomePage() {
         <section style={{ paddingTop: 'clamp(4rem, 8vh, 6rem)', paddingBottom: 'clamp(4rem, 8vh, 6rem)' }}>
           <Container>
             {/* Section header */}
-            <div
-              className="reveal-scroll"
-              style={{
-                display: 'flex',
-                alignItems: 'flex-end',
-                justifyContent: 'space-between',
-                marginBottom: '3rem',
-                flexWrap: 'wrap',
-                gap: '1rem',
-              }}
-            >
+            <div className="reveal-scroll" style={{ marginBottom: '3rem' }}>
               <SectionHeading
                 eyebrow="How it works"
                 heading={
@@ -599,9 +597,6 @@ export default async function HomePage() {
                   </>
                 }
               />
-              <Link href="/slots" style={{ textDecoration: 'none', flexShrink: 0 }}>
-                <Button variant="ghost" size="md" arrow>Browse game times</Button>
-              </Link>
             </div>
 
             {/* Step cards */}
@@ -700,6 +695,11 @@ export default async function HomePage() {
         </section>
 
         {/* ============================================================
+            FAQ
+            ============================================================ */}
+        <FaqAccordion />
+
+        {/* ============================================================
             PITCH OWNER — pitch-green tinted band
             ============================================================ */}
         <section
@@ -737,7 +737,7 @@ export default async function HomePage() {
               style={{
                 fontSize: '10px',
                 fontWeight: 700,
-                letterSpacing: '0.18em',
+                letterSpacing: '0.16em',
                 textTransform: 'uppercase',
                 color: 'var(--text-tertiary)',
                 fontFamily: 'var(--font-sans)',

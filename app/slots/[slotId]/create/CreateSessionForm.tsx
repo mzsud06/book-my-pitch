@@ -5,19 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Badge } from '@/components/ui/Badge'
-
-const COUNTRY_CODES = [
-  { code: '+44',  label: '🇬🇧 +44' },
-  { code: '+1',   label: '🇺🇸 +1' },
-  { code: '+92',  label: '🇵🇰 +92' },
-  { code: '+880', label: '🇧🇩 +880' },
-  { code: '+91',  label: '🇮🇳 +91' },
-  { code: '+234', label: '🇳🇬 +234' },
-  { code: '+249', label: '🇸🇴 +249' },
-  { code: '+212', label: '🇲🇦 +212' },
-  { code: '+213', label: '🇩🇿 +213' },
-  { code: '+90',  label: '🇹🇷 +90' },
-]
+import PhoneInput, { parsePhone } from '@/components/PhoneInput'
 
 interface Slot {
   id: string
@@ -67,26 +55,17 @@ const labelStyle: React.CSSProperties = {
   fontFamily: 'var(--font-sans)',
 }
 
-function parsePhone(full: string): { countryCode: string; localNumber: string } {
-  const sorted = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length)
-  const match = sorted.find(({ code }) => full.startsWith(code))
-  if (match) return { countryCode: match.code, localNumber: full.slice(match.code.length) }
-  return { countryCode: '+44', localNumber: full.replace(/[^0-9]/g, '') }
-}
-
 export default function CreateSessionForm({ slot }: Props) {
   const router = useRouter()
   const supabase = createClient()
   const [existingSessionId, setExistingSessionId] = useState<string | null>(null)
   const [checking, setChecking] = useState(true)
   const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [countryCode, setCountryCode] = useState('+44')
-  const [localNumber, setLocalNumber] = useState('')
+  const [phone, setPhone] = useState('+44')
   const [nameError, setNameError] = useState('')
   const [phoneError, setPhoneError] = useState('')
   const [teamName, setTeamName] = useState('')
-  const [gameType, setGameType] = useState<'private' | 'looking_for_opposition' | 'open'>('private')
+  const [gameType, setGameType] = useState<'private' | 'open'>('private')
 
   const searchParams = useSearchParams()
   const challengeSessionId = searchParams.get('challenge')
@@ -124,9 +103,6 @@ export default function CreateSessionForm({ slot }: Props) {
 
         const metaPhone = typeof meta?.phone === 'string' ? meta.phone : ''
         if (metaPhone) {
-          const parsed = parsePhone(metaPhone)
-          setCountryCode(parsed.countryCode)
-          setLocalNumber(parsed.localNumber)
           setPhone(metaPhone)
         } else {
           // Fall back to most recent player row for this user
@@ -140,9 +116,6 @@ export default function CreateSessionForm({ slot }: Props) {
             .maybeSingle()
           const storedPhone = (latestPlayer as unknown as { phone: string | null } | null)?.phone
           if (storedPhone) {
-            const parsed = parsePhone(storedPhone)
-            setCountryCode(parsed.countryCode)
-            setLocalNumber(parsed.localNumber)
             setPhone(storedPhone)
           }
         }
@@ -183,6 +156,7 @@ export default function CreateSessionForm({ slot }: Props) {
       setNameError('Name may only contain letters and spaces')
       valid = false
     }
+    const { localNumber } = parsePhone(phone)
     if (!localNumber.trim() || !/^[0-9]+$/.test(localNumber.trim())) {
       setPhoneError('Please enter a valid phone number')
       valid = false
@@ -202,7 +176,7 @@ export default function CreateSessionForm({ slot }: Props) {
     router.push(`/slots/${slot.id}/create/payment${challengeSessionId ? `?challenge=${challengeSessionId}` : ''}`)
   }
 
-  const isReady = name.trim() && localNumber.trim()
+  const isReady = name.trim() && parsePhone(phone).localNumber.trim()
 
   if (checking) return null
 
@@ -250,10 +224,11 @@ export default function CreateSessionForm({ slot }: Props) {
         className="anim-fade-up"
         style={{
           fontSize: '10px',
-          color: 'var(--green)',
+          color: 'var(--text-tertiary)',
           fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.16em',
+          fontFamily: 'var(--font-sans)',
           marginBottom: '0.6rem',
           display: 'flex',
           alignItems: 'center',
@@ -347,16 +322,17 @@ export default function CreateSessionForm({ slot }: Props) {
             <div
               style={{
                 fontSize: '10px',
-                color: 'var(--muted)',
+                color: 'var(--text-tertiary)',
                 marginBottom: '4px',
                 fontWeight: 700,
                 textTransform: 'uppercase',
-                letterSpacing: '0.1em',
+                letterSpacing: '0.16em',
+                fontFamily: 'var(--font-sans)',
               }}
             >
               {slot.venue?.name ?? 'Globe Football Pitch'}
             </div>
-            <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
               {slot.venue?.address ?? '110 Globe Rd, Bethnal Green E1 4DZ'}
             </div>
             <div style={{ marginTop: '10px' }}>
@@ -377,7 +353,7 @@ export default function CreateSessionForm({ slot }: Props) {
             >
               £{perPlayer}
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '4px', fontWeight: 500 }}>per player</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: 500 }}>per player</div>
           </div>
         </div>
 
@@ -408,7 +384,7 @@ export default function CreateSessionForm({ slot }: Props) {
                     top: '4px',
                     right: '6px',
                     fontSize: '7px',
-                    fontWeight: 900,
+                    fontWeight: 700,
                     fontFamily: 'var(--font-display)',
                     color: i === 0 ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.06)',
                     lineHeight: 1,
@@ -480,7 +456,7 @@ export default function CreateSessionForm({ slot }: Props) {
                         top: '4px',
                         right: '6px',
                         fontSize: '7px',
-                        fontWeight: 900,
+                        fontWeight: 700,
                         fontFamily: 'var(--font-display)',
                         color: 'rgba(255,255,255,0.06)',
                         lineHeight: 1,
@@ -516,7 +492,7 @@ export default function CreateSessionForm({ slot }: Props) {
             />
           ))}
         </div>
-        <div style={{ fontSize: '13px', color: 'var(--muted)', textAlign: 'center', fontWeight: 500 }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 500 }}>
           {challengeSessionId ? (
             <>
               <strong style={{ color: 'var(--text)', fontWeight: 800 }}>1/5 players</strong>
@@ -561,75 +537,7 @@ export default function CreateSessionForm({ slot }: Props) {
         </div>
         <div>
           <label style={labelStyle}>Phone number</label>
-          <div
-            className="field-input"
-            style={{
-              display: 'flex',
-              width: '100%',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              overflow: 'hidden',
-              background: 'var(--surface2)',
-              transition: 'border-color 160ms ease, box-shadow 160ms ease',
-            }}
-          >
-            <select
-              value={countryCode}
-              onChange={(e) => {
-                const code = e.target.value
-                setCountryCode(code)
-                setPhone(code + localNumber)
-              }}
-              style={{
-                background: 'var(--surface2)',
-                border: 'none',
-                borderRight: '1px solid var(--border)',
-                padding: '0.875rem 0.4rem 0.875rem 0.75rem',
-                color: 'var(--text)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '14px',
-                fontWeight: 500,
-                outline: 'none',
-                cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            >
-              {COUNTRY_CODES.map(c => (
-                <option key={c.code} value={c.code} style={{ background: '#161616' }}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-            <input
-              type="tel"
-              inputMode="numeric"
-              value={localNumber}
-              onChange={(e) => {
-                const cleaned = e.target.value.replace(/[^0-9]/g, '')
-                setLocalNumber(cleaned)
-                setPhone(countryCode + cleaned)
-              }}
-              onKeyDown={(e) => {
-                if (e.ctrlKey || e.metaKey) return
-                if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return
-                if (!/^[0-9]$/.test(e.key)) e.preventDefault()
-              }}
-              placeholder="7911 123456"
-              required
-              style={{
-                flex: 1,
-                background: 'transparent',
-                border: 'none',
-                padding: '0.875rem 1rem',
-                color: 'var(--text)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: '15px',
-                fontWeight: 500,
-                outline: 'none',
-                minWidth: 0,
-              }}
-            />
-          </div>
+          <PhoneInput value={phone} onChange={setPhone} required />
           {phoneError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{phoneError}</div>}
         </div>
         {!challengeSessionId && (
@@ -639,17 +547,13 @@ export default function CreateSessionForm({ slot }: Props) {
               {(
                 [
                   ['private', 'Private'],
-                  ['looking_for_opposition', 'Looking for opposition'],
-                  ['open', 'Open to anyone'],
+                  ['open', 'Public'],
                 ] as const
               ).map(([value, label]) => (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => {
-                    setGameType(value)
-                    if (value !== 'looking_for_opposition') setTeamName('')
-                  }}
+                  onClick={() => setGameType(value)}
                   style={{
                     flex: 1,
                     padding: '0.65rem 0.3rem',

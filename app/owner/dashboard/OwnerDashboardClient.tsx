@@ -141,7 +141,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           <Link href="/" style={{ textDecoration: 'none' }}>
             <span
               style={{
-                fontFamily: "'Archivo Black', sans-serif",
+                fontFamily: 'var(--font-display)',
                 fontSize: '17px',
                 letterSpacing: '-0.04em',
                 color: 'var(--text)',
@@ -163,7 +163,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           <span
             style={{
               fontSize: '13px',
-              color: 'var(--muted)',
+              color: 'var(--text-secondary)',
               fontWeight: 600,
             }}
           >
@@ -196,7 +196,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               borderRadius: '8px',
               border: '1px solid var(--border)',
               background: 'transparent',
-              color: 'var(--muted)',
+              color: 'var(--text-secondary)',
               fontFamily: "'Archivo', sans-serif",
               fontWeight: 600,
               fontSize: '13px',
@@ -217,7 +217,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           <div
             className="anim-fade-up"
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: 'clamp(24px, 4vw, 34px)',
               letterSpacing: '-0.04em',
               lineHeight: 0.95,
@@ -226,7 +226,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           >
             {venue.name}
           </div>
-          <div className="anim-fade-up d-80" style={{ fontSize: '14px', color: 'var(--muted)', fontWeight: 500 }}>
+          <div className="anim-fade-up d-80" style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
             {venue.address}
           </div>
         </div>
@@ -256,7 +256,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             >
               <div
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
+                  fontFamily: 'var(--font-display)',
                   fontSize: 'clamp(24px, 3vw, 32px)',
                   color: 'var(--green)',
                   letterSpacing: '-0.04em',
@@ -266,7 +266,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               >
                 {stat.n}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.02em' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.02em' }}>
                 {stat.l}
               </div>
             </div>
@@ -295,7 +295,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             >
               <div
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
+                  fontFamily: 'var(--font-display)',
                   fontSize: '15px',
                   letterSpacing: '-0.025em',
                 }}
@@ -320,7 +320,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             </div>
 
             {confirmed.length === 0 && (
-              <div style={{ fontSize: '13px', color: 'var(--muted)', padding: '1rem 0', fontWeight: 500 }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', padding: '1rem 0', fontWeight: 500 }}>
                 No confirmed bookings yet
               </div>
             )}
@@ -347,7 +347,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                         style={{
                           fontSize: '10px',
                           fontWeight: 700,
-                          color: typeColors[s.slots.type] ?? 'var(--muted)',
+                          color: typeColors[s.slots.type] ?? 'var(--text-secondary)',
                           letterSpacing: '0.04em',
                           textTransform: 'uppercase',
                         }}
@@ -355,7 +355,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                         {typeLabels[s.slots.type] ?? s.slots.type}
                       </span>
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500 }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                       {formatDate(s.slots.date)} · {totalPlayers(s)} players
                     </div>
                   </div>
@@ -363,7 +363,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                     <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--green)', letterSpacing: '-0.02em' }}>
                       £{s.slots.price}.00
                     </div>
-                    <div style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 500 }}>Paid ✓</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 500 }}>Paid ✓</div>
                   </div>
                 </div>
               </Link>
@@ -390,18 +390,18 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             >
               <div
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
+                  fontFamily: 'var(--font-display)',
                   fontSize: '15px',
                   letterSpacing: '-0.025em',
                 }}
               >
                 Slot occupancy
               </div>
-              <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500 }}>This week</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>This week</span>
             </div>
 
             {occupancyData.length === 0 && (
-              <div style={{ fontSize: '13px', color: 'var(--muted)', padding: '1rem 0', fontWeight: 500 }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', padding: '1rem 0', fontWeight: 500 }}>
                 No data for this week
               </div>
             )}
@@ -430,11 +430,11 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                     >
                       {occ.time.slice(0, 5)}
                       {' '}
-                      <span style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         {typeLabels[occ.type] ?? ''}
                       </span>
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500, marginTop: '1px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '1px' }}>
                       {occ.type === 'weekend' ? 'Weekend' : 'Mon–Fri'}
                     </div>
                   </div>
@@ -461,7 +461,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                   <div
                     style={{
                       fontSize: '12px',
-                      color: 'var(--muted)',
+                      color: 'var(--text-secondary)',
                       whiteSpace: 'nowrap',
                       minWidth: '36px',
                       textAlign: 'right',
@@ -497,7 +497,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             >
               <div
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
+                  fontFamily: 'var(--font-display)',
                   fontSize: '15px',
                   letterSpacing: '-0.025em',
                 }}
@@ -548,7 +548,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                             style={{
                               fontSize: '9px',
                               fontWeight: 700,
-                              color: typeColors[s.slots.type] ?? 'var(--muted)',
+                              color: typeColors[s.slots.type] ?? 'var(--text-secondary)',
                               letterSpacing: '0.1em',
                               textTransform: 'uppercase',
                             }}
@@ -576,16 +576,16 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                               }}
                             />
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 500 }}>
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                             {formatDate(s.slots.date)}
                           </div>
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
-                        <div style={{ fontSize: '17px', fontWeight: 900, fontFamily: "'Archivo Black', sans-serif", color: 'var(--amber)', letterSpacing: '-0.03em' }}>
+                        <div style={{ fontSize: '17px', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--amber)', letterSpacing: '-0.03em' }}>
                           {count}/10
                         </div>
-                        <div style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 500 }}>players</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 500 }}>players</div>
                       </div>
                     </div>
                   </Link>

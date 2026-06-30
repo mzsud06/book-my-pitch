@@ -4,19 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-
-const COUNTRY_CODES = [
-  { code: '+44',  label: '🇬🇧 +44' },
-  { code: '+1',   label: '🇺🇸 +1' },
-  { code: '+92',  label: '🇵🇰 +92' },
-  { code: '+880', label: '🇧🇩 +880' },
-  { code: '+91',  label: '🇮🇳 +91' },
-  { code: '+234', label: '🇳🇬 +234' },
-  { code: '+249', label: '🇸🇴 +249' },
-  { code: '+212', label: '🇲🇦 +212' },
-  { code: '+213', label: '🇩🇿 +213' },
-  { code: '+90',  label: '🇹🇷 +90' },
-]
+import PhoneInput, { parsePhone } from '@/components/PhoneInput'
 
 interface Player {
   id: string
@@ -127,9 +115,7 @@ export default function SessionClient({
   const [shareUrl, setShareUrl] = useState(`/session/${session.id}`)
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
   const [lookupOpen, setLookupOpen] = useState(false)
-  const [lookupPhone, setLookupPhone] = useState('')
-  const [lookupCountryCode, setLookupCountryCode] = useState('+44')
-  const [lookupLocalNumber, setLookupLocalNumber] = useState('')
+  const [lookupPhone, setLookupPhone] = useState('+44')
   const [lookupLoading, setLookupLoading] = useState(false)
   const [foundPlayer, setFoundPlayer] = useState<Player | null>(null)
   const [lookupDone, setLookupDone] = useState(false)
@@ -166,6 +152,11 @@ export default function SessionClient({
   const [bannerLeaveOpen, setBannerLeaveOpen] = useState(false)
   const [bannerLeaveLoading, setBannerLeaveLoading] = useState(false)
   const [bannerLeaveError, setBannerLeaveError] = useState('')
+  const [joinName, setJoinName] = useState('')
+  const [joinPhone, setJoinPhone] = useState('+44')
+  const [joinNameError, setJoinNameError] = useState('')
+  const [joinPhoneError, setJoinPhoneError] = useState('')
+  const joinAutofillDone = useRef(false)
 
   useEffect(() => {
     return () => { if (teamNameDebounceRef.current) clearTimeout(teamNameDebounceRef.current) }
@@ -480,14 +471,14 @@ export default function SessionClient({
 
   function toggleLookup() {
     setLookupOpen(o => {
-      if (o) { setLookupDone(false); setFoundPlayer(null); setLookupPhone('') }
+      if (o) { setLookupDone(false); setFoundPlayer(null); setLookupPhone('+44') }
       return !o
     })
   }
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault()
-    if (!lookupLocalNumber.trim()) return
+    if (!parsePhone(lookupPhone).localNumber.trim()) return
     const phone = lookupPhone.trim()
     setLookupLoading(true)
     const { data } = await supabase
@@ -616,6 +607,73 @@ export default function SessionClient({
       setCopied(true)
       setTimeout(() => setCopied(false), 2200)
     })
+  }
+
+  useEffect(() => {
+    if (joinAutofillDone.current) return
+    joinAutofillDone.current = true
+    async function autofill() {
+      try {
+        const ss = sessionStorage.getItem('join_details')
+        if (ss) {
+          const { name: n, phone: p } = JSON.parse(ss)
+          if (n) setJoinName(n)
+          if (p) setJoinPhone(p)
+          return
+        }
+      } catch { /* ignore */ }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const meta = user.user_metadata as Record<string, unknown>
+        if (typeof meta?.name === 'string') setJoinName(meta.name)
+        if (typeof meta?.phone === 'string') {
+          setJoinPhone(meta.phone)
+        } else {
+          const { data: lp } = await supabase
+            .from('players')
+            .select('phone')
+            .eq('user_id', user.id)
+            .not('phone', 'is', null)
+            .order('joined_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          const sp = (lp as { phone: string | null } | null)?.phone
+          if (sp) setJoinPhone(sp)
+        }
+        return
+      }
+      try {
+        const ls = localStorage.getItem('bmp_player_details')
+        if (ls) {
+          const { name: n, phone: p } = JSON.parse(ls)
+          if (n) setJoinName(n)
+          if (p) setJoinPhone(p)
+        }
+      } catch { /* ignore */ }
+    }
+    autofill()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleJoinFormSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    let valid = true
+    if (!joinName.trim() || !/^[A-Za-z ]+$/.test(joinName.trim())) {
+      setJoinNameError('Please enter a valid name')
+      valid = false
+    } else {
+      setJoinNameError('')
+    }
+    const joinLocalNumber = parsePhone(joinPhone).localNumber
+    if (!joinLocalNumber.trim() || !/^[0-9]{1,15}$/.test(joinLocalNumber.trim())) {
+      setJoinPhoneError('Please enter a valid phone number')
+      valid = false
+    } else {
+      setJoinPhoneError('')
+    }
+    if (!valid) return
+    sessionStorage.setItem('join_details', JSON.stringify({ name: joinName.trim(), phone: joinPhone.trim() }))
+    router.push(`/session/${session.id}/payment`)
   }
 
   function shareWhatsApp() {
@@ -823,7 +881,7 @@ export default function SessionClient({
           <div
             style={{
               fontSize: '15px',
-              color: 'var(--muted)',
+              color: 'var(--text-secondary)',
               lineHeight: 1.7,
               marginBottom: '2rem',
               fontWeight: 500,
@@ -857,7 +915,7 @@ export default function SessionClient({
             href="/slots"
             style={{
               fontSize: '13px',
-              color: 'var(--muted)',
+              color: 'var(--text-secondary)',
               textDecoration: 'none',
               fontWeight: 600,
               letterSpacing: '-0.01em',
@@ -963,7 +1021,7 @@ export default function SessionClient({
           >
             Game created!
           </div>
-          <div style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: 1.6, fontWeight: 500 }}>
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, fontWeight: 500 }}>
             Share the link below with your mates. When 10 players join, everyone pays automatically.
           </div>
         </div>
@@ -1051,7 +1109,7 @@ export default function SessionClient({
               <div style={{ fontSize: '14px', color: 'var(--text)', fontWeight: 700, marginBottom: '6px' }}>
                 Are you sure you want to leave?
               </div>
-              <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '12px' }}>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '12px' }}>
                 Your spot will be freed up for someone else. No charge has been made.
               </div>
               {bannerLeaveError && (
@@ -1066,7 +1124,7 @@ export default function SessionClient({
                   style={{
                     flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-lg)',
                     border: '1px solid var(--border)', background: 'transparent',
-                    color: 'var(--muted)', fontFamily: 'var(--font-display)',
+                    color: 'var(--text-secondary)', fontFamily: 'var(--font-display)',
                     fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                     cursor: 'pointer', lineHeight: 1,
                   }}
@@ -1080,7 +1138,7 @@ export default function SessionClient({
                     flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-lg)',
                     border: 'none',
                     background: bannerLeaveLoading ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.85)',
-                    color: '#fff', fontFamily: 'var(--font-display)',
+                    color: 'var(--text)', fontFamily: 'var(--font-display)',
                     fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                     cursor: bannerLeaveLoading ? 'not-allowed' : 'pointer', lineHeight: 1,
                     transition: 'background 0.15s ease',
@@ -1127,11 +1185,12 @@ export default function SessionClient({
         <div
           style={{
             fontSize: '10px',
-            color: 'var(--muted)',
+            color: 'var(--text-tertiary)',
             marginBottom: '5px',
             fontWeight: 700,
             textTransform: 'uppercase',
-            letterSpacing: '0.1em',
+            letterSpacing: '0.16em',
+            fontFamily: 'var(--font-sans)',
           }}
         >
           {slot.venues?.name ?? 'Globe Football Pitch'} · Bethnal Green
@@ -1147,7 +1206,7 @@ export default function SessionClient({
         >
           {sliceTime(slot.start_time)} – {sliceTime(slot.end_time)}
         </div>
-        <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '6px', fontWeight: 500 }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
           {formatDate(slot.date)} · {slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'} · 5-a-side
         </div>
         <a
@@ -1239,7 +1298,7 @@ export default function SessionClient({
 
               <SegBar count={playerCount} isConfirmed={isConfirmed} />
 
-              <div style={{ fontSize: '14px', color: 'var(--muted)', textAlign: 'center', fontWeight: 600 }}>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 600 }}>
                 {isConfirmed ? (
                   <strong style={{ color: 'var(--green)', fontWeight: 800 }}>Confirmed — all 10 players ✓</strong>
                 ) : (
@@ -1254,7 +1313,7 @@ export default function SessionClient({
         </div>
 
         {session.organiser_name && (
-          <div style={{ fontSize: '12px', color: 'var(--muted)', textAlign: 'center', fontWeight: 500, marginTop: '0.6rem', opacity: 0.7 }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 500, marginTop: '0.6rem', opacity: 0.7 }}>
             Organiser: {session.organiser_name}{session.organiser_phone ? ` · ${session.organiser_phone}` : ''}
           </div>
         )}
@@ -1271,7 +1330,7 @@ export default function SessionClient({
             padding: '1rem 1.5rem',
             marginBottom: '1.25rem',
             fontSize: '13px',
-            color: 'var(--muted)',
+            color: 'var(--text-secondary)',
             textAlign: 'center',
             fontWeight: 600,
           }}
@@ -1346,7 +1405,7 @@ export default function SessionClient({
                 borderBottom: idx < arr.length - 1 ? '1px solid var(--border)' : 'none',
               }}
             >
-              <span style={{ color: 'var(--muted)', fontWeight: 500 }}>{row.label}</span>
+              <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{row.label}</span>
               <span
                 style={{
                   fontWeight: 800,
@@ -1377,7 +1436,7 @@ export default function SessionClient({
           <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>
             This game is already confirmed
           </div>
-          <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
             It&apos;s underway — no spots available.
           </div>
           <Link href="/slots" style={{ textDecoration: 'none' }}>
@@ -1496,7 +1555,7 @@ export default function SessionClient({
                 borderRadius: 'var(--radius-lg)',
                 border: 'none',
                 background: '#25D366',
-                color: '#fff',
+                color: 'var(--text)',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
                 fontSize: '13px',
@@ -1516,7 +1575,7 @@ export default function SessionClient({
               ============================================================ */}
           {isOrganiserUser && session.game_type === 'private' && !session.matched_session_id && (
             <div style={{ marginBottom: '1rem' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.16em', fontFamily: 'var(--font-sans)', marginBottom: '8px' }}>
                 Game settings
               </div>
 
@@ -1530,9 +1589,9 @@ export default function SessionClient({
                   }}
                 >
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
-                    Make this an open game?
+                    Make this public?
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
                     Anyone will be able to find and join this game publicly.
                   </div>
                   {convertError && (
@@ -1547,7 +1606,7 @@ export default function SessionClient({
                       style={{
                         flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                         border: '1px solid var(--border)', background: 'transparent',
-                        color: 'var(--muted)', fontFamily: 'var(--font-display)',
+                        color: 'var(--text-secondary)', fontFamily: 'var(--font-display)',
                         fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
                       }}
                     >
@@ -1560,7 +1619,7 @@ export default function SessionClient({
                         flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                         border: 'none',
                         background: converting ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.1)',
-                        color: converting ? 'var(--muted)' : 'var(--text)',
+                        color: converting ? 'var(--text-secondary)' : 'var(--text)',
                         fontFamily: 'var(--font-display)',
                         fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                         cursor: converting ? 'not-allowed' : 'pointer', lineHeight: 1,
@@ -1571,106 +1630,6 @@ export default function SessionClient({
                     </button>
                   </div>
                 </div>
-              ) : convertOpen === 'lfo' ? (
-                <div
-                  style={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border-strong)',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: '1.25rem',
-                  }}
-                >
-                  {lfoStep === 'confirm' ? (
-                    <>
-                      <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
-                        Look for opposition?
-                      </div>
-                      <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
-                        Your game will be listed publicly so another team of 5 can challenge you. If you already have more than 5 players this option won&apos;t be available.
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          onClick={() => { setConvertOpen(null); setConvertError('') }}
-                          style={{
-                            flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
-                            border: '1px solid var(--border)', background: 'transparent',
-                            color: 'var(--muted)', fontFamily: 'var(--font-display)',
-                            fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => setLfoStep('name')}
-                          style={{
-                            flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
-                            border: 'none', background: 'rgba(255,255,255,0.1)',
-                            color: 'var(--text)', fontFamily: 'var(--font-display)',
-                            fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
-                            transition: 'background 0.15s ease',
-                          }}
-                        >
-                          Yes, list it
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '8px' }}>
-                        Set a team name (optional)
-                      </div>
-                      <input
-                        className="field-input"
-                        type="text"
-                        value={lfoTeamName}
-                        onChange={(e) => setLfoTeamName(e.target.value.replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 30))}
-                        placeholder="e.g. The Wanderers"
-                        style={{
-                          width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
-                          borderRadius: 'var(--radius-lg)', padding: '0.75rem 1rem', color: 'var(--text)',
-                          fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 600,
-                          outline: 'none', marginBottom: '1rem', boxSizing: 'border-box',
-                          transition: 'border-color 0.15s ease',
-                        }}
-                      />
-                      {convertError && (
-                        <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
-                          {convertError}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          onClick={() => { setLfoStep('confirm'); setConvertError('') }}
-                          disabled={converting}
-                          style={{
-                            flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
-                            border: '1px solid var(--border)', background: 'transparent',
-                            color: 'var(--muted)', fontFamily: 'var(--font-display)',
-                            fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
-                          }}
-                        >
-                          Back
-                        </button>
-                        <button
-                          onClick={handleConvertToLfo}
-                          disabled={converting}
-                          style={{
-                            flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
-                            border: 'none',
-                            background: converting ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.1)',
-                            color: converting ? 'var(--muted)' : 'var(--text)',
-                            fontFamily: 'var(--font-display)',
-                            fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
-                            cursor: converting ? 'not-allowed' : 'pointer', lineHeight: 1,
-                            transition: 'background 0.15s ease',
-                          }}
-                        >
-                          {converting ? 'Saving…' : 'List publicly'}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <button
@@ -1679,28 +1638,13 @@ export default function SessionClient({
                     style={{
                       width: '100%', padding: '0.8rem 1rem', borderRadius: 'var(--radius-lg)',
                       border: '1px solid rgba(255,255,255,0.1)', background: 'var(--surface2)',
-                      color: 'var(--muted)', fontFamily: 'var(--font-sans)',
+                      color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)',
                       fontWeight: 600, fontSize: '13px', cursor: 'pointer',
                       textAlign: 'left', lineHeight: 1,
                     }}
                   >
-                    Make this an open game
+                    Make this public
                   </button>
-                  {playerCount <= 5 && (
-                    <button
-                      className="settings-btn"
-                      onClick={() => { setConvertOpen('lfo'); setLfoStep('confirm'); setConvertError('') }}
-                      style={{
-                        width: '100%', padding: '0.8rem 1rem', borderRadius: 'var(--radius-lg)',
-                        border: '1px solid rgba(255,255,255,0.1)', background: 'var(--surface2)',
-                        color: 'var(--muted)', fontFamily: 'var(--font-sans)',
-                        fontWeight: 600, fontSize: '13px', cursor: 'pointer',
-                        textAlign: 'left', lineHeight: 1,
-                      }}
-                    >
-                      Look for opposition
-                    </button>
-                  )}
                 </div>
               )}
             </div>
@@ -1711,7 +1655,7 @@ export default function SessionClient({
               ============================================================ */}
           {isOrganiserUser && session.game_type === 'looking_for_opposition' && !session.matched_session_id && (
             <div style={{ marginBottom: '1rem' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.16em', fontFamily: 'var(--font-sans)', marginBottom: '8px' }}>
                 Your listing
               </div>
 
@@ -1725,7 +1669,7 @@ export default function SessionClient({
                   marginBottom: '8px',
                 }}
               >
-                <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, marginBottom: '6px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '6px' }}>
                   Team name
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -1777,7 +1721,7 @@ export default function SessionClient({
                   style={{
                     width: '100%', padding: '0.8rem 1rem', borderRadius: 'var(--radius-lg)',
                     border: '1px solid rgba(255,255,255,0.1)', background: 'var(--surface2)',
-                    color: 'var(--muted)', fontFamily: 'var(--font-sans)',
+                    color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)',
                     fontWeight: 600, fontSize: '13px', cursor: 'pointer',
                     textAlign: 'left', lineHeight: 1,
                   }}
@@ -1796,7 +1740,7 @@ export default function SessionClient({
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
                     Stop looking for opposition?
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
                     Your listing will be removed. Any pending challenge will be cancelled.
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -1805,7 +1749,7 @@ export default function SessionClient({
                       style={{
                         flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                         border: '1px solid var(--border)', background: 'transparent',
-                        color: 'var(--muted)', fontFamily: 'var(--font-display)',
+                        color: 'var(--text-secondary)', fontFamily: 'var(--font-display)',
                         fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
                       }}
                     >
@@ -1866,7 +1810,7 @@ export default function SessionClient({
                 <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>
                   This game is full
                 </div>
-                <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
                   All spots have been taken. Find another game time below.
                 </div>
                 <Link href="/slots" style={{ textDecoration: 'none' }}>
@@ -1885,13 +1829,13 @@ export default function SessionClient({
                       lineHeight: 1,
                     }}
                   >
-                    Browse game times →
+                    See open games →
                   </button>
                 </Link>
               </div>
             ) : isLoggedIn === false && session.game_type === 'open' ? (
               <Link
-                href={`/auth/login?redirect=${encodeURIComponent(`/session/${session.id}/join`)}`}
+                href={`/auth/login?redirect=${encodeURIComponent(`/session/${session.id}`)}`}
                 className="anim-fade-up d-300"
                 style={{ textDecoration: 'none', display: 'block', marginBottom: '1.25rem' }}
               >
@@ -1916,33 +1860,84 @@ export default function SessionClient({
                 </button>
               </Link>
             ) : (
-              <Link
-                href={`/session/${session.id}/join`}
-                className="anim-fade-up d-300"
-                style={{ textDecoration: 'none', display: 'block', marginBottom: '1.25rem' }}
-              >
-                <button
-                  className="btn-g"
+              <div id="join-form" className="anim-fade-up d-300" style={{ marginBottom: '1.25rem' }}>
+                <div
                   style={{
-                    width: '100%',
-                    padding: '1.25rem',
-                    fontSize: '18px',
-                    borderRadius: 'var(--radius-lg)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: 'var(--green)',
-                    color: 'var(--black)',
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 700,
-                    letterSpacing: '-0.03em',
-                    transition: 'transform 0.18s var(--ease-out), box-shadow 0.18s ease, background 0.15s ease',
-                    lineHeight: 1,
-                    boxShadow: '0 6px 28px rgba(198,241,53,0.35)',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border-strong)',
+                    borderRadius: 'var(--radius-xl)',
+                    padding: '1.5rem',
                   }}
                 >
-                  Join this game — £{perPlayerPounds} if confirmed
-                </button>
-              </Link>
+                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '21px', color: 'var(--text)', letterSpacing: '-0.025em', lineHeight: 1.2, marginBottom: '6px' }}>
+                    Join this game
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.1rem' }}>
+                    Nothing is charged now — your card is only saved once all 10 players join.
+                  </div>
+                  <form onSubmit={handleJoinFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div>
+                      <label style={{ fontSize: '10px', color: 'var(--text-secondary)', marginBottom: '7px', display: 'block', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>
+                        Your name
+                      </label>
+                      <input
+                        className="field-input"
+                        type="text"
+                        autoComplete="name"
+                        value={joinName}
+                        onChange={(e) => {
+                          const cleaned = e.target.value.replace(/[^a-zA-Z\s]/g, '')
+                          setJoinName(cleaned)
+                          if (joinNameError) setJoinNameError('')
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.ctrlKey || e.metaKey) return
+                          if (['Backspace','Delete','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)) return
+                          if (!/^[a-zA-Z\s]$/.test(e.key)) e.preventDefault()
+                        }}
+                        placeholder="Full name"
+                        style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.8rem 1rem', color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 600, outline: 'none', transition: 'border-color 0.15s ease', boxSizing: 'border-box' as const }}
+                      />
+                      {joinNameError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{joinNameError}</div>}
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '10px', color: 'var(--text-secondary)', marginBottom: '7px', display: 'block', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>
+                        Phone number
+                      </label>
+                      <PhoneInput
+                        value={joinPhone}
+                        onChange={(v) => {
+                          setJoinPhone(v)
+                          if (joinPhoneError) setJoinPhoneError('')
+                        }}
+                      />
+                      {joinPhoneError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{joinPhoneError}</div>}
+                    </div>
+
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.55 }}>
+                      🔒 <strong style={{ color: 'var(--text)' }}>Nothing is charged now</strong> — your card is only taken when all 10 players join.
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={!joinName.trim() || !parsePhone(joinPhone).localNumber.trim()}
+                      className={joinName.trim() && parsePhone(joinPhone).localNumber.trim() ? 'btn-g' : ''}
+                      style={{
+                        width: '100%', padding: '1rem', fontSize: '16px', borderRadius: '12px', border: 'none',
+                        cursor: !joinName.trim() || !parsePhone(joinPhone).localNumber.trim() ? 'not-allowed' : 'pointer',
+                        background: !joinName.trim() || !parsePhone(joinPhone).localNumber.trim() ? 'var(--surface2)' : 'var(--green)',
+                        color: !joinName.trim() || !parsePhone(joinPhone).localNumber.trim() ? 'var(--text-secondary)' : 'var(--black)',
+                        fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1,
+                        transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                      }}
+                    >
+                      Continue to payment →
+                    </button>
+
+                  </form>
+                </div>
+              </div>
             )
           )}
         </>
@@ -1961,7 +1956,7 @@ export default function SessionClient({
               background: 'transparent',
               border: '1px dashed rgba(255,255,255,0.12)',
               borderRadius: 'var(--radius-lg)',
-              color: 'var(--muted)',
+              color: 'var(--text-secondary)',
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -1988,94 +1983,27 @@ export default function SessionClient({
             >
               {!lookupDone ? (
                 <form onSubmit={handleLookup}>
-                  <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, marginBottom: '0.85rem', lineHeight: 1.6 }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.85rem', lineHeight: 1.6 }}>
                     Joined from a different device? Enter your number to find your spot.
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <div
-                      className="field-input"
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        border: '1px solid var(--border)',
-                        borderRadius: 'var(--radius-lg)',
-                        overflow: 'hidden',
-                        background: 'var(--surface2)',
-                        transition: 'border-color 0.15s ease',
-                        minWidth: 0,
-                      }}
-                    >
-                      <select
-                        value={lookupCountryCode}
-                        onChange={(e) => {
-                          const code = e.target.value
-                          setLookupCountryCode(code)
-                          setLookupPhone(code + lookupLocalNumber)
-                        }}
-                        style={{
-                          background: 'var(--surface2)',
-                          border: 'none',
-                          borderRight: '1px solid var(--border)',
-                          padding: '0.8rem 0.4rem 0.8rem 0.75rem',
-                          color: 'var(--text)',
-                          fontFamily: 'var(--font-sans)',
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          outline: 'none',
-                          cursor: 'pointer',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {COUNTRY_CODES.map(c => (
-                          <option key={c.code} value={c.code} style={{ background: '#161616' }}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="tel"
-                        inputMode="numeric"
-                        value={lookupLocalNumber}
-                        onChange={(e) => {
-                          const cleaned = e.target.value.replace(/[^0-9]/g, '')
-                          setLookupLocalNumber(cleaned)
-                          setLookupPhone(lookupCountryCode + cleaned)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.ctrlKey || e.metaKey) return
-                          if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return
-                          if (!/^[0-9]$/.test(e.key)) e.preventDefault()
-                        }}
-                        placeholder="7911 123456"
-                        autoComplete="tel"
-                        style={{
-                          flex: 1,
-                          background: 'transparent',
-                          border: 'none',
-                          padding: '0.8rem 1rem',
-                          color: 'var(--text)',
-                          fontFamily: 'var(--font-sans)',
-                          fontSize: '15px',
-                          fontWeight: 600,
-                          outline: 'none',
-                          minWidth: 0,
-                        }}
-                      />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <PhoneInput value={lookupPhone} onChange={setLookupPhone} />
                     </div>
                     <button
                       type="submit"
-                      disabled={lookupLoading || !lookupLocalNumber.trim()}
+                      disabled={lookupLoading || !parsePhone(lookupPhone).localNumber.trim()}
                       style={{
                         padding: '0.8rem 1.1rem',
                         borderRadius: 'var(--radius-lg)',
                         border: 'none',
-                        background: lookupLoading || !lookupLocalNumber.trim() ? 'var(--surface2)' : 'var(--green)',
-                        color: lookupLoading || !lookupLocalNumber.trim() ? 'var(--muted)' : 'var(--black)',
+                        background: lookupLoading || !parsePhone(lookupPhone).localNumber.trim() ? 'var(--surface2)' : 'var(--green)',
+                        color: lookupLoading || !parsePhone(lookupPhone).localNumber.trim() ? 'var(--text-secondary)' : 'var(--black)',
                         fontFamily: 'var(--font-display)',
                         fontWeight: 700,
                         fontSize: '13px',
                         letterSpacing: '-0.015em',
-                        cursor: lookupLoading || !lookupLocalNumber.trim() ? 'not-allowed' : 'pointer',
+                        cursor: lookupLoading || !parsePhone(lookupPhone).localNumber.trim() ? 'not-allowed' : 'pointer',
                         whiteSpace: 'nowrap',
                         flexShrink: 0,
                         lineHeight: 1,
@@ -2120,17 +2048,17 @@ export default function SessionClient({
                       >
                         You&apos;re in, {foundPlayer.name.split(' ')[0]}!
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                         Your spot is highlighted in the grid above.
                       </div>
                     </div>
                   </div>
                   <button
-                    onClick={() => { setLookupDone(false); setFoundPlayer(null); setLookupPhone('') }}
+                    onClick={() => { setLookupDone(false); setFoundPlayer(null); setLookupPhone('+44') }}
                     style={{
                       background: 'transparent',
                       border: 'none',
-                      color: 'var(--muted)',
+                      color: 'var(--text-secondary)',
                       fontSize: '12px',
                       cursor: 'pointer',
                       padding: 0,
@@ -2156,40 +2084,39 @@ export default function SessionClient({
                     >
                       Not in this game
                     </div>
-                    <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6 }}>
                       That number doesn&apos;t match anyone in this game yet.
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     {isFilling && (
-                      <Link href={`/session/${session.id}/join`} style={{ textDecoration: 'none' }}>
-                        <button
-                          className="btn-g"
-                          style={{
-                            padding: '0.65rem 1.25rem',
-                            borderRadius: 'var(--radius-lg)',
-                            border: 'none',
-                            background: 'var(--green)',
-                            color: 'var(--black)',
-                            fontFamily: 'var(--font-display)',
-                            fontWeight: 700,
-                            fontSize: '13px',
-                            letterSpacing: '-0.015em',
-                            cursor: 'pointer',
-                            lineHeight: 1,
-                            transition: 'background 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
-                          }}
-                        >
-                          Join this game →
-                        </button>
-                      </Link>
+                      <button
+                        className="btn-g"
+                        onClick={() => document.getElementById('join-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                        style={{
+                          padding: '0.65rem 1.25rem',
+                          borderRadius: 'var(--radius-lg)',
+                          border: 'none',
+                          background: 'var(--green)',
+                          color: 'var(--black)',
+                          fontFamily: 'var(--font-display)',
+                          fontWeight: 700,
+                          fontSize: '13px',
+                          letterSpacing: '-0.015em',
+                          cursor: 'pointer',
+                          lineHeight: 1,
+                          transition: 'background 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                        }}
+                      >
+                        Join above ↑
+                      </button>
                     )}
                     <button
-                      onClick={() => { setLookupDone(false); setLookupPhone('') }}
+                      onClick={() => { setLookupDone(false); setLookupPhone('+44') }}
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: 'var(--muted)',
+                        color: 'var(--text-secondary)',
                         fontSize: '12px',
                         cursor: 'pointer',
                         padding: 0,
@@ -2283,7 +2210,7 @@ export default function SessionClient({
             >
               Are you sure you want to leave?
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
               {canOrganiserLeave
                 ? "The game will continue without you and someone else can take your spot."
                 : "Your spot will be gone and you won't be charged. This can't be undone."}
@@ -2303,7 +2230,7 @@ export default function SessionClient({
                   borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border)',
                   background: 'transparent',
-                  color: 'var(--muted)',
+                  color: 'var(--text-secondary)',
                   fontFamily: 'var(--font-display)',
                   fontWeight: 700,
                   fontSize: '13px',
@@ -2323,7 +2250,7 @@ export default function SessionClient({
                   borderRadius: 'var(--radius-lg)',
                   border: 'none',
                   background: leaveLoading ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.85)',
-                  color: '#fff',
+                  color: 'var(--text)',
                   fontFamily: 'var(--font-display)',
                   fontWeight: 700,
                   fontSize: '13px',
@@ -2356,7 +2283,7 @@ export default function SessionClient({
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
               {session.matched_session_id ? 'Withdraw your challenge?' : 'Are you sure you want to cancel this game?'}
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
               {session.matched_session_id
                 ? "Your team's spot will be removed and the original game will be freed up for other challengers. No one will be charged."
                 : 'All players will lose their spot and the game time will open back up. No one will be charged.'}
@@ -2373,7 +2300,7 @@ export default function SessionClient({
                 style={{
                   flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border)', background: 'transparent',
-                  color: 'var(--muted)', fontFamily: 'var(--font-display)',
+                  color: 'var(--text-secondary)', fontFamily: 'var(--font-display)',
                   fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                   cursor: 'pointer', lineHeight: 1,
                 }}
@@ -2387,7 +2314,7 @@ export default function SessionClient({
                   flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                   border: 'none',
                   background: cancelLoading ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.85)',
-                  color: '#fff', fontFamily: 'var(--font-display)',
+                  color: 'var(--text)', fontFamily: 'var(--font-display)',
                   fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                   cursor: cancelLoading ? 'not-allowed' : 'pointer', lineHeight: 1,
                   transition: 'background 0.15s ease',
@@ -2437,7 +2364,7 @@ export default function SessionClient({
               <div
                 style={{
                   fontSize: '13px',
-                  color: 'var(--muted)',
+                  color: 'var(--text-secondary)',
                   textAlign: 'center',
                   padding: '2rem',
                   margin: 'auto',
@@ -2460,7 +2387,7 @@ export default function SessionClient({
                 const time = new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
                 return (
                   <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isOwn ? 'flex-end' : 'flex-start' }}>
-                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginBottom: '3px', fontWeight: 500 }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px', fontWeight: 500 }}>
                       {senderName}
                     </div>
                     <div
@@ -2478,7 +2405,7 @@ export default function SessionClient({
                     >
                       {msg.content}
                     </div>
-                    <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '3px' }}>
+                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '3px' }}>
                       {time}
                     </div>
                   </div>
@@ -2538,7 +2465,7 @@ export default function SessionClient({
           href="/slots"
           style={{
             fontSize: '13px',
-            color: 'var(--muted)',
+            color: 'var(--text-secondary)',
             textDecoration: 'none',
             fontWeight: 600,
             transition: 'color 0.15s ease',
@@ -2549,74 +2476,6 @@ export default function SessionClient({
         </Link>
       </div>
 
-      {isFilling && !isFull && !localAlreadyIn && !isOrganiserUser && (
-        <>
-          <style>{`@media (min-width: 641px){.sticky-join-bar,.sticky-join-spacer{display:none!important}}`}</style>
-          <div className="sticky-join-spacer" style={{ height: '88px' }} />
-          <div
-            className="sticky-join-bar"
-            style={{
-              position: 'fixed',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              padding: '0.85rem 1.25rem calc(0.85rem + env(safe-area-inset-bottom))',
-              background: 'rgba(10,10,10,0.92)',
-              backdropFilter: 'blur(14px)',
-              WebkitBackdropFilter: 'blur(14px)',
-              borderTop: '1px solid rgba(255,255,255,0.07)',
-              zIndex: 100,
-            }}
-          >
-            {isLoggedIn === false && session.game_type === 'open' ? (
-              <Link
-                href={`/auth/login?redirect=${encodeURIComponent(`/session/${session.id}/join`)}`}
-                style={{ textDecoration: 'none', display: 'block' }}
-              >
-                <button
-                  style={{
-                    width: '100%',
-                    minHeight: '56px',
-                    fontSize: '16px',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid rgba(255,255,255,0.14)',
-                    cursor: 'pointer',
-                    background: 'transparent',
-                    color: 'var(--text)',
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 700,
-                    letterSpacing: '-0.025em',
-                    lineHeight: 1,
-                  }}
-                >
-                  Log in to join →
-                </button>
-              </Link>
-            ) : (
-              <Link href={`/session/${session.id}/join`} style={{ textDecoration: 'none', display: 'block' }}>
-                <button
-                  style={{
-                    width: '100%',
-                    minHeight: '56px',
-                    fontSize: '16px',
-                    borderRadius: 'var(--radius-lg)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: 'var(--green)',
-                    color: 'var(--black)',
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 700,
-                    letterSpacing: '-0.025em',
-                    lineHeight: 1,
-                  }}
-                >
-                  Join this game — £{perPlayerPounds} if confirmed
-                </button>
-              </Link>
-            )}
-          </div>
-        </>
-      )}
 
       {/* ============================================================
           POST-JOIN REGISTRATION POPUP — non-logged-in players only
@@ -2679,7 +2538,7 @@ export default function SessionClient({
                 <div
                   style={{
                     fontSize: '14px',
-                    color: 'var(--muted)',
+                    color: 'var(--text-secondary)',
                     lineHeight: 1.6,
                     fontWeight: 500,
                     marginBottom: '1.5rem',
@@ -2724,7 +2583,7 @@ export default function SessionClient({
                 <div
                   style={{
                     fontSize: '14px',
-                    color: 'var(--muted)',
+                    color: 'var(--text-secondary)',
                     lineHeight: 1.6,
                     fontWeight: 500,
                     marginBottom: '1.5rem',
@@ -2856,7 +2715,7 @@ export default function SessionClient({
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: 'var(--muted)',
+                      color: 'var(--text-secondary)',
                       fontSize: '13px',
                       fontWeight: 600,
                       cursor: 'pointer',

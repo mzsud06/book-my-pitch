@@ -202,15 +202,15 @@ function CardStep({
           gap: '6px',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
           <span>Pitch hire split (£{slot.price} / {slot.max_players})</span>
           <span>£{pitchPerPlayer}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
           <span>Booking fee</span>
           <span>50p</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
           <span>Payment handling</span>
           <span>30p</span>
         </div>
@@ -307,7 +307,7 @@ function CardStep({
         >
           {loading ? 'Confirming your spot…' : parentDisabled ? 'Refreshing payment form…' : `Confirm your spot — only £${total} if confirmed`}
         </button>
-        <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--muted)', fontWeight: 600 }}>
+        <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
           No charge until game is full.
         </div>
       </div>
@@ -444,7 +444,7 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
 
   if (!clientSecret || !details) {
     return (
-      <div style={{ maxWidth: '480px', margin: '4rem auto', textAlign: 'center', color: 'var(--muted)', fontSize: '15px', fontWeight: 500 }}>
+      <div style={{ maxWidth: '480px', margin: '4rem auto', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '15px', fontWeight: 500 }}>
         Setting up payment…
       </div>
     )
@@ -458,10 +458,11 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
         className="anim-fade-up"
         style={{
           fontSize: '10px',
-          color: 'var(--green)',
+          color: 'var(--text-tertiary)',
           fontWeight: 700,
           textTransform: 'uppercase',
           letterSpacing: '0.16em',
+          fontFamily: 'var(--font-sans)',
           marginBottom: '0.6rem',
           display: 'flex',
           alignItems: 'center',
@@ -567,7 +568,7 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
         style={{
           background: 'none',
           border: 'none',
-          color: 'var(--muted)',
+          color: 'var(--text-secondary)',
           fontSize: '13px',
           fontWeight: 600,
           cursor: 'pointer',
