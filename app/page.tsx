@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import Nav from '@/components/Nav'
+import PageReveal from '@/components/PageReveal'
+import { createServiceClient } from '@/lib/supabase/service'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -63,9 +65,48 @@ const MARQUEE_ITEMS = [
   "£0 until the team's full",
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  // ── Fetch real open games (future dates only) ──────────────────────────
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: rawGames } = await createServiceClient()
+    .from('sessions')
+    .select('id, organiser_name, slots!inner(date, start_time, end_time, type, price), players(count)')
+    .eq('game_type', 'open')
+    .eq('status', 'filling')
+    .eq('is_public', true)
+    .gte('slots.date', today)
+    .limit(10)
+
+  type LiveGameRow = {
+    id: string
+    organiser_name: string | null
+    slots: { date: string; start_time: string; end_time: string; type: string; price: number }
+    players: { count: number }[]
+  }
+
+  const liveGames = ((rawGames as unknown as LiveGameRow[]) ?? [])
+    .map(s => {
+      const slot = Array.isArray(s.slots) ? s.slots[0] : s.slots
+      const playerCount = (Array.isArray(s.players) ? s.players[0]?.count : 0) ?? 0
+      const type = slot.type as 'peak' | 'offpeak' | 'weekend'
+      return {
+        id: s.id,
+        time: `${slot.start_time.slice(0, 5)} – ${slot.end_time.slice(0, 5)}`,
+        price: `£${(slot.price / 10).toFixed(2)}`,
+        playerCount,
+        type,
+        badgeVariant: (type === 'peak' ? 'peak' : type === 'weekend' ? 'neutral' : 'offpeak') as 'peak' | 'offpeak' | 'neutral',
+        badgeLabel: type === 'peak' ? 'Peak · Every day' : type === 'offpeak' ? 'Off-peak · Mon–Fri' : 'Weekend',
+      }
+    })
+    .sort((a, b) => b.playerCount - a.playerCount)
+    .slice(0, 3)
+
+  const exampleCards = PREVIEW_CARDS.slice(0, Math.max(0, 3 - liveGames.length))
+  // ──────────────────────────────────────────────────────────────────────
+
   return (
-    <>
+    <PageReveal>
       <Nav />
       <main style={{ position: 'relative', zIndex: 1 }}>
 
@@ -330,150 +371,197 @@ export default function HomePage() {
             ============================================================ */}
         <section style={{ paddingTop: 'clamp(2.5rem, 5vh, 3.5rem)', paddingBottom: 'clamp(2.5rem, 5vh, 3.5rem)' }}>
           <div className="preview-cards-scroller">
-            {PREVIEW_CARDS.map((card, idx) => (
+            {/* ── Real open games ── */}
+            {liveGames.map((game, idx) => (
               <Link
-                key={card.time}
-                href="/slots"
+                key={game.id}
+                href={`/session/${game.id}`}
                 className="preview-card-link anim-fade-up"
                 style={{ animationDelay: `${idx * 80}ms` }}
               >
                 <Card hover style={{ overflow: 'hidden', height: '100%' }}>
-
-                  {/* ── Media region (16:9) ── */}
                   <div style={{ position: 'relative', paddingTop: '56.25%' }}>
-
-                    {/* Photo or gradient fallback */}
-                    {card.image ? (
-                      <img
-                        src={card.image}
-                        alt=""
-                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div style={{
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      background: idx === 0
+                        ? 'linear-gradient(145deg, #1a3322 0%, #0f1f14 55%, #080808 100%)'
+                        : idx === 1
+                        ? 'linear-gradient(145deg, #142519 0%, #0c1a10 55%, #080808 100%)'
+                        : 'linear-gradient(145deg, #111a12 0%, #0a1309 55%, #080808 100%)',
+                    }}>
+                      <div aria-hidden style={{
                         position: 'absolute', inset: 0,
-                        background: idx === 0
-                          ? 'linear-gradient(145deg, #1a3322 0%, #0f1f14 55%, #080808 100%)'
-                          : idx === 1
-                          ? 'linear-gradient(145deg, #142519 0%, #0c1a10 55%, #080808 100%)'
-                          : 'linear-gradient(145deg, #111a12 0%, #0a1309 55%, #080808 100%)',
-                      }}>
-                        {/* Subtle glow */}
-                        <div aria-hidden style={{
-                          position: 'absolute', inset: 0,
-                          background: 'radial-gradient(ellipse 70% 55% at 50% 100%, rgba(198,241,53,0.05) 0%, transparent 60%)',
-                        }} />
-                      </div>
-                    )}
-
-                    {/* Dark scrim — bottom-to-top, keeps price legible */}
+                        background: 'radial-gradient(ellipse 70% 55% at 50% 100%, rgba(198,241,53,0.05) 0%, transparent 60%)',
+                      }} />
+                    </div>
                     <div aria-hidden style={{
                       position: 'absolute', inset: 0,
                       background: 'linear-gradient(to top, rgba(8,8,8,0.80) 0%, rgba(8,8,8,0.2) 50%, transparent 100%)',
                     }} />
-
-                    {/* Badge — top left overlay */}
                     <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                      <Badge variant={card.badge}>{card.badgeLabel}</Badge>
+                      <Badge variant={game.badgeVariant}>{game.badgeLabel}</Badge>
                     </div>
-
-                    {/* Price — bottom left overlay */}
                     <div style={{ position: 'absolute', bottom: '12px', left: '14px' }}>
-                      <div
-                        className="tabular"
-                        style={{
-                          fontFamily: 'var(--font-display)',
-                          fontSize: '26px',
-                          fontWeight: 700,
-                          color: 'var(--green)',
-                          lineHeight: 1,
-                          letterSpacing: '-0.01em',
-                          textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-                        }}
-                      >
-                        {card.price}
+                      <div className="tabular" style={{
+                        fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700,
+                        color: 'var(--green)', lineHeight: 1, letterSpacing: '-0.01em',
+                        textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+                      }}>
+                        {game.price}
                       </div>
                       <div style={{
-                        fontFamily: 'var(--font-sans)',
-                        fontSize: '10px',
-                        color: 'rgba(155,163,154,0.85)',
-                        marginTop: '2px',
-                        fontWeight: 500,
-                        letterSpacing: '0.04em',
+                        fontFamily: 'var(--font-sans)', fontSize: '10px',
+                        color: 'rgba(155,163,154,0.85)', marginTop: '2px',
+                        fontWeight: 500, letterSpacing: '0.04em',
                       }}>
                         per player
                       </div>
                     </div>
-
                   </div>
-
-                  {/* ── Card body ── */}
                   <div style={{ padding: '1.2rem 1.35rem 1.3rem' }}>
-
-                    {/* Time range */}
-                    <div
-                      className="tabular"
-                      style={{
-                        fontFamily: 'var(--font-display)',
-                        fontSize: '20px',
-                        fontWeight: 700,
-                        letterSpacing: '-0.01em',
-                        color: 'var(--text)',
-                        lineHeight: 1,
-                        marginBottom: '0.85rem',
-                      }}
-                    >
-                      {card.time}
+                    <div className="tabular" style={{
+                      fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
+                      letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1, marginBottom: '0.85rem',
+                    }}>
+                      {game.time}
                     </div>
-
-                    {/* Progress bar */}
                     <div style={{
-                      height: '3px',
-                      borderRadius: '99px',
-                      background: 'rgba(255,255,255,0.07)',
-                      overflow: 'hidden',
-                      marginBottom: '0.55rem',
+                      height: '3px', borderRadius: '99px',
+                      background: 'rgba(255,255,255,0.07)', overflow: 'hidden', marginBottom: '0.55rem',
                     }}>
                       <div style={{
                         height: '100%',
-                        width: `${(card.players / 10) * 100}%`,
+                        width: `${(game.playerCount / 10) * 100}%`,
                         borderRadius: '99px',
-                        background: card.badge === 'peak'
+                        background: game.badgeVariant === 'peak'
                           ? 'linear-gradient(90deg, var(--amber), rgba(255,184,0,0.7))'
                           : 'var(--green)',
-                        boxShadow: card.badge === 'peak'
+                        boxShadow: game.badgeVariant === 'peak'
                           ? '0 0 6px rgba(255,184,0,0.4)'
                           : '0 0 6px rgba(198,241,53,0.35)',
                         transition: 'width 0.6s var(--ease-out)',
                       }} />
                     </div>
-
-                    {/* Urgency line or spots count */}
-                    {card.rival ? (
-                      <div style={{
-                        fontFamily: 'var(--font-sans)',
-                        fontSize: '11px',
-                        color: 'var(--amber)',
-                        fontWeight: 700,
-                        letterSpacing: '0.01em',
-                      }}>
-                        {card.urgency}
-                      </div>
-                    ) : (
-                      <div style={{
-                        fontFamily: 'var(--font-sans)',
-                        fontSize: '11px',
-                        color: 'var(--text-secondary)',
-                        fontWeight: 500,
-                      }}>
-                        {card.players}/10 joined · {10 - card.players} spots left
-                      </div>
-                    )}
-
+                    <div style={{
+                      fontFamily: 'var(--font-sans)', fontSize: '11px',
+                      color: 'var(--text-secondary)', fontWeight: 500,
+                    }}>
+                      {game.playerCount}/10 joined · {10 - game.playerCount} spots left
+                    </div>
                   </div>
                 </Card>
               </Link>
             ))}
+
+            {/* ── Example / illustrative cards (fills remaining slots to 3) ── */}
+            {exampleCards.map((card, i) => {
+              const idx = liveGames.length + i
+              return (
+                <div
+                  key={card.time}
+                  className="preview-card-link anim-fade-up"
+                  style={{ animationDelay: `${idx * 80}ms`, cursor: 'default' }}
+                >
+                  <Card style={{ overflow: 'hidden', height: '100%' }}>
+                    <div style={{ position: 'relative', paddingTop: '56.25%' }}>
+                      {card.image ? (
+                        <img
+                          src={card.image}
+                          alt=""
+                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <div style={{
+                          position: 'absolute', inset: 0,
+                          background: idx === 0
+                            ? 'linear-gradient(145deg, #1a3322 0%, #0f1f14 55%, #080808 100%)'
+                            : idx === 1
+                            ? 'linear-gradient(145deg, #142519 0%, #0c1a10 55%, #080808 100%)'
+                            : 'linear-gradient(145deg, #111a12 0%, #0a1309 55%, #080808 100%)',
+                        }}>
+                          <div aria-hidden style={{
+                            position: 'absolute', inset: 0,
+                            background: 'radial-gradient(ellipse 70% 55% at 50% 100%, rgba(198,241,53,0.05) 0%, transparent 60%)',
+                          }} />
+                        </div>
+                      )}
+                      <div aria-hidden style={{
+                        position: 'absolute', inset: 0,
+                        background: 'linear-gradient(to top, rgba(8,8,8,0.80) 0%, rgba(8,8,8,0.2) 50%, transparent 100%)',
+                      }} />
+                      <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
+                        <Badge variant={card.badge}>{card.badgeLabel}</Badge>
+                      </div>
+                      {/* EXAMPLE label — top right, muted, honest labelling */}
+                      <div style={{
+                        position: 'absolute', top: '12px', right: '12px',
+                        fontFamily: 'var(--font-sans)', fontSize: '9px', fontWeight: 600,
+                        letterSpacing: '0.1em', textTransform: 'uppercase',
+                        color: 'rgba(155,163,154,0.5)',
+                      }}>
+                        Example
+                      </div>
+                      <div style={{ position: 'absolute', bottom: '12px', left: '14px' }}>
+                        <div className="tabular" style={{
+                          fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700,
+                          color: 'var(--green)', lineHeight: 1, letterSpacing: '-0.01em',
+                          textShadow: '0 1px 8px rgba(0,0,0,0.5)',
+                        }}>
+                          {card.price}
+                        </div>
+                        <div style={{
+                          fontFamily: 'var(--font-sans)', fontSize: '10px',
+                          color: 'rgba(155,163,154,0.85)', marginTop: '2px',
+                          fontWeight: 500, letterSpacing: '0.04em',
+                        }}>
+                          per player
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ padding: '1.2rem 1.35rem 1.3rem' }}>
+                      <div className="tabular" style={{
+                        fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
+                        letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1, marginBottom: '0.85rem',
+                      }}>
+                        {card.time}
+                      </div>
+                      <div style={{
+                        height: '3px', borderRadius: '99px',
+                        background: 'rgba(255,255,255,0.07)', overflow: 'hidden', marginBottom: '0.55rem',
+                      }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${(card.players / 10) * 100}%`,
+                          borderRadius: '99px',
+                          background: card.badge === 'peak'
+                            ? 'linear-gradient(90deg, var(--amber), rgba(255,184,0,0.7))'
+                            : 'var(--green)',
+                          boxShadow: card.badge === 'peak'
+                            ? '0 0 6px rgba(255,184,0,0.4)'
+                            : '0 0 6px rgba(198,241,53,0.35)',
+                          transition: 'width 0.6s var(--ease-out)',
+                        }} />
+                      </div>
+                      {card.rival ? (
+                        <div style={{
+                          fontFamily: 'var(--font-sans)', fontSize: '11px',
+                          color: 'var(--amber)', fontWeight: 700, letterSpacing: '0.01em',
+                        }}>
+                          {card.urgency}
+                        </div>
+                      ) : (
+                        <div style={{
+                          fontFamily: 'var(--font-sans)', fontSize: '11px',
+                          color: 'var(--text-secondary)', fontWeight: 500,
+                        }}>
+                          {card.players}/10 joined · {10 - card.players} spots left
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </div>
+              )
+            })}
           </div>
         </section>
 
@@ -742,6 +830,6 @@ export default function HomePage() {
         </footer>
 
       </main>
-    </>
+    </PageReveal>
   )
 }

@@ -252,6 +252,13 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
   50%       { transform: translateY(-6px); }
 }
 
+/* Page-level reveal — wrapper translateY(12px) so it doesn't compete with child fadeUp(28px) */
+@keyframes pageReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-reveal { animation: pageReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 /* ---- Animation utilities ---- */
 .anim-fade-up    { animation: fadeUp    0.65s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .anim-fade-down  { animation: fadeDown  0.5s  cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -877,20 +884,27 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
   display: flex;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  /* scroll-padding-left aligns snap points to the leading inset */
+  scroll-padding-left: 20px;
   -webkit-overflow-scrolling: touch;
   gap: 12px;
-  /* left pad = leading peek; right pad = trailing peek; bottom = shadow room */
-  padding: 8px 20px 24px;
+  /* padding-right is ignored by overflow containers — trailing space is on :last-child instead */
+  padding: 8px 0 24px 20px;
   scrollbar-width: none;
 }
 .preview-cards-scroller::-webkit-scrollbar { display: none; }
 
 .preview-card-link {
-  flex: 0 0 clamp(268px, 82vw, 340px);
+  flex: 0 0 clamp(260px, 78vw, 340px);
   scroll-snap-align: start;
   min-width: 0;
   text-decoration: none;
   display: block;
+}
+
+/* trailing breathing room — margin-right works even inside overflow containers */
+.preview-card-link:last-child {
+  margin-right: 20px;
 }
 
 @media (min-width: 768px) {
@@ -900,6 +914,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
     gap: 20px;
     overflow: visible;
     scroll-snap-type: none;
+    scroll-padding-left: unset;
     max-width: 1180px;
     margin: 0 auto;
     padding: 8px clamp(1.25rem, 4vw, 2rem) 24px;
@@ -907,6 +922,9 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
   .preview-card-link {
     flex: unset;
     scroll-snap-align: unset;
+  }
+  .preview-card-link:last-child {
+    margin-right: 0;
   }
 }
 
