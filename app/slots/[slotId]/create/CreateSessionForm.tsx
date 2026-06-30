@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { Badge } from '@/components/ui/Badge'
 
 const COUNTRY_CODES = [
   { code: '+44',  label: '🇬🇧 +44' },
@@ -44,24 +45,26 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   background: 'var(--surface2)',
   border: '1px solid var(--border)',
-  borderRadius: '10px',
-  padding: '0.8rem 1rem',
+  borderRadius: 'var(--radius-lg)',
+  padding: '0.875rem 1rem',
   color: 'var(--text)',
-  fontFamily: "'Archivo', sans-serif",
+  fontFamily: 'var(--font-sans)',
   fontSize: '15px',
-  fontWeight: 600,
+  fontWeight: 500,
   outline: 'none',
-  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+  minHeight: '48px',
+  transition: 'border-color 160ms ease, box-shadow 160ms ease',
 }
 
 const labelStyle: React.CSSProperties = {
-  fontSize: '10px',
-  color: 'var(--muted)',
-  marginBottom: '7px',
+  fontSize: '11px',
+  color: 'var(--text-secondary)',
+  marginBottom: '8px',
   display: 'block',
-  fontWeight: 700,
+  fontWeight: 600,
   textTransform: 'uppercase',
-  letterSpacing: '0.12em',
+  letterSpacing: '0.1em',
+  fontFamily: 'var(--font-sans)',
 }
 
 function parsePhone(full: string): { countryCode: string; localNumber: string } {
@@ -207,7 +210,7 @@ export default function CreateSessionForm({ slot }: Props) {
     <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
       <div
         style={{
-          fontFamily: "'Archivo Black', sans-serif",
+          fontFamily: 'var(--font-display)',
           fontSize: 'clamp(22px, 4vw, 30px)',
           letterSpacing: '-0.04em',
           lineHeight: 1,
@@ -219,17 +222,18 @@ export default function CreateSessionForm({ slot }: Props) {
       <Link href={`/session/${existingSessionId}`} style={{ textDecoration: 'none' }}>
         <button
           style={{
-            padding: '0.9rem 2rem',
-            borderRadius: '12px',
+            padding: '0.875rem 2rem',
+            borderRadius: 'var(--radius-lg)',
             border: 'none',
             background: 'var(--green)',
             color: 'var(--black)',
-            fontFamily: "'Archivo Black', sans-serif",
-            fontWeight: 900,
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
             fontSize: '15px',
-            letterSpacing: '-0.025em',
+            letterSpacing: '-0.015em',
             cursor: 'pointer',
             lineHeight: 1,
+            minHeight: '48px',
           }}
         >
           View your game →
@@ -271,7 +275,7 @@ export default function CreateSessionForm({ slot }: Props) {
       <div
         className="anim-fade-up d-80"
         style={{
-          fontFamily: "'Archivo Black', sans-serif",
+          fontFamily: 'var(--font-display)',
           fontSize: 'clamp(28px, 5vw, 38px)',
           letterSpacing: '-0.04em',
           lineHeight: 0.9,
@@ -282,7 +286,7 @@ export default function CreateSessionForm({ slot }: Props) {
       </div>
       <div
         className="anim-fade-up d-150"
-        style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '2rem', fontWeight: 500 }}
+        style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '2rem', fontWeight: 500, fontFamily: 'var(--font-sans)' }}
       >
         {formatDate(slot.date)} · {typeLabel} · {slot.venue?.name ?? 'Globe Football Pitch'}
       </div>
@@ -291,18 +295,20 @@ export default function CreateSessionForm({ slot }: Props) {
         <div
           className="anim-fade-up d-180"
           style={{
-            background: '#C6F135',
-            borderRadius: '12px',
+            background: 'rgba(22,48,31,0.6)',
+            border: '1px solid rgba(198,241,53,0.3)',
+            borderRadius: 'var(--radius-lg)',
             padding: '1rem 1.1rem',
-            color: '#000',
+            color: 'var(--green)',
             marginBottom: '1.5rem',
           }}
         >
           <div
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: '15px',
-              letterSpacing: '-0.025em',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
               lineHeight: 1.3,
               marginBottom: '5px',
             }}
@@ -321,9 +327,9 @@ export default function CreateSessionForm({ slot }: Props) {
       <div
         className="anim-fade-up d-200"
         style={{
-          background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: '18px',
+          background: 'var(--surface)',
+          border: '1px solid var(--border-strong)',
+          borderRadius: 'var(--radius-xl)',
           padding: '1.5rem',
           marginBottom: '1.5rem',
           boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
@@ -354,26 +360,15 @@ export default function CreateSessionForm({ slot }: Props) {
               {slot.venue?.address ?? '110 Globe Rd, Bethnal Green E1 4DZ'}
             </div>
             <div style={{ marginTop: '10px' }}>
-              <span
-                style={{
-                  fontSize: '9px',
-                  fontWeight: 700,
-                  letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
-                  padding: '3px 9px',
-                  borderRadius: '5px',
-                  background: typeBg,
-                  color: typeColor,
-                }}
-              >
+              <Badge variant={slot.type === 'peak' ? 'peak' : slot.type === 'offpeak' ? 'offpeak' : 'neutral'}>
                 {typeLabel}
-              </span>
+              </Badge>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div
               style={{
-                fontFamily: "'Archivo Black', sans-serif",
+                fontFamily: 'var(--font-display)',
                 fontSize: '30px',
                 color: 'var(--green)',
                 letterSpacing: '-0.04em',
@@ -414,7 +409,7 @@ export default function CreateSessionForm({ slot }: Props) {
                     right: '6px',
                     fontSize: '7px',
                     fontWeight: 900,
-                    fontFamily: "'Archivo Black', sans-serif",
+                    fontFamily: 'var(--font-display)',
                     color: i === 0 ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.06)',
                     lineHeight: 1,
                   }}
@@ -486,7 +481,7 @@ export default function CreateSessionForm({ slot }: Props) {
                         right: '6px',
                         fontSize: '7px',
                         fontWeight: 900,
-                        fontFamily: "'Archivo Black', sans-serif",
+                        fontFamily: 'var(--font-display)',
                         color: 'rgba(255,255,255,0.06)',
                         lineHeight: 1,
                       }}
@@ -572,10 +567,10 @@ export default function CreateSessionForm({ slot }: Props) {
               display: 'flex',
               width: '100%',
               border: '1px solid var(--border)',
-              borderRadius: '10px',
+              borderRadius: 'var(--radius-lg)',
               overflow: 'hidden',
               background: 'var(--surface2)',
-              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+              transition: 'border-color 160ms ease, box-shadow 160ms ease',
             }}
           >
             <select
@@ -589,11 +584,11 @@ export default function CreateSessionForm({ slot }: Props) {
                 background: 'var(--surface2)',
                 border: 'none',
                 borderRight: '1px solid var(--border)',
-                padding: '0.8rem 0.4rem 0.8rem 0.75rem',
+                padding: '0.875rem 0.4rem 0.875rem 0.75rem',
                 color: 'var(--text)',
-                fontFamily: "'Archivo', sans-serif",
+                fontFamily: 'var(--font-sans)',
                 fontSize: '14px',
-                fontWeight: 600,
+                fontWeight: 500,
                 outline: 'none',
                 cursor: 'pointer',
                 flexShrink: 0,
@@ -625,11 +620,11 @@ export default function CreateSessionForm({ slot }: Props) {
                 flex: 1,
                 background: 'transparent',
                 border: 'none',
-                padding: '0.8rem 1rem',
+                padding: '0.875rem 1rem',
                 color: 'var(--text)',
-                fontFamily: "'Archivo', sans-serif",
+                fontFamily: 'var(--font-sans)',
                 fontSize: '15px',
-                fontWeight: 600,
+                fontWeight: 500,
                 outline: 'none',
                 minWidth: 0,
               }}
@@ -658,16 +653,17 @@ export default function CreateSessionForm({ slot }: Props) {
                   style={{
                     flex: 1,
                     padding: '0.65rem 0.3rem',
-                    borderRadius: '8px',
-                    border: gameType === value ? 'none' : '1px solid rgba(255,255,255,0.15)',
-                    background: gameType === value ? '#C6F135' : '#1a1a1a',
-                    color: gameType === value ? '#000' : '#fff',
-                    fontFamily: "'Archivo', sans-serif",
+                    minHeight: '44px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: gameType === value ? 'none' : '1px solid rgba(255,255,255,0.12)',
+                    background: gameType === value ? 'var(--green)' : 'var(--surface2)',
+                    color: gameType === value ? 'var(--black)' : 'var(--text-secondary)',
+                    fontFamily: 'var(--font-sans)',
                     fontSize: '11px',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     cursor: 'pointer',
                     lineHeight: 1.2,
-                    textAlign: 'center',
+                    textAlign: 'center' as const,
                   }}
                 >
                   {label}
@@ -699,18 +695,19 @@ export default function CreateSessionForm({ slot }: Props) {
           className={isReady ? 'btn-g' : ''}
           style={{
             width: '100%',
-            padding: '1rem',
-            borderRadius: '12px',
+            minHeight: '52px',
+            borderRadius: 'var(--radius-lg)',
             border: 'none',
             cursor: !isReady ? 'not-allowed' : 'pointer',
             background: !isReady ? 'var(--surface2)' : 'var(--green)',
-            color: !isReady ? 'var(--muted)' : 'var(--black)',
-            fontFamily: "'Archivo Black', sans-serif",
-            fontWeight: 900,
-            fontSize: '16px',
-            letterSpacing: '-0.025em',
+            color: !isReady ? 'var(--text-secondary)' : 'var(--black)',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            fontSize: '15px',
+            letterSpacing: '-0.015em',
             marginTop: '4px',
-            transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+            opacity: !isReady ? 0.5 : 1,
+            transition: 'background 160ms ease, color 160ms ease, transform 160ms var(--ease-out), box-shadow 160ms ease',
             lineHeight: 1,
           }}
         >

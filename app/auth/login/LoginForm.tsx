@@ -70,150 +70,173 @@ export default function LoginForm() {
     setView('sent')
   }
 
-  const inputStyle = {
+  const inputStyle: React.CSSProperties = {
     width: '100%',
     background: 'var(--surface2)',
     border: '1px solid var(--border)',
-    borderRadius: '10px',
-    padding: '0.85rem 1rem',
+    borderRadius: 'var(--radius-lg)',
+    padding: '0.875rem 1rem',
     color: 'var(--text)',
-    fontFamily: "'Archivo', sans-serif",
-    fontWeight: 600,
+    fontFamily: 'var(--font-sans)',
+    fontWeight: 500,
     fontSize: '15px',
     outline: 'none',
-    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+    minHeight: '48px',
+    transition: 'border-color 160ms ease, box-shadow 160ms ease',
   }
 
-  const labelStyle = {
-    fontSize: '10px',
-    color: 'var(--muted)',
-    marginBottom: '7px',
+  const labelStyle: React.CSSProperties = {
+    fontSize: '11px',
+    color: 'var(--text-secondary)',
+    marginBottom: '8px',
     display: 'block',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em',
+    fontFamily: 'var(--font-sans)',
+  }
+
+  const submitBtn = (disabled: boolean): React.CSSProperties => ({
+    width: '100%',
+    minHeight: '52px',
+    fontSize: '15px',
+    borderRadius: 'var(--radius-lg)',
+    border: 'none',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    background: disabled ? 'var(--surface3)' : 'var(--green)',
+    color: disabled ? 'var(--text-tertiary)' : 'var(--black)',
+    fontFamily: 'var(--font-display)',
     fontWeight: 700,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.12em',
+    letterSpacing: '-0.015em',
+    marginTop: '8px',
+    transition: 'background 160ms ease, color 160ms ease, transform 160ms var(--ease-out), box-shadow 160ms ease',
+    lineHeight: 1,
+    opacity: disabled ? 0.5 : 1,
+  })
+
+  const errorPanel: React.CSSProperties = {
+    background: 'rgba(255,68,68,0.07)',
+    border: '1px solid rgba(255,68,68,0.18)',
+    borderRadius: 'var(--radius-md)',
+    padding: '0.875rem 1rem',
+    fontSize: '13px',
+    color: 'var(--red)',
+    fontWeight: 500,
+    lineHeight: 1.55,
+    fontFamily: 'var(--font-sans)',
   }
 
   return (
-    <div className="auth-layout">
-      {/* Brand panel */}
-      <div className="auth-brand-panel">
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <span
-            style={{
-              fontFamily: "'Archivo Black', sans-serif",
-              fontSize: '18px',
-              letterSpacing: '-0.04em',
-              color: 'var(--text)',
-              lineHeight: 1,
-            }}
-          >
-            Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
-            <span style={{ color: 'var(--green)', fontSize: '14px', verticalAlign: 'super', marginLeft: '1px' }}>.uk</span>
-          </span>
-        </Link>
+    <div
+      style={{
+        minHeight: '100dvh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'clamp(2rem, 5vh, 3rem) 1.25rem',
+        background: 'var(--black)',
+      }}
+    >
+      <div style={{ width: '100%', maxWidth: '420px' }}>
 
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h2
-            style={{
-              fontFamily: "'Archivo Black', sans-serif",
-              fontSize: 'clamp(42px, 5vw, 72px)',
-              letterSpacing: '-0.04em',
-              lineHeight: 0.88,
-              margin: '0 0 1.5rem',
-              color: 'var(--text)',
-            }}
-          >
-            Fill the team.
-            <br />
-            <span style={{ color: 'var(--green)' }}>Book the pitch.</span>
-          </h2>
-          <p style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.7, fontWeight: 500, maxWidth: '340px' }}>
-            Sign in to track your bookings and stay in the loop when your game fills up.
-          </p>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            gap: '2.5rem',
-            paddingTop: '1.5rem',
-            borderTop: '1px solid var(--border)',
-          }}
-        >
-          {[
-            { n: '10', l: 'players per game' },
-            { n: '£0', l: 'until full' },
-            { n: '4G', l: 'all-weather' },
-          ].map((stat, idx) => (
-            <div key={idx}>
-              <div
+        {/* Wordmark */}
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+            <span
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '20px',
+                letterSpacing: '-0.03em',
+                color: 'var(--text)',
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
+              <span
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontSize: '30px',
                   color: 'var(--green)',
-                  letterSpacing: '-0.04em',
-                  lineHeight: 1,
+                  fontSize: '13px',
+                  verticalAlign: 'super',
+                  marginLeft: '1px',
+                  opacity: 0.75,
+                  fontWeight: 600,
                 }}
               >
-                {stat.n}
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '5px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>
-                {stat.l}
-              </div>
-            </div>
-          ))}
+                .uk
+              </span>
+            </span>
+          </Link>
         </div>
-      </div>
 
-      {/* Form panel */}
-      <div className="auth-form-panel">
-        <div style={{ width: '100%', maxWidth: '380px' }}>
+        {/* Contextual notice (e.g. "You need an account to create a game") */}
+        {message && (
+          <div
+            style={{
+              background: 'rgba(22,48,31,0.6)',
+              border: '1px solid rgba(198,241,53,0.2)',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.875rem 1rem',
+              marginBottom: '1rem',
+              fontSize: '14px',
+              color: 'var(--green)',
+              fontWeight: 500,
+              lineHeight: 1.55,
+              fontFamily: 'var(--font-sans)',
+            }}
+          >
+            {message}
+          </div>
+        )}
+
+        {/* Form card */}
+        <div
+          style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--radius-xl)',
+            padding: 'clamp(1.5rem, 4vw, 2rem)',
+            boxShadow: '0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+          }}
+        >
 
           {/* ── Login view ── */}
           {view === 'login' && (
             <>
-              <div
+              <h1
                 className="anim-fade-up"
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
+                  fontFamily: 'var(--font-display)',
                   fontSize: '28px',
-                  letterSpacing: '-0.04em',
-                  marginBottom: '0.3rem',
-                  lineHeight: 0.95,
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1,
+                  color: 'var(--text)',
+                  margin: '0 0 6px',
                 }}
               >
                 Log in
-              </div>
-              <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '2rem', fontWeight: 500 }}>
+              </h1>
+              <div
+                style={{
+                  fontSize: '14px',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 400,
+                  marginBottom: '1.75rem',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
                 Don&apos;t have an account?{' '}
-                <Link href="/auth/signup" style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 700 }}>
+                <Link href="/auth/signup" style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 600 }}>
                   Sign up
                 </Link>
               </div>
 
-              {message && (
-                <div
-                  style={{
-                    background: 'rgba(198,241,53,0.05)',
-                    border: '1px solid rgba(198,241,53,0.2)',
-                    borderRadius: '10px',
-                    padding: '0.85rem 1rem',
-                    marginBottom: '1.25rem',
-                    fontSize: '14px',
-                    color: 'var(--green)',
-                    lineHeight: 1.55,
-                    fontWeight: 600,
-                  }}
-                >
-                  {message}
-                </div>
-              )}
-
               <form
                 className="anim-fade-up d-80"
                 onSubmit={handleLogin}
-                style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
               >
                 <div>
                   <label style={labelStyle}>Email</label>
@@ -226,8 +249,13 @@ export default function LoginForm() {
                     className="field-input"
                     style={inputStyle}
                   />
-                  {emailError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{emailError}</div>}
+                  {emailError && (
+                    <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '6px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}>
+                      {emailError}
+                    </div>
+                  )}
                 </div>
+
                 <div>
                   <label style={labelStyle}>Password</label>
                   <input
@@ -241,61 +269,32 @@ export default function LoginForm() {
                   />
                 </div>
 
-                <div style={{ textAlign: 'right', marginTop: '-6px' }}>
+                <div style={{ textAlign: 'right', marginTop: '-4px' }}>
                   <button
                     type="button"
                     onClick={() => { setError(''); setEmailError(''); setView('forgot') }}
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#C6F135',
+                      color: 'var(--green)',
                       fontSize: '13px',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       cursor: 'pointer',
-                      padding: 0,
-                      letterSpacing: '-0.01em',
+                      padding: '0 0 2px',
+                      fontFamily: 'var(--font-sans)',
                     }}
                   >
                     Forgot password?
                   </button>
                 </div>
 
-                {error && (
-                  <div
-                    style={{
-                      background: 'rgba(255,68,68,0.08)',
-                      border: '1px solid rgba(255,68,68,0.2)',
-                      borderRadius: '10px',
-                      padding: '0.85rem 1rem',
-                      fontSize: '13px',
-                      color: 'var(--red)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {error}
-                  </div>
-                )}
+                {error && <div style={errorPanel}>{error}</div>}
 
                 <button
                   type="submit"
                   disabled={loading || !!emailError}
                   className={!loading && !emailError ? 'btn-g' : ''}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    fontSize: '16px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    cursor: loading || emailError ? 'not-allowed' : 'pointer',
-                    background: loading || emailError ? 'var(--surface2)' : 'var(--green)',
-                    color: loading || emailError ? 'var(--muted)' : 'var(--black)',
-                    fontFamily: "'Archivo Black', sans-serif",
-                    fontWeight: 900,
-                    letterSpacing: '-0.025em',
-                    marginTop: '4px',
-                    transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
-                    lineHeight: 1,
-                  }}
+                  style={submitBtn(loading || !!emailError)}
                 >
                   {loading ? 'Logging in…' : 'Log in →'}
                 </button>
@@ -306,26 +305,36 @@ export default function LoginForm() {
           {/* ── Forgot password view ── */}
           {view === 'forgot' && (
             <>
-              <div
+              <h1
                 className="anim-fade-up"
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
+                  fontFamily: 'var(--font-display)',
                   fontSize: '28px',
-                  letterSpacing: '-0.04em',
-                  marginBottom: '0.3rem',
-                  lineHeight: 0.95,
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
+                  lineHeight: 1,
+                  color: 'var(--text)',
+                  margin: '0 0 6px',
                 }}
               >
                 Reset password
-              </div>
-              <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '2rem', fontWeight: 500 }}>
+              </h1>
+              <div
+                style={{
+                  fontSize: '14px',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 400,
+                  marginBottom: '1.75rem',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
                 Enter your email and we&apos;ll send you a reset link.
               </div>
 
               <form
                 className="anim-fade-up d-80"
                 onSubmit={handleForgotPassword}
-                style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
               >
                 <div>
                   <label style={labelStyle}>Email</label>
@@ -338,45 +347,20 @@ export default function LoginForm() {
                     className="field-input"
                     style={inputStyle}
                   />
-                  {emailError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{emailError}</div>}
+                  {emailError && (
+                    <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '6px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}>
+                      {emailError}
+                    </div>
+                  )}
                 </div>
 
-                {error && (
-                  <div
-                    style={{
-                      background: 'rgba(255,68,68,0.08)',
-                      border: '1px solid rgba(255,68,68,0.2)',
-                      borderRadius: '10px',
-                      padding: '0.85rem 1rem',
-                      fontSize: '13px',
-                      color: 'var(--red)',
-                      fontWeight: 600,
-                    }}
-                  >
-                    {error}
-                  </div>
-                )}
+                {error && <div style={errorPanel}>{error}</div>}
 
                 <button
                   type="submit"
                   disabled={resetLoading || !!emailError}
                   className={!resetLoading && !emailError ? 'btn-g' : ''}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    fontSize: '16px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    cursor: resetLoading || emailError ? 'not-allowed' : 'pointer',
-                    background: resetLoading || emailError ? 'var(--surface2)' : 'var(--green)',
-                    color: resetLoading || emailError ? 'var(--muted)' : 'var(--black)',
-                    fontFamily: "'Archivo Black', sans-serif",
-                    fontWeight: 900,
-                    letterSpacing: '-0.025em',
-                    marginTop: '4px',
-                    transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
-                    lineHeight: 1,
-                  }}
+                  style={submitBtn(resetLoading || !!emailError)}
                 >
                   {resetLoading ? 'Sending…' : 'Send reset link →'}
                 </button>
@@ -388,15 +372,15 @@ export default function LoginForm() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: 'var(--muted)',
+                  color: 'var(--text-secondary)',
                   fontSize: '14px',
-                  fontWeight: 600,
+                  fontWeight: 500,
                   cursor: 'pointer',
                   padding: '1rem 0 0',
                   display: 'block',
                   width: '100%',
                   textAlign: 'center',
-                  letterSpacing: '-0.01em',
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 ← Back to login
@@ -406,12 +390,12 @@ export default function LoginForm() {
 
           {/* ── Sent confirmation view ── */}
           {view === 'sent' && (
-            <div className="anim-fade-up" style={{ textAlign: 'center', paddingTop: '1rem' }}>
+            <div className="anim-fade-up" style={{ textAlign: 'center', paddingTop: '0.5rem' }}>
               <div
                 style={{
                   width: '64px',
                   height: '64px',
-                  background: 'rgba(198,241,53,0.08)',
+                  background: 'rgba(22,48,31,0.7)',
                   border: '1px solid rgba(198,241,53,0.25)',
                   borderRadius: '50%',
                   display: 'flex',
@@ -424,20 +408,32 @@ export default function LoginForm() {
               >
                 ✉
               </div>
-              <div
+              <h1
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
+                  fontFamily: 'var(--font-display)',
                   fontSize: '24px',
-                  letterSpacing: '-0.04em',
-                  marginBottom: '0.75rem',
+                  fontWeight: 700,
+                  letterSpacing: '-0.03em',
                   lineHeight: 1,
+                  color: 'var(--text)',
+                  marginBottom: '0.75rem',
                 }}
               >
                 Check your email
-              </div>
-              <div style={{ fontSize: '15px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.65, marginBottom: '2rem' }}>
-                We&apos;ve sent a reset link to <strong style={{ color: 'var(--text)' }}>{email}</strong>.
-                Check your inbox and follow the link to set a new password.
+              </h1>
+              <div
+                style={{
+                  fontSize: '15px',
+                  color: 'var(--text-secondary)',
+                  fontWeight: 400,
+                  lineHeight: 1.65,
+                  marginBottom: '2rem',
+                  fontFamily: 'var(--font-sans)',
+                }}
+              >
+                We&apos;ve sent a reset link to{' '}
+                <strong style={{ color: 'var(--text)', fontWeight: 600 }}>{email}</strong>.
+                {' '}Check your inbox and follow the link to set a new password.
               </div>
               <button
                 type="button"
@@ -445,12 +441,12 @@ export default function LoginForm() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#C6F135',
+                  color: 'var(--green)',
                   fontSize: '14px',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   cursor: 'pointer',
                   padding: 0,
-                  letterSpacing: '-0.01em',
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 ← Back to login

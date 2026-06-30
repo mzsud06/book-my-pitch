@@ -10,6 +10,35 @@ interface AuthUser {
   email: string
 }
 
+/* Minimal pitch-corner arc mark — two lines of a pitch corner + quarter-circle arc */
+function PitchMark({ size = 20 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      fill="none"
+      aria-hidden="true"
+      style={{ flexShrink: 0, color: 'var(--green)' }}
+    >
+      <path
+        d="M3 17L3 3L17 3"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M3 13A10 10 0 0 1 13 3"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  )
+}
+
 export default function Nav() {
   const pathname = usePathname()
   const router = useRouter()
@@ -76,10 +105,10 @@ export default function Nav() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '0 1.5rem',
-        height: '58px',
+        padding: '0 clamp(1.25rem, 4vw, 2rem)',
+        height: '60px',
+        borderTop: '2px solid var(--green)',
         borderBottom: '1px solid var(--border)',
-        borderTop: '3px solid var(--green)',
         position: 'sticky',
         top: 0,
         zIndex: 300,
@@ -89,244 +118,268 @@ export default function Nav() {
         boxShadow: '0 1px 0 rgba(255,255,255,0.03)',
       }}
     >
-      {/* Logo */}
-      <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0' }}>
-        <span
+        {/* Wordmark */}
+        <Link
+          href="/"
           style={{
-            fontFamily: "'Archivo Black', sans-serif",
-            fontSize: '18px',
-            letterSpacing: '-0.04em',
-            cursor: 'pointer',
-            userSelect: 'none',
-            color: 'var(--text)',
-            lineHeight: 1,
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '9px',
+            minHeight: '44px',
           }}
         >
-          Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
+          <PitchMark size={18} />
           <span
             style={{
-              color: 'var(--green)',
-              fontFamily: "'Archivo Black', sans-serif",
-              fontSize: '14px',
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(15px, 3.5vw, 18px)',
+              fontWeight: 700,
               letterSpacing: '-0.02em',
-              verticalAlign: 'super',
-              marginLeft: '1px',
+              color: 'var(--text)',
+              lineHeight: 1,
+              userSelect: 'none',
             }}
           >
-            .uk
-          </span>
-        </span>
-      </Link>
-
-      {/* Right side */}
-      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-        {user ? (
-          <div ref={dropdownRef} style={{ position: 'relative' }}>
-            <button
-              className="profile-btn"
-              onClick={() => setDropdownOpen(o => !o)}
-              aria-label="Account menu"
+            BookMyPitch
+            <span
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontFamily: "'Archivo', sans-serif",
-                fontWeight: 700,
-                fontSize: '13px',
-                padding: '4px 12px 4px 4px',
-                borderRadius: '100px',
-                border: '1px solid var(--border)',
-                cursor: 'pointer',
-                background: 'transparent',
-                color: 'var(--text)',
-                transition: 'border-color 0.15s ease, background 0.15s ease, transform 0.1s ease',
+                color: 'var(--green)',
+                opacity: 0.75,
+                fontSize: '0.72em',
+                fontWeight: 600,
+                letterSpacing: '0',
+                marginLeft: '1px',
               }}
             >
-              <span
+              .uk
+            </span>
+          </span>
+        </Link>
+
+        {/* Right side */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {user ? (
+            <div ref={dropdownRef} style={{ position: 'relative' }}>
+              <button
+                className="profile-btn"
+                onClick={() => setDropdownOpen(o => !o)}
+                aria-label="Account menu"
+                aria-expanded={dropdownOpen}
                 style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '50%',
-                  background: 'var(--green)',
-                  color: 'var(--black)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '12px',
-                  fontWeight: 900,
-                  fontFamily: "'Archivo Black', sans-serif",
-                  flexShrink: 0,
-                }}
-              >
-                {initial}
-              </span>
-              <span style={{ letterSpacing: '-0.01em' }}>{firstName}</span>
-            </button>
-
-            {dropdownOpen && (
-              <div
-                className="nav-dropdown"
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 10px)',
-                  right: 0,
-                  background: '#141414',
+                  gap: '8px',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  padding: '5px 12px 5px 5px',
+                  borderRadius: 'var(--radius-full)',
                   border: '1px solid var(--border)',
-                  borderRadius: '16px',
-                  padding: '6px',
-                  minWidth: '232px',
-                  zIndex: 400,
-                  boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  color: 'var(--text)',
+                  transition: 'border-color 0.15s ease, background 0.15s ease, transform 0.1s ease',
+                  minHeight: '44px',
                 }}
               >
-                {/* Profile header */}
-                <div
+                <span
                   style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: 'var(--green)',
+                    color: 'var(--black)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    padding: '10px 10px 12px',
-                    marginBottom: '4px',
-                    borderBottom: '1px solid var(--border)',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    fontFamily: 'var(--font-display)',
+                    flexShrink: 0,
                   }}
                 >
-                  <span
+                  {initial}
+                </span>
+                <span style={{ letterSpacing: '-0.01em', color: 'var(--text-secondary)' }}>
+                  {firstName}
+                </span>
+              </button>
+
+              {dropdownOpen && (
+                <div
+                  className="nav-dropdown"
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 10px)',
+                    right: 0,
+                    background: 'var(--surface2)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '16px',
+                    padding: '6px',
+                    minWidth: '236px',
+                    zIndex: 400,
+                    boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+                  }}
+                >
+                  {/* Profile header */}
+                  <div
                     style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      flexShrink: 0,
-                      background: 'var(--green)',
-                      color: 'var(--black)',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '17px',
-                      fontWeight: 900,
-                      fontFamily: "'Archivo Black', sans-serif",
+                      gap: '12px',
+                      padding: '10px 10px 12px',
+                      marginBottom: '4px',
+                      borderBottom: '1px solid var(--border)',
                     }}
                   >
-                    {initial}
-                  </span>
-                  <div style={{ overflow: 'hidden', minWidth: 0 }}>
-                    <div
+                    <span
                       style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        flexShrink: 0,
+                        background: 'var(--green)',
+                        color: 'var(--black)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '17px',
                         fontWeight: 700,
+                        fontFamily: 'var(--font-display)',
+                      }}
+                    >
+                      {initial}
+                    </span>
+                    <div style={{ overflow: 'hidden', minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          fontSize: '14px',
+                          color: 'var(--text)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          letterSpacing: '-0.01em',
+                          fontFamily: 'var(--font-display)',
+                        }}
+                      >
+                        {user.name || firstName}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          color: 'var(--text-secondary)',
+                          marginTop: '2px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {user.email}
+                      </div>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/my-bookings"
+                    style={{ textDecoration: 'none' }}
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <div
+                      className="dropdown-item"
+                      style={{
+                        padding: '9px 12px',
+                        borderRadius: '10px',
                         fontSize: '14px',
-                        color: 'var(--text)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        transition: 'all 0.12s',
+                        fontWeight: 500,
                         letterSpacing: '-0.01em',
                       }}
                     >
-                      {user.name || firstName}
+                      My bookings
                     </div>
-                    <div
-                      style={{
-                        fontSize: '12px',
-                        color: 'var(--muted)',
-                        marginTop: '1px',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {user.email}
-                    </div>
-                  </div>
-                </div>
+                  </Link>
 
-                <Link
-                  href="/my-bookings"
-                  style={{ textDecoration: 'none' }}
-                  onClick={() => setDropdownOpen(false)}
-                >
-                  <div
+                  <button
+                    onClick={handleSignOut}
                     className="dropdown-item"
                     style={{
-                      padding: '8px 10px',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '9px 12px',
                       borderRadius: '10px',
                       fontSize: '14px',
-                      color: 'var(--muted)',
+                      color: 'var(--text-secondary)',
                       cursor: 'pointer',
+                      background: 'transparent',
+                      border: 'none',
+                      fontFamily: 'var(--font-sans)',
+                      fontWeight: 500,
                       transition: 'all 0.12s',
-                      fontWeight: 600,
                       letterSpacing: '-0.01em',
                     }}
                   >
-                    My bookings
-                  </div>
-                </Link>
-
-                <button
-                  onClick={handleSignOut}
-                  className="dropdown-item"
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px 10px',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    color: 'var(--muted)',
-                    cursor: 'pointer',
-                    background: 'transparent',
-                    border: 'none',
-                    fontFamily: "'Archivo', sans-serif",
-                    fontWeight: 600,
-                    transition: 'all 0.12s',
-                    letterSpacing: '-0.01em',
-                  }}
-                >
-                  Sign out
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <Link
-              href="/auth/login"
-              className="nav-link-ghost"
-              style={{
-                fontFamily: "'Archivo', sans-serif",
-                fontWeight: 600,
-                fontSize: '13px',
-                color: 'var(--muted)',
-                textDecoration: 'none',
-                transition: 'color 0.15s ease',
-                whiteSpace: 'nowrap',
-                letterSpacing: '-0.01em',
-              }}
-            >
-              Log in
-            </Link>
-            <Link href="/slots" style={{ textDecoration: 'none' }}>
-              <button
-                className="nav-btn-green"
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <Link
+                href="/auth/login"
+                className="nav-link-ghost"
                 style={{
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontWeight: 900,
-                  fontSize: '13px',
-                  letterSpacing: '-0.025em',
-                  padding: '0.5rem 1.2rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: 'var(--green)',
-                  color: 'var(--black)',
-                  transition: 'background 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  color: 'var(--text-secondary)',
+                  textDecoration: 'none',
+                  transition: 'color 0.15s ease',
                   whiteSpace: 'nowrap',
-                  lineHeight: 1,
+                  letterSpacing: '-0.01em',
+                  padding: '0.5rem 0.25rem',
+                  minHeight: '44px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
                 }}
               >
-                Find a slot →
-              </button>
-            </Link>
-          </>
-        )}
-      </div>
+                Log in
+              </Link>
+              <Link href="/slots" style={{ textDecoration: 'none', display: 'flex' }}>
+                <button
+                  className="nav-btn-green"
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 600,
+                    fontSize: 'clamp(12px, 3vw, 14px)',
+                    letterSpacing: '-0.01em',
+                    padding: 'clamp(0.5rem, 2vw, 0.6rem) clamp(0.875rem, 3vw, 1.25rem)',
+                    borderRadius: 'var(--radius-lg)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: 'var(--green)',
+                    color: 'var(--black)',
+                    transition: 'background 160ms ease-out, transform 160ms ease-out, box-shadow 160ms ease-out',
+                    whiteSpace: 'nowrap',
+                    lineHeight: 1,
+                    minHeight: '44px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                  }}
+                >
+                  Find a slot
+                  <span aria-hidden="true">→</span>
+                </button>
+              </Link>
+            </>
+          )}
+        </div>
     </nav>
   )
 }

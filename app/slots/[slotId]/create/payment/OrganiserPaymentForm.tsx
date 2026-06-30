@@ -182,9 +182,9 @@ function CardStep({
       {/* Cost breakdown */}
       <div
         style={{
-          background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: '14px',
+          background: 'var(--surface)',
+          border: '1px solid var(--border-strong)',
+          borderRadius: 'var(--radius-lg)',
           padding: '1.1rem 1.25rem',
           display: 'flex',
           flexDirection: 'column',
@@ -223,24 +223,26 @@ function CardStep({
       {/* Prominent "not charged today" banner — sits directly above the card form */}
       <div
         style={{
-          background: '#C6F135',
-          borderRadius: '12px',
+          background: 'rgba(22,48,31,0.6)',
+          border: '1px solid rgba(198,241,53,0.25)',
+          borderRadius: 'var(--radius-lg)',
           padding: '1rem 1.2rem',
-          color: '#000',
         }}
       >
         <div
           style={{
-            fontFamily: "'Archivo Black', sans-serif",
+            fontFamily: 'var(--font-display)',
             fontSize: '15px',
-            fontWeight: 900,
+            fontWeight: 700,
             letterSpacing: '-0.02em',
             lineHeight: 1.35,
+            color: 'var(--green)',
+            marginBottom: '4px',
           }}
         >
           🔒 You will NOT be charged today.
         </div>
-        <div style={{ fontSize: '13px', fontWeight: 700, marginTop: '4px', lineHeight: 1.5, opacity: 0.75 }}>
+        <div style={{ fontSize: '13px', fontWeight: 500, lineHeight: 1.55, color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)' }}>
           Your card is only charged once all players have joined and the game is confirmed.
         </div>
       </div>
@@ -258,11 +260,11 @@ function CardStep({
           style={{
             background: 'rgba(255,68,68,0.08)',
             border: '1px solid rgba(255,68,68,0.2)',
-            borderRadius: '10px',
+            borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1rem',
             fontSize: '13px',
             color: 'var(--red)',
-            fontWeight: 600,
+            fontWeight: 500,
           }}
         >
           {submitError}
@@ -276,18 +278,19 @@ function CardStep({
           className={!isDisabled ? 'btn-g' : ''}
           style={{
             width: '100%',
-            padding: '1rem',
-            borderRadius: '12px',
+            minHeight: '52px',
+            borderRadius: 'var(--radius-lg)',
             border: 'none',
             cursor: isDisabled ? 'not-allowed' : 'pointer',
             background: isDisabled ? 'var(--surface2)' : 'var(--green)',
-            color: isDisabled ? 'var(--muted)' : 'var(--black)',
-            fontFamily: "'Archivo Black', sans-serif",
-            fontWeight: 900,
-            fontSize: '16px',
-            letterSpacing: '-0.025em',
+            color: isDisabled ? 'var(--text-secondary)' : 'var(--black)',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            fontSize: '15px',
+            letterSpacing: '-0.015em',
             marginTop: '4px',
-            transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+            opacity: isDisabled ? 0.5 : 1,
+            transition: 'background 160ms ease, color 160ms ease, transform 160ms var(--ease-out), box-shadow 160ms ease',
             lineHeight: 1,
           }}
         >
@@ -400,11 +403,11 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
           style={{
             background: 'rgba(255,68,68,0.08)',
             border: '1px solid rgba(255,68,68,0.2)',
-            borderRadius: '10px',
+            borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1rem',
             fontSize: '13px',
             color: 'var(--red)',
-            fontWeight: 600,
+            fontWeight: 500,
             marginBottom: '1rem',
           }}
         >
@@ -415,7 +418,7 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
           style={{
             background: 'none',
             border: 'none',
-            color: 'var(--muted)',
+            color: 'var(--text-secondary)',
             fontSize: '14px',
             fontWeight: 600,
             cursor: 'pointer',
@@ -469,7 +472,7 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
       <div
         className="anim-fade-up d-80"
         style={{
-          fontFamily: "'Archivo Black', sans-serif",
+          fontFamily: 'var(--font-display)',
           fontSize: 'clamp(24px, 5vw, 34px)',
           letterSpacing: '-0.04em',
           lineHeight: 0.95,
@@ -480,7 +483,7 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
       </div>
       <div
         className="anim-fade-up d-150"
-        style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '1.75rem', fontWeight: 500 }}
+        style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '1.75rem', fontWeight: 500, fontFamily: 'var(--font-sans)' }}
       >
         {startTime} – {endTime} · {formatDate(slot.date)} · {typeLabel} · {slot.venue?.name ?? 'Globe Football Pitch'}
       </div>
@@ -489,18 +492,20 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
         <div
           className="anim-fade-up d-180"
           style={{
-            background: '#C6F135',
-            borderRadius: '12px',
+            background: 'rgba(22,48,31,0.6)',
+            border: '1px solid rgba(198,241,53,0.3)',
+            borderRadius: 'var(--radius-lg)',
             padding: '1rem 1.1rem',
-            color: '#000',
+            color: 'var(--green)',
             marginBottom: '1.5rem',
           }}
         >
           <div
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: '15px',
-              letterSpacing: '-0.025em',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
               lineHeight: 1.3,
               marginBottom: challengedPlayerCount !== null ? '5px' : 0,
             }}
@@ -520,11 +525,11 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
           style={{
             background: 'rgba(255,68,68,0.08)',
             border: '1px solid rgba(255,68,68,0.2)',
-            borderRadius: '10px',
+            borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1rem',
             fontSize: '13px',
             color: 'var(--red)',
-            fontWeight: 600,
+            fontWeight: 500,
           }}
         >
           {formError}

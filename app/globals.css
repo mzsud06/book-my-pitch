@@ -1,39 +1,102 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+/* Clash Display — Fontshare CDN (self-hosted by Fontshare, no Google dependency) */
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap');
 
 @import "tailwindcss";
 
+/* ============================================================
+   TAILWIND v4 THEME — maps CSS vars to utility classes
+   ============================================================ */
+@theme {
+  /* Colours */
+  --color-bmp-black:        #080808;
+  --color-bmp-green:        #C6F135;
+  --color-bmp-green-dim:    #AACE2C;
+  --color-bmp-amber:        #FFB800;
+  --color-bmp-red:          #FF4444;
+  --color-bmp-pitch:        #16301F;
+  --color-surface:          #111111;
+  --color-surface-2:        #161616;
+  --color-surface-3:        #1e1e1e;
+  --color-surface-4:        #232323;
+  --color-text-primary:     #F7F4EE;
+  --color-text-secondary:   #9BA39A;
+  --color-text-tertiary:    #5E655D;
+
+  /* Typography */
+  --font-display:           'Clash Display', system-ui, sans-serif;
+  --font-sans:              var(--font-geist-sans, 'Inter', system-ui, sans-serif);
+
+  /* Border radius */
+  --radius-card:   20px;
+  --radius-button: 14px;
+  --radius-input:  14px;
+}
+
 :root {
+  /* Core palette — DO NOT change these values; all other files reference them */
   --black: #080808;
   --white: #F7F4EE;
-  --green: #C6F135;
+  --green: #C6F135;         /* acid green — THE single action colour */
   --green-dim: #AACE2C;
   --green-faint: rgba(198,241,53,0.08);
   --green-glow-sm: 0 0 20px rgba(198,241,53,0.18);
   --green-glow-md: 0 0 40px rgba(198,241,53,0.22);
   --green-glow-lg: 0 0 80px rgba(198,241,53,0.18);
-  --surface: #111;
+
+  /* Surfaces */
+  --surface: #111111;
   --surface2: #161616;
   --surface3: #1e1e1e;
   --surface4: #232323;
+  --pitch-green: #16301F;   /* deep pitch-green — off-peak badge, surface tints */
+
+  /* Borders */
   --border: rgba(255,255,255,0.07);
   --border-subtle: rgba(255,255,255,0.04);
   --border-active: rgba(198,241,53,0.35);
   --border-strong: rgba(255,255,255,0.12);
+  --green-border-glow: 0 0 0 1px rgba(198,241,53,0.30), 0 0 24px -4px rgba(198,241,53,0.25);
+
+  /* Text hierarchy — use this scale; never use colour for hierarchy */
+  --text: #F7F4EE;          /* primary */
+  --text-secondary: #9BA39A;
+  --text-tertiary: #5E655D;
   --muted: #686868;
   --muted-dim: rgba(104,104,104,0.5);
-  --text: #F7F4EE;
+
+  /* Status */
   --red: #FF4444;
-  --amber: #FFB800;
+  --amber: #FFB800;         /* PEAK / urgency */
+
+  /* Easing */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --shadow-card: 0 2px 12px rgba(0,0,0,0.4), 0 0 1px rgba(0,0,0,0.6);
+
+  /* Shadows */
+  --shadow-card: 0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px var(--border);
   --shadow-card-hover: 0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(198,241,53,0.18);
+  --shadow-glow: 0 0 0 1px rgba(198,241,53,0.30), 0 0 24px -4px rgba(198,241,53,0.25);
+
+  /* Radii */
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
+  --radius-lg: 14px;   /* buttons + inputs */
+  --radius-xl: 20px;   /* cards */
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* Typography — fluid scale via clamp() */
+  --text-hero:   clamp(2.5rem, 9vw, 4.5rem);
+  --text-h2:     clamp(1.75rem, 5vw, 2.5rem);
+  --text-h3:     clamp(1.25rem, 3vw, 1.5rem);
+  --text-body:   1rem;
+  --text-label:  0.75rem;
+
+  /* Fonts */
+  --font-display: 'Clash Display', system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans, 'Inter', system-ui, sans-serif);
 }
 
 * { box-sizing: border-box; }
@@ -44,15 +107,18 @@ html {
 }
 
 body {
-  font-family: 'Archivo', sans-serif;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-weight: 500;
   font-size: 16px;
+  line-height: 1.6;
   background: var(--black);
   color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
   margin: 0;
   padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Subtle ambient glow at top of page */
@@ -69,12 +135,29 @@ body::before {
   z-index: 0;
 }
 
-.font-heading { font-family: 'Archivo Black', sans-serif; }
-strong { font-weight: 800; }
+.font-heading { font-family: var(--font-display); }
+strong { font-weight: 700; }
 input::placeholder { color: rgba(104,104,104,0.5); }
 input:focus { outline: none; }
-p, span, a, li, div { font-weight: 600; }
-h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
+/* Tabular nums for prices and times */
+.tabular { font-variant-numeric: tabular-nums; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
+
+/* Focus ring — 2px green, everywhere */
+:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Reduced motion — disable all transitions/animations */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 /* ============================================================
    KEYFRAMES
@@ -214,6 +297,50 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
   );
   background-size: 200% 100%;
   animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ============================================================
+   DESIGN SYSTEM PRIMITIVES
+   ============================================================ */
+
+/* Card */
+.bmp-card {
+  transition: transform 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out;
+}
+@media (hover: hover) and (pointer: fine) {
+  .bmp-card-hover:hover {
+    border-color: rgba(198,241,53,0.22) !important;
+    box-shadow: var(--shadow-glow) !important;
+    transform: translateY(-4px);
+  }
+}
+.bmp-card-hover:active { transform: scale(0.98) !important; transition-duration: 0.08s !important; }
+
+/* Button primitives */
+.bmp-btn {
+  transition: background 160ms ease-out, color 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out, transform 160ms ease-out;
+}
+@media (hover: hover) and (pointer: fine) {
+  .bmp-btn-primary:hover {
+    background: var(--green-dim) !important;
+    box-shadow: var(--shadow-glow) !important;
+    transform: translateY(-2px);
+  }
+  .bmp-btn-secondary:hover {
+    border-color: rgba(255,255,255,0.18) !important;
+    background: var(--surface3) !important;
+    transform: translateY(-1px);
+  }
+  .bmp-btn-ghost:hover {
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+    background: rgba(255,255,255,0.04) !important;
+  }
+}
+.bmp-btn:active { transform: scale(0.97) translateY(0) !important; transition-duration: 0.06s !important; }
+.bmp-btn:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
 }
 
 /* ============================================================
@@ -707,4 +834,255 @@ h1, h2, h3, h4 { font-family: 'Archivo Black', sans-serif; font-weight: 900; }
 @media (max-width: 768px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .dash-cols  { grid-template-columns: 1fr !important; }
+}
+
+/* ============================================================
+   MARQUEE STRIP (landing page value strip)
+   ============================================================ */
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.marquee-strip {
+  overflow: hidden;
+  user-select: none;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-scroll 32s linear infinite;
+}
+
+.marquee-strip:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Reduced motion: stop animation, show single centred row */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none !important;
+    width: 100%;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .marquee-dupe { display: none !important; }
+}
+
+/* ============================================================
+   SLOT PREVIEW CARDS — mobile carousel / desktop 3-up grid
+   ============================================================ */
+.preview-cards-scroller {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  gap: 12px;
+  /* left pad = leading peek; right pad = trailing peek; bottom = shadow room */
+  padding: 8px 20px 24px;
+  scrollbar-width: none;
+}
+.preview-cards-scroller::-webkit-scrollbar { display: none; }
+
+.preview-card-link {
+  flex: 0 0 clamp(268px, 82vw, 340px);
+  scroll-snap-align: start;
+  min-width: 0;
+  text-decoration: none;
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .preview-cards-scroller {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    overflow: visible;
+    scroll-snap-type: none;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 8px clamp(1.25rem, 4vw, 2rem) 24px;
+  }
+  .preview-card-link {
+    flex: unset;
+    scroll-snap-align: unset;
+  }
+}
+
+/* ============================================================
+   SLOTS PAGE — time slot grid + open games scroller
+   ============================================================ */
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+@media (min-width: 768px) {
+  .slots-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+}
+
+/* Time pills — compact 2/3/4-col grid */
+.time-pills-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+@media (min-width: 640px) {
+  .time-pills-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+}
+@media (min-width: 1024px) {
+  .time-pills-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+}
+
+.time-pill {
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .time-pill:not(.time-pill-selected):not(.time-pill-booked):hover {
+    border-color: rgba(198,241,53,0.35) !important;
+    background: rgba(198,241,53,0.05) !important;
+    transform: translateY(-3px);
+  }
+}
+.time-pill:active:not(.time-pill-booked) {
+  transform: scale(0.95) !important;
+  transition-duration: 0.06s !important;
+}
+
+/* 7-day chips (no-arrow selector) */
+.day-chip {
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .day-chip:not(.day-chip-active):not(:disabled):hover {
+    border-color: rgba(198,241,53,0.30) !important;
+    background: rgba(198,241,53,0.07) !important;
+    transform: translateY(-2px);
+  }
+}
+.day-chip:active:not(.day-chip-active) {
+  transform: scale(0.94) !important;
+  transition-duration: 0.06s !important;
+}
+
+/* Slot detail panel entrance */
+.slot-detail-panel {
+  animation: fadeUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Open games — horizontally scrollable on mobile, 3-up grid on desktop */
+.open-games-scroller {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 6px;
+}
+.open-games-scroller::-webkit-scrollbar { display: none; }
+
+.open-game-card-link {
+  flex: 0 0 clamp(240px, 75vw, 300px);
+  scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  min-width: 0;
+}
+
+.open-game-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: transform 200ms var(--ease-out), border-color 200ms ease, box-shadow 200ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .open-game-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(198,241,53,0.22);
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+.open-game-card:active {
+  transform: scale(0.98) !important;
+  transition-duration: 0.08s !important;
+}
+
+@media (min-width: 768px) {
+  .open-games-scroller {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    overflow: visible;
+    scroll-snap-type: none;
+    gap: 16px;
+    padding-bottom: 0;
+  }
+  .open-game-card-link {
+    flex: unset;
+    scroll-snap-align: unset;
+  }
+}
+
+/* Hero stat row — tighten padding on narrow screens */
+@media (max-width: 480px) {
+  .hero-stats > div {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+}
+
+/* ============================================================
+   HOW IT WORKS — step grid, flow connector, payoff accent
+   ============================================================ */
+.steps-grid-new {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 640px) {
+  .steps-grid-new {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+}
+@media (min-width: 1024px) {
+  .steps-grid-new {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+}
+
+/* Subtle flow arrow — visible only in 4-across row on desktop */
+@media (min-width: 1024px) {
+  .step-connector-arrow::after {
+    content: '→';
+    position: absolute;
+    right: -13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(198,241,53,0.22);
+    font-size: 11px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    pointer-events: none;
+    z-index: 2;
+    line-height: 1;
+  }
+}
+
+/* Step 04 payoff — intensified hover (rest state set via inline style) */
+@media (hover: hover) and (pointer: fine) {
+  .step-card-payoff:hover {
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(198,241,53,0.40), 0 0 48px -8px rgba(198,241,53,0.30) !important;
+    border-color: rgba(198,241,53,0.40) !important;
+  }
 }

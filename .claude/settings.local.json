@@ -35,7 +35,9 @@
       "Bash(ping -n 4 127.0.0.1)",
       "Bash(Select-Object Name)",
       "PowerShell(npm run *)",
-      "Skill(run)"
+      "Skill(run)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Head *)"
     ]
   }
 }

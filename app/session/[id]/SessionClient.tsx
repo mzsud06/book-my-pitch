@@ -662,7 +662,7 @@ export default function SessionClient({
           position: 'relative',
           flex: 1,
           height: '60px',
-          borderRadius: '10px',
+          borderRadius: 'var(--radius-lg)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -681,8 +681,8 @@ export default function SessionClient({
             top: '4px',
             right: '5px',
             fontSize: '7px',
-            fontWeight: 900,
-            fontFamily: "'Archivo Black', sans-serif",
+            fontWeight: 700,
+            fontFamily: 'var(--font-display)',
             color: player ? 'rgba(198,241,53,0.4)' : 'rgba(255,255,255,0.06)',
             lineHeight: 1,
           }}
@@ -715,10 +715,10 @@ export default function SessionClient({
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '9px',
-            fontWeight: 900,
+            fontWeight: 700,
             color: player ? 'var(--black)' : 'transparent',
             flexShrink: 0,
-            fontFamily: "'Archivo Black', sans-serif",
+            fontFamily: 'var(--font-display)',
           }}
         >
           {player ? initials : ''}
@@ -763,7 +763,7 @@ export default function SessionClient({
           position: 'relative',
           flex: 1,
           height: '60px',
-          borderRadius: '10px',
+          borderRadius: 'var(--radius-lg)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -775,10 +775,10 @@ export default function SessionClient({
           transition: 'background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
         }}
       >
-        <div style={{ position: 'absolute', top: '4px', right: '5px', fontSize: '7px', fontWeight: 900, fontFamily: "'Archivo Black', sans-serif", color: player ? 'rgba(198,241,53,0.4)' : 'rgba(255,255,255,0.06)', lineHeight: 1 }}>
+        <div style={{ position: 'absolute', top: '4px', right: '5px', fontSize: '7px', fontWeight: 700, fontFamily: 'var(--font-display)', color: player ? 'rgba(198,241,53,0.4)' : 'rgba(255,255,255,0.06)', lineHeight: 1 }}>
           {i + 1}
         </div>
-        <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: player ? 'var(--green)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 900, color: player ? 'var(--black)' : 'transparent', flexShrink: 0, fontFamily: "'Archivo Black', sans-serif" }}>
+        <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: player ? 'var(--green)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: player ? 'var(--black)' : 'transparent', flexShrink: 0, fontFamily: 'var(--font-display)' }}>
           {player ? initials : ''}
         </div>
         {player && (
@@ -795,9 +795,9 @@ export default function SessionClient({
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
         <div
           style={{
-            background: 'linear-gradient(145deg, rgba(255,68,68,0.04) 0%, #0f0f0f 100%)',
+            background: 'rgba(255,68,68,0.05)',
             border: '1px solid rgba(255,68,68,0.18)',
-            borderRadius: '20px',
+            borderRadius: 'var(--radius-xl)',
             padding: '2.5rem 2rem',
             textAlign: 'center',
             marginTop: '1rem',
@@ -806,7 +806,7 @@ export default function SessionClient({
           <div style={{ fontSize: '38px', marginBottom: '1.25rem' }}>✕</div>
           <div
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: '22px',
               letterSpacing: '-0.04em',
               marginBottom: '0.75rem',
@@ -834,11 +834,12 @@ export default function SessionClient({
                 color: 'var(--black)',
                 border: 'none',
                 padding: '1rem 2rem',
-                borderRadius: '12px',
-                fontFamily: "'Archivo Black', sans-serif",
-                fontWeight: 900,
-                fontSize: '16px',
-                letterSpacing: '-0.025em',
+                minHeight: '52px',
+                borderRadius: 'var(--radius-lg)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: '15px',
+                letterSpacing: '-0.015em',
                 cursor: 'pointer',
                 lineHeight: 1,
               }}
@@ -875,17 +876,17 @@ export default function SessionClient({
         <div
           className="anim-fade-up"
           style={{
-            background: '#C6F135',
-            borderRadius: '16px',
+            background: 'var(--green)',
+            borderRadius: 'var(--radius-xl)',
             padding: '1.25rem 1.5rem',
             marginBottom: '1.25rem',
           }}
         >
           <div
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: '16px',
-              color: '#000',
+              color: 'var(--black)',
               letterSpacing: '-0.025em',
               lineHeight: 1.35,
               marginBottom: '5px',
@@ -905,7 +906,7 @@ export default function SessionClient({
           style={{
             background: 'rgba(198,241,53,0.06)',
             border: '1px solid rgba(198,241,53,0.22)',
-            borderRadius: '12px',
+            borderRadius: 'var(--radius-lg)',
             padding: '1rem 1.2rem',
             marginBottom: '1.25rem',
             fontSize: '15px',
@@ -927,7 +928,7 @@ export default function SessionClient({
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '12px',
-              fontWeight: 900,
+              fontWeight: 700,
               flexShrink: 0,
             }}
           >
@@ -942,14 +943,14 @@ export default function SessionClient({
           style={{
             background: 'linear-gradient(135deg, rgba(198,241,53,0.07) 0%, rgba(198,241,53,0.03) 100%)',
             border: '1px solid rgba(198,241,53,0.25)',
-            borderRadius: '14px',
+            borderRadius: 'var(--radius-lg)',
             padding: '1.15rem 1.25rem',
             marginBottom: '1.25rem',
           }}
         >
           <div
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: '17px',
               color: 'var(--green)',
               marginBottom: '5px',
@@ -969,7 +970,7 @@ export default function SessionClient({
           style={{
             background: 'rgba(198,241,53,0.06)',
             border: '1px solid rgba(198,241,53,0.2)',
-            borderRadius: '12px',
+            borderRadius: 'var(--radius-lg)',
             padding: '1rem 1.2rem',
             marginBottom: '1.25rem',
             fontSize: '15px',
@@ -991,7 +992,7 @@ export default function SessionClient({
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '12px',
-              fontWeight: 900,
+              fontWeight: 700,
               flexShrink: 0,
             }}
           >
@@ -1009,7 +1010,7 @@ export default function SessionClient({
           style={{
             background: 'rgba(198,241,53,0.06)',
             border: '1px solid rgba(198,241,53,0.25)',
-            borderRadius: '14px',
+            borderRadius: 'var(--radius-lg)',
             padding: '1rem 1.2rem',
             marginBottom: '1.25rem',
           }}
@@ -1028,8 +1029,8 @@ export default function SessionClient({
                   border: '1px solid rgba(255,68,68,0.35)',
                   background: 'rgba(255,68,68,0.08)',
                   color: 'rgba(255,100,100,0.9)',
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontWeight: 900,
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
                   fontSize: '12px',
                   letterSpacing: '-0.01em',
                   cursor: 'pointer',
@@ -1059,10 +1060,10 @@ export default function SessionClient({
                   onClick={() => { setBannerLeaveOpen(false); setBannerLeaveError('') }}
                   disabled={bannerLeaveLoading}
                   style={{
-                    flex: 1, padding: '0.75rem', borderRadius: '10px',
+                    flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-lg)',
                     border: '1px solid var(--border)', background: 'transparent',
-                    color: 'var(--muted)', fontFamily: "'Archivo Black', sans-serif",
-                    fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em',
+                    color: 'var(--muted)', fontFamily: 'var(--font-display)',
+                    fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                     cursor: 'pointer', lineHeight: 1,
                   }}
                 >
@@ -1072,11 +1073,11 @@ export default function SessionClient({
                   onClick={handleBannerLeave}
                   disabled={bannerLeaveLoading}
                   style={{
-                    flex: 1, padding: '0.75rem', borderRadius: '10px',
+                    flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-lg)',
                     border: 'none',
                     background: bannerLeaveLoading ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.85)',
-                    color: '#fff', fontFamily: "'Archivo Black', sans-serif",
-                    fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em',
+                    color: '#fff', fontFamily: 'var(--font-display)',
+                    fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                     cursor: bannerLeaveLoading ? 'not-allowed' : 'pointer', lineHeight: 1,
                     transition: 'background 0.15s ease',
                   }}
@@ -1092,13 +1093,13 @@ export default function SessionClient({
       {returningPlayer && isLoggedIn === false && !justJoined && !justCreated && isConfirmed && (
         <div
           style={{
-            background: '#C6F135',
-            borderRadius: '14px',
+            background: 'var(--green)',
+            borderRadius: 'var(--radius-lg)',
             padding: '1.1rem 1.3rem',
             marginBottom: '1.25rem',
           }}
         >
-          <div style={{ fontSize: '15px', color: '#000', fontWeight: 900, fontFamily: "'Archivo Black', sans-serif", letterSpacing: '-0.025em', lineHeight: 1.4 }}>
+          <div style={{ fontSize: '15px', color: 'var(--black)', fontWeight: 700, fontFamily: 'var(--font-display)', letterSpacing: '-0.025em', lineHeight: 1.4 }}>
             Game confirmed ✓ · £{perPlayerPounds} was taken from your card · {formatDate(slot.date)} · {sliceTime(slot.start_time)}–{sliceTime(slot.end_time)} · {slot.venues?.name ?? 'Globe Football Pitch'}
           </div>
         </div>
@@ -1110,11 +1111,9 @@ export default function SessionClient({
       <div
         className="anim-fade-up d-100"
         style={{
-          background: isConfirmed
-            ? 'linear-gradient(145deg, rgba(198,241,53,0.05) 0%, #0f0f0f 100%)'
-            : 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-          border: `1px solid ${isConfirmed ? 'rgba(198,241,53,0.28)' : isFilling ? 'rgba(198,241,53,0.12)' : 'rgba(255,255,255,0.07)'}`,
-          borderRadius: '18px',
+          background: isConfirmed ? 'rgba(198,241,53,0.04)' : 'var(--surface)',
+          border: `1px solid ${isConfirmed ? 'rgba(198,241,53,0.28)' : isFilling ? 'rgba(198,241,53,0.15)' : 'var(--border-strong)'}`,
+          borderRadius: 'var(--radius-xl)',
           padding: '1.5rem',
           marginBottom: '1.25rem',
           boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
@@ -1135,7 +1134,7 @@ export default function SessionClient({
         </div>
         <div
           style={{
-            fontFamily: "'Archivo Black', sans-serif",
+            fontFamily: 'var(--font-display)',
             fontSize: '28px',
             letterSpacing: '-0.04em',
             marginBottom: '3px',
@@ -1162,7 +1161,7 @@ export default function SessionClient({
             <>
               {/* Team A */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#C6F135', flexShrink: 0 }} />
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', flexShrink: 0 }} />
                 <span style={{ fontSize: '11px', color: 'var(--text)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', opacity: 0.65 }}>
                   {session.team_name || 'Team A'}
                 </span>
@@ -1180,10 +1179,10 @@ export default function SessionClient({
                   border: '1px solid rgba(198,241,53,0.28)',
                   background: 'rgba(198,241,53,0.05)',
                   fontSize: '11px',
-                  fontWeight: 900,
-                  color: '#C6F135',
+                  fontWeight: 700,
+                  color: 'var(--green)',
                   letterSpacing: '0.08em',
-                  fontFamily: "'Archivo Black', sans-serif",
+                  fontFamily: 'var(--font-display)',
                   flexShrink: 0,
                 }}>
                   VS
@@ -1262,9 +1261,9 @@ export default function SessionClient({
         <div
           className="anim-fade-up d-150"
           style={{
-            background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-            border: '1px solid rgba(198,241,53,0.15)',
-            borderRadius: '18px',
+            background: 'var(--surface)',
+            border: '1px solid rgba(198,241,53,0.2)',
+            borderRadius: 'var(--radius-xl)',
             padding: '1rem 1.5rem',
             marginBottom: '1.25rem',
             fontSize: '13px',
@@ -1283,7 +1282,7 @@ export default function SessionClient({
           style={{
             background: 'rgba(255,184,0,0.06)',
             border: '1px solid rgba(255,184,0,0.22)',
-            borderRadius: '12px',
+            borderRadius: 'var(--radius-lg)',
             padding: '0.9rem 1.1rem',
             marginBottom: '1.25rem',
             fontSize: '14px',
@@ -1306,9 +1305,9 @@ export default function SessionClient({
       {isConfirmed && (
         <div
           style={{
-            background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: '18px',
+            background: 'var(--surface)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--radius-xl)',
             padding: '1.5rem',
             marginBottom: '1.5rem',
             boxShadow: '0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
@@ -1316,7 +1315,7 @@ export default function SessionClient({
         >
           <div
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: '15px',
               letterSpacing: '-0.025em',
               marginBottom: '1rem',
@@ -1363,15 +1362,15 @@ export default function SessionClient({
       {isConfirmed && !localAlreadyIn && !isOrganiserUser && isLoggedIn !== null && (
         <div
           style={{
-            background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: '14px',
+            background: 'var(--surface)',
+            border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--radius-lg)',
             padding: '1.25rem 1.5rem',
             marginBottom: '1.25rem',
             textAlign: 'center',
           }}
         >
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: "'Archivo Black', sans-serif", letterSpacing: '-0.025em' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>
             This game is already confirmed
           </div>
           <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
@@ -1381,16 +1380,17 @@ export default function SessionClient({
             <button
               style={{
                 padding: '0.75rem 1.5rem',
-                borderRadius: '10px',
+                borderRadius: 'var(--radius-lg)',
                 border: 'none',
                 background: 'var(--green)',
                 color: 'var(--black)',
-                fontFamily: "'Archivo Black', sans-serif",
-                fontWeight: 900,
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
                 fontSize: '14px',
                 letterSpacing: '-0.015em',
                 cursor: 'pointer',
                 lineHeight: 1,
+                minHeight: '44px',
               }}
             >
               Find another slot →
@@ -1413,89 +1413,97 @@ export default function SessionClient({
             style={{
               background: 'linear-gradient(145deg, rgba(198,241,53,0.07) 0%, rgba(198,241,53,0.03) 100%)',
               border: '1px solid rgba(198,241,53,0.28)',
-              borderRadius: '18px',
+              borderRadius: 'var(--radius-xl)',
               padding: '1.5rem',
               marginBottom: '1rem',
             }}
           >
             <div
               style={{
-                fontFamily: "'Archivo Black', sans-serif",
+                fontFamily: 'var(--font-display)',
                 fontSize: '18px',
+                fontWeight: 700,
                 letterSpacing: '-0.03em',
+                color: 'var(--text)',
                 marginBottom: '5px',
               }}
             >
               Share with your team
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '1.1rem', lineHeight: 1.6, fontWeight: 500 }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.6, fontWeight: 500, fontFamily: 'var(--font-sans)' }}>
               {remaining} spot{remaining !== 1 ? 's' : ''} left. Send this link to fill them.
             </div>
 
-            {/* URL display */}
-            <div
-              style={{
-                background: 'rgba(0,0,0,0.4)',
-                borderRadius: '10px',
-                padding: '0.8rem 1rem',
-                fontSize: '11px',
-                color: 'rgba(198,241,53,0.65)',
-                wordBreak: 'break-all',
-                lineHeight: 1.55,
-                marginBottom: '1rem',
-                fontFamily: 'monospace',
-                border: '1px solid rgba(198,241,53,0.1)',
-                letterSpacing: '0.01em',
-              }}
-            >
-              {shareUrl}
-            </div>
-
-            {/* Share buttons */}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            {/* URL + Copy inline — hero row */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+              <div
+                style={{
+                  flex: 1,
+                  background: 'var(--surface2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '0 1rem',
+                  fontSize: '13px',
+                  color: 'var(--text-secondary)',
+                  fontFamily: 'var(--font-sans)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  lineHeight: 1,
+                  minHeight: '48px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                {shareUrl}
+              </div>
               <button
                 className="share-copy"
                 onClick={copyLink}
                 style={{
-                  flex: 1,
-                  padding: '0.9rem',
-                  borderRadius: '10px',
+                  padding: '0 1.25rem',
+                  borderRadius: 'var(--radius-lg)',
                   border: 'none',
-                  background: 'var(--green)',
-                  color: 'var(--black)',
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontWeight: 900,
+                  background: copied ? 'rgba(198,241,53,0.15)' : 'var(--green)',
+                  color: copied ? 'var(--green)' : 'var(--black)',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
                   fontSize: '13px',
                   letterSpacing: '-0.015em',
                   cursor: 'pointer',
-                  transition: 'background 0.18s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
+                  transition: 'background 160ms ease, color 160ms ease, transform 160ms var(--ease-out)',
                   lineHeight: 1,
+                  flexShrink: 0,
+                  minHeight: '48px',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {copied ? '✓ Copied!' : 'Copy link'}
               </button>
-              <button
-                className="share-wa"
-                onClick={shareWhatsApp}
-                style={{
-                  flex: 1,
-                  padding: '0.9rem',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: '#25D366',
-                  color: '#fff',
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontWeight: 900,
-                  fontSize: '13px',
-                  letterSpacing: '-0.015em',
-                  cursor: 'pointer',
-                  transition: 'background 0.18s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
-                  lineHeight: 1,
-                }}
-              >
-                WhatsApp →
-              </button>
             </div>
+
+            {/* WhatsApp — full width */}
+            <button
+              className="share-wa"
+              onClick={shareWhatsApp}
+              style={{
+                width: '100%',
+                padding: '0.875rem',
+                borderRadius: 'var(--radius-lg)',
+                border: 'none',
+                background: '#25D366',
+                color: '#fff',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: '13px',
+                letterSpacing: '-0.015em',
+                cursor: 'pointer',
+                transition: 'background 160ms ease, transform 160ms var(--ease-out), box-shadow 160ms ease',
+                lineHeight: 1,
+              }}
+            >
+              WhatsApp →
+            </button>
           </div>
           )}
 
@@ -1511,13 +1519,13 @@ export default function SessionClient({
               {convertOpen === 'open' ? (
                 <div
                   style={{
-                    background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '14px',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border-strong)',
+                    borderRadius: 'var(--radius-lg)',
                     padding: '1.25rem',
                   }}
                 >
-                  <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
                     Make this an open game?
                   </div>
                   <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
@@ -1533,10 +1541,10 @@ export default function SessionClient({
                       onClick={() => { setConvertOpen(null); setConvertError('') }}
                       disabled={converting}
                       style={{
-                        flex: 1, padding: '0.8rem', borderRadius: '10px',
+                        flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                         border: '1px solid var(--border)', background: 'transparent',
-                        color: 'var(--muted)', fontFamily: "'Archivo Black', sans-serif",
-                        fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
+                        color: 'var(--muted)', fontFamily: 'var(--font-display)',
+                        fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
                       }}
                     >
                       Cancel
@@ -1545,12 +1553,12 @@ export default function SessionClient({
                       onClick={handleConvertToOpen}
                       disabled={converting}
                       style={{
-                        flex: 1, padding: '0.8rem', borderRadius: '10px',
+                        flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                         border: 'none',
                         background: converting ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.1)',
                         color: converting ? 'var(--muted)' : 'var(--text)',
-                        fontFamily: "'Archivo Black', sans-serif",
-                        fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em',
+                        fontFamily: 'var(--font-display)',
+                        fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                         cursor: converting ? 'not-allowed' : 'pointer', lineHeight: 1,
                         transition: 'background 0.15s ease',
                       }}
@@ -1562,15 +1570,15 @@ export default function SessionClient({
               ) : convertOpen === 'lfo' ? (
                 <div
                   style={{
-                    background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '14px',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border-strong)',
+                    borderRadius: 'var(--radius-lg)',
                     padding: '1.25rem',
                   }}
                 >
                   {lfoStep === 'confirm' ? (
                     <>
-                      <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
                         Look for opposition?
                       </div>
                       <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
@@ -1580,10 +1588,10 @@ export default function SessionClient({
                         <button
                           onClick={() => { setConvertOpen(null); setConvertError('') }}
                           style={{
-                            flex: 1, padding: '0.8rem', borderRadius: '10px',
+                            flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                             border: '1px solid var(--border)', background: 'transparent',
-                            color: 'var(--muted)', fontFamily: "'Archivo Black', sans-serif",
-                            fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
+                            color: 'var(--muted)', fontFamily: 'var(--font-display)',
+                            fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
                           }}
                         >
                           Cancel
@@ -1591,10 +1599,10 @@ export default function SessionClient({
                         <button
                           onClick={() => setLfoStep('name')}
                           style={{
-                            flex: 1, padding: '0.8rem', borderRadius: '10px',
+                            flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                             border: 'none', background: 'rgba(255,255,255,0.1)',
-                            color: 'var(--text)', fontFamily: "'Archivo Black', sans-serif",
-                            fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
+                            color: 'var(--text)', fontFamily: 'var(--font-display)',
+                            fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
                             transition: 'background 0.15s ease',
                           }}
                         >
@@ -1604,7 +1612,7 @@ export default function SessionClient({
                     </>
                   ) : (
                     <>
-                      <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '14px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '8px' }}>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '8px' }}>
                         Set a team name (optional)
                       </div>
                       <input
@@ -1615,8 +1623,8 @@ export default function SessionClient({
                         placeholder="e.g. The Wanderers"
                         style={{
                           width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
-                          borderRadius: '10px', padding: '0.75rem 1rem', color: 'var(--text)',
-                          fontFamily: "'Archivo', sans-serif", fontSize: '14px', fontWeight: 600,
+                          borderRadius: 'var(--radius-lg)', padding: '0.75rem 1rem', color: 'var(--text)',
+                          fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 600,
                           outline: 'none', marginBottom: '1rem', boxSizing: 'border-box',
                           transition: 'border-color 0.15s ease',
                         }}
@@ -1631,10 +1639,10 @@ export default function SessionClient({
                           onClick={() => { setLfoStep('confirm'); setConvertError('') }}
                           disabled={converting}
                           style={{
-                            flex: 1, padding: '0.8rem', borderRadius: '10px',
+                            flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                             border: '1px solid var(--border)', background: 'transparent',
-                            color: 'var(--muted)', fontFamily: "'Archivo Black', sans-serif",
-                            fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
+                            color: 'var(--muted)', fontFamily: 'var(--font-display)',
+                            fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
                           }}
                         >
                           Back
@@ -1643,12 +1651,12 @@ export default function SessionClient({
                           onClick={handleConvertToLfo}
                           disabled={converting}
                           style={{
-                            flex: 1, padding: '0.8rem', borderRadius: '10px',
+                            flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                             border: 'none',
                             background: converting ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.1)',
                             color: converting ? 'var(--muted)' : 'var(--text)',
-                            fontFamily: "'Archivo Black', sans-serif",
-                            fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em',
+                            fontFamily: 'var(--font-display)',
+                            fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                             cursor: converting ? 'not-allowed' : 'pointer', lineHeight: 1,
                             transition: 'background 0.15s ease',
                           }}
@@ -1665,9 +1673,9 @@ export default function SessionClient({
                     className="settings-btn"
                     onClick={() => { setConvertOpen('open'); setConvertError('') }}
                     style={{
-                      width: '100%', padding: '0.8rem 1rem', borderRadius: '10px',
+                      width: '100%', padding: '0.8rem 1rem', borderRadius: 'var(--radius-lg)',
                       border: '1px solid rgba(255,255,255,0.1)', background: 'var(--surface2)',
-                      color: 'var(--muted)', fontFamily: "'Archivo', sans-serif",
+                      color: 'var(--muted)', fontFamily: 'var(--font-sans)',
                       fontWeight: 600, fontSize: '13px', cursor: 'pointer',
                       textAlign: 'left', lineHeight: 1,
                     }}
@@ -1679,9 +1687,9 @@ export default function SessionClient({
                       className="settings-btn"
                       onClick={() => { setConvertOpen('lfo'); setLfoStep('confirm'); setConvertError('') }}
                       style={{
-                        width: '100%', padding: '0.8rem 1rem', borderRadius: '10px',
+                        width: '100%', padding: '0.8rem 1rem', borderRadius: 'var(--radius-lg)',
                         border: '1px solid rgba(255,255,255,0.1)', background: 'var(--surface2)',
-                        color: 'var(--muted)', fontFamily: "'Archivo', sans-serif",
+                        color: 'var(--muted)', fontFamily: 'var(--font-sans)',
                         fontWeight: 600, fontSize: '13px', cursor: 'pointer',
                         textAlign: 'left', lineHeight: 1,
                       }}
@@ -1706,9 +1714,9 @@ export default function SessionClient({
               {/* Team name editor */}
               <div
                 style={{
-                  background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: '14px',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border-strong)',
+                  borderRadius: 'var(--radius-lg)',
                   padding: '1rem 1.1rem',
                   marginBottom: '8px',
                 }}
@@ -1729,7 +1737,7 @@ export default function SessionClient({
                       borderRadius: '8px',
                       padding: '0.6rem 0.8rem',
                       color: 'var(--text)',
-                      fontFamily: "'Archivo', sans-serif",
+                      fontFamily: 'var(--font-sans)',
                       fontSize: '14px',
                       fontWeight: 600,
                       outline: 'none',
@@ -1743,8 +1751,8 @@ export default function SessionClient({
                       border: 'none',
                       background: 'var(--green)',
                       color: 'var(--black)',
-                      fontFamily: "'Archivo Black', sans-serif",
-                      fontWeight: 900,
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 700,
                       fontSize: '13px',
                       cursor: 'pointer',
                       lineHeight: 1,
@@ -1763,9 +1771,9 @@ export default function SessionClient({
                   className="settings-btn"
                   onClick={handlePublicToggle}
                   style={{
-                    width: '100%', padding: '0.8rem 1rem', borderRadius: '10px',
+                    width: '100%', padding: '0.8rem 1rem', borderRadius: 'var(--radius-lg)',
                     border: '1px solid rgba(255,255,255,0.1)', background: 'var(--surface2)',
-                    color: 'var(--muted)', fontFamily: "'Archivo', sans-serif",
+                    color: 'var(--muted)', fontFamily: 'var(--font-sans)',
                     fontWeight: 600, fontSize: '13px', cursor: 'pointer',
                     textAlign: 'left', lineHeight: 1,
                   }}
@@ -1775,13 +1783,13 @@ export default function SessionClient({
               ) : (
                 <div
                   style={{
-                    background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '14px',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border-strong)',
+                    borderRadius: 'var(--radius-lg)',
                     padding: '1.25rem',
                   }}
                 >
-                  <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
                     Stop looking for opposition?
                   </div>
                   <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
@@ -1791,10 +1799,10 @@ export default function SessionClient({
                     <button
                       onClick={() => setConfirmPublicOff(false)}
                       style={{
-                        flex: 1, padding: '0.8rem', borderRadius: '10px',
+                        flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                         border: '1px solid var(--border)', background: 'transparent',
-                        color: 'var(--muted)', fontFamily: "'Archivo Black', sans-serif",
-                        fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
+                        color: 'var(--muted)', fontFamily: 'var(--font-display)',
+                        fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
                       }}
                     >
                       Cancel
@@ -1802,12 +1810,12 @@ export default function SessionClient({
                     <button
                       onClick={handleConfirmPublicOff}
                       style={{
-                        flex: 1, padding: '0.8rem', borderRadius: '10px',
+                        flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                         border: 'none',
                         background: 'rgba(255,255,255,0.1)',
                         color: 'var(--text)',
-                        fontFamily: "'Archivo Black', sans-serif",
-                        fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em',
+                        fontFamily: 'var(--font-display)',
+                        fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                         cursor: 'pointer', lineHeight: 1,
                         transition: 'background 0.15s ease',
                       }}
@@ -1826,15 +1834,15 @@ export default function SessionClient({
               <div
                 className="anim-fade-up d-300"
                 style={{
-                  background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: '14px',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border-strong)',
+                  borderRadius: 'var(--radius-lg)',
                   padding: '1.25rem 1.5rem',
                   marginBottom: '1.25rem',
                   textAlign: 'center',
                 }}
               >
-                <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: "'Archivo Black', sans-serif", letterSpacing: '-0.025em' }}>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>
                   This game is full
                 </div>
                 <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
@@ -1844,12 +1852,12 @@ export default function SessionClient({
                   <button
                     style={{
                       padding: '0.75rem 1.5rem',
-                      borderRadius: '10px',
+                      borderRadius: 'var(--radius-lg)',
                       border: 'none',
                       background: 'var(--green)',
                       color: 'var(--black)',
-                      fontFamily: "'Archivo Black', sans-serif",
-                      fontWeight: 900,
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 700,
                       fontSize: '14px',
                       letterSpacing: '-0.015em',
                       cursor: 'pointer',
@@ -1872,13 +1880,13 @@ export default function SessionClient({
                     width: '100%',
                     padding: '1.25rem',
                     fontSize: '18px',
-                    borderRadius: '14px',
+                    borderRadius: 'var(--radius-lg)',
                     border: '1px solid rgba(255,255,255,0.14)',
                     cursor: 'pointer',
                     background: 'transparent',
                     color: 'var(--text)',
-                    fontFamily: "'Archivo Black', sans-serif",
-                    fontWeight: 900,
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
                     letterSpacing: '-0.03em',
                     lineHeight: 1,
                   }}
@@ -1898,13 +1906,13 @@ export default function SessionClient({
                     width: '100%',
                     padding: '1.25rem',
                     fontSize: '18px',
-                    borderRadius: '14px',
+                    borderRadius: 'var(--radius-lg)',
                     border: 'none',
                     cursor: 'pointer',
-                    background: '#C6F135',
-                    color: '#000',
-                    fontFamily: "'Archivo Black', sans-serif",
-                    fontWeight: 900,
+                    background: 'var(--green)',
+                    color: 'var(--black)',
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
                     letterSpacing: '-0.03em',
                     transition: 'transform 0.18s var(--ease-out), box-shadow 0.18s ease, background 0.15s ease',
                     lineHeight: 1,
@@ -1931,12 +1939,12 @@ export default function SessionClient({
               padding: '0.75rem 1rem',
               background: 'transparent',
               border: '1px dashed rgba(255,255,255,0.12)',
-              borderRadius: '10px',
+              borderRadius: 'var(--radius-lg)',
               color: 'var(--muted)',
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',
-              fontFamily: "'Archivo', sans-serif",
+              fontFamily: 'var(--font-sans)',
               letterSpacing: '-0.01em',
               transition: 'border-color 0.15s ease, color 0.15s ease',
               textAlign: 'center',
@@ -1950,9 +1958,9 @@ export default function SessionClient({
             <div
               style={{
                 marginTop: '8px',
-                background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: '14px',
+                background: 'var(--surface)',
+                border: '1px solid var(--border-strong)',
+                borderRadius: 'var(--radius-lg)',
                 padding: '1.25rem',
                 boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
               }}
@@ -1969,7 +1977,7 @@ export default function SessionClient({
                         flex: 1,
                         display: 'flex',
                         border: '1px solid var(--border)',
-                        borderRadius: '10px',
+                        borderRadius: 'var(--radius-lg)',
                         overflow: 'hidden',
                         background: 'var(--surface2)',
                         transition: 'border-color 0.15s ease',
@@ -1989,7 +1997,7 @@ export default function SessionClient({
                           borderRight: '1px solid var(--border)',
                           padding: '0.8rem 0.4rem 0.8rem 0.75rem',
                           color: 'var(--text)',
-                          fontFamily: "'Archivo', sans-serif",
+                          fontFamily: 'var(--font-sans)',
                           fontSize: '14px',
                           fontWeight: 600,
                           outline: 'none',
@@ -2025,7 +2033,7 @@ export default function SessionClient({
                           border: 'none',
                           padding: '0.8rem 1rem',
                           color: 'var(--text)',
-                          fontFamily: "'Archivo', sans-serif",
+                          fontFamily: 'var(--font-sans)',
                           fontSize: '15px',
                           fontWeight: 600,
                           outline: 'none',
@@ -2038,12 +2046,12 @@ export default function SessionClient({
                       disabled={lookupLoading || !lookupLocalNumber.trim()}
                       style={{
                         padding: '0.8rem 1.1rem',
-                        borderRadius: '10px',
+                        borderRadius: 'var(--radius-lg)',
                         border: 'none',
                         background: lookupLoading || !lookupLocalNumber.trim() ? 'var(--surface2)' : 'var(--green)',
                         color: lookupLoading || !lookupLocalNumber.trim() ? 'var(--muted)' : 'var(--black)',
-                        fontFamily: "'Archivo Black', sans-serif",
-                        fontWeight: 900,
+                        fontFamily: 'var(--font-display)',
+                        fontWeight: 700,
                         fontSize: '13px',
                         letterSpacing: '-0.015em',
                         cursor: lookupLoading || !lookupLocalNumber.trim() ? 'not-allowed' : 'pointer',
@@ -2071,9 +2079,9 @@ export default function SessionClient({
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '14px',
-                        fontWeight: 900,
+                        fontWeight: 700,
                         flexShrink: 0,
-                        fontFamily: "'Archivo Black', sans-serif",
+                        fontFamily: 'var(--font-display)',
                       }}
                     >
                       ✓
@@ -2081,7 +2089,7 @@ export default function SessionClient({
                     <div>
                       <div
                         style={{
-                          fontFamily: "'Archivo Black', sans-serif",
+                          fontFamily: 'var(--font-display)',
                           fontSize: '16px',
                           letterSpacing: '-0.025em',
                           color: 'var(--text)',
@@ -2105,7 +2113,7 @@ export default function SessionClient({
                       fontSize: '12px',
                       cursor: 'pointer',
                       padding: 0,
-                      fontFamily: "'Archivo', sans-serif",
+                      fontFamily: 'var(--font-sans)',
                       fontWeight: 600,
                       letterSpacing: '-0.01em',
                     }}
@@ -2118,7 +2126,7 @@ export default function SessionClient({
                   <div style={{ marginBottom: '0.85rem' }}>
                     <div
                       style={{
-                        fontFamily: "'Archivo Black', sans-serif",
+                        fontFamily: 'var(--font-display)',
                         fontSize: '15px',
                         letterSpacing: '-0.025em',
                         color: 'var(--text)',
@@ -2138,12 +2146,12 @@ export default function SessionClient({
                           className="btn-g"
                           style={{
                             padding: '0.65rem 1.25rem',
-                            borderRadius: '10px',
+                            borderRadius: 'var(--radius-lg)',
                             border: 'none',
                             background: 'var(--green)',
                             color: 'var(--black)',
-                            fontFamily: "'Archivo Black', sans-serif",
-                            fontWeight: 900,
+                            fontFamily: 'var(--font-display)',
+                            fontWeight: 700,
                             fontSize: '13px',
                             letterSpacing: '-0.015em',
                             cursor: 'pointer',
@@ -2164,7 +2172,7 @@ export default function SessionClient({
                         fontSize: '12px',
                         cursor: 'pointer',
                         padding: 0,
-                        fontFamily: "'Archivo', sans-serif",
+                        fontFamily: 'var(--font-sans)',
                         fontWeight: 600,
                         letterSpacing: '-0.01em',
                       }}
@@ -2193,12 +2201,12 @@ export default function SessionClient({
                 padding: '0.65rem 0.75rem',
                 background: 'transparent',
                 border: '1px solid rgba(255,68,68,0.3)',
-                borderRadius: '10px',
+                borderRadius: 'var(--radius-lg)',
                 color: 'rgba(255,100,100,0.8)',
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                fontFamily: "'Archivo', sans-serif",
+                fontFamily: 'var(--font-sans)',
                 letterSpacing: '-0.01em',
                 transition: 'border-color 0.15s ease, color 0.15s ease',
                 lineHeight: 1,
@@ -2216,12 +2224,12 @@ export default function SessionClient({
                 padding: '0.65rem 0.75rem',
                 background: 'transparent',
                 border: '1px solid rgba(255,68,68,0.3)',
-                borderRadius: '10px',
+                borderRadius: 'var(--radius-lg)',
                 color: 'rgba(255,100,100,0.8)',
                 fontSize: '12px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                fontFamily: "'Archivo', sans-serif",
+                fontFamily: 'var(--font-sans)',
                 letterSpacing: '-0.01em',
                 transition: 'border-color 0.15s ease, color 0.15s ease, background 0.15s ease',
                 lineHeight: 1,
@@ -2237,15 +2245,15 @@ export default function SessionClient({
         <div className="anim-fade-up d-400" style={{ marginBottom: '1.25rem' }}>
           <div
             style={{
-              background: 'linear-gradient(145deg, rgba(255,68,68,0.04) 0%, #0f0f0f 100%)',
+              background: 'rgba(255,68,68,0.05)',
               border: '1px solid rgba(255,68,68,0.2)',
-              borderRadius: '14px',
+              borderRadius: 'var(--radius-lg)',
               padding: '1.25rem',
             }}
           >
             <div
               style={{
-                fontFamily: "'Archivo Black', sans-serif",
+                fontFamily: 'var(--font-display)',
                 fontSize: '15px',
                 letterSpacing: '-0.025em',
                 color: 'var(--text)',
@@ -2271,12 +2279,12 @@ export default function SessionClient({
                 style={{
                   flex: 1,
                   padding: '0.8rem',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border)',
                   background: 'transparent',
                   color: 'var(--muted)',
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontWeight: 900,
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
                   fontSize: '13px',
                   letterSpacing: '-0.015em',
                   cursor: 'pointer',
@@ -2291,12 +2299,12 @@ export default function SessionClient({
                 style={{
                   flex: 1,
                   padding: '0.8rem',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--radius-lg)',
                   border: 'none',
                   background: leaveLoading ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.85)',
                   color: '#fff',
-                  fontFamily: "'Archivo Black', sans-serif",
-                  fontWeight: 900,
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
                   fontSize: '13px',
                   letterSpacing: '-0.015em',
                   cursor: leaveLoading ? 'not-allowed' : 'pointer',
@@ -2318,13 +2326,13 @@ export default function SessionClient({
         <div className="anim-fade-up d-450" style={{ marginBottom: '1.25rem' }}>
           <div
             style={{
-              background: 'linear-gradient(145deg, rgba(255,68,68,0.04) 0%, #0f0f0f 100%)',
+              background: 'rgba(255,68,68,0.05)',
               border: '1px solid rgba(255,68,68,0.2)',
-              borderRadius: '14px',
+              borderRadius: 'var(--radius-lg)',
               padding: '1.25rem',
             }}
           >
-            <div style={{ fontFamily: "'Archivo Black', sans-serif", fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
               {session.matched_session_id ? 'Withdraw your challenge?' : 'Are you sure you want to cancel this game?'}
             </div>
             <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
@@ -2342,10 +2350,10 @@ export default function SessionClient({
                 onClick={() => { setCancelOpen(false); setCancelError('') }}
                 disabled={cancelLoading}
                 style={{
-                  flex: 1, padding: '0.8rem', borderRadius: '10px',
+                  flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border)', background: 'transparent',
-                  color: 'var(--muted)', fontFamily: "'Archivo Black', sans-serif",
-                  fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em',
+                  color: 'var(--muted)', fontFamily: 'var(--font-display)',
+                  fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                   cursor: 'pointer', lineHeight: 1,
                 }}
               >
@@ -2355,11 +2363,11 @@ export default function SessionClient({
                 onClick={handleCancelSession}
                 disabled={cancelLoading}
                 style={{
-                  flex: 1, padding: '0.8rem', borderRadius: '10px',
+                  flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                   border: 'none',
                   background: cancelLoading ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.85)',
-                  color: '#fff', fontFamily: "'Archivo Black', sans-serif",
-                  fontWeight: 900, fontSize: '13px', letterSpacing: '-0.015em',
+                  color: '#fff', fontFamily: 'var(--font-display)',
+                  fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
                   cursor: cancelLoading ? 'not-allowed' : 'pointer', lineHeight: 1,
                   transition: 'background 0.15s ease',
                 }}
@@ -2380,7 +2388,7 @@ export default function SessionClient({
         <div>
           <div
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: '18px',
               letterSpacing: '-0.03em',
               marginBottom: '1rem',
@@ -2390,9 +2398,9 @@ export default function SessionClient({
           </div>
           <div
             style={{
-              background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: '16px',
+              background: 'var(--surface)',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 'var(--radius-xl)',
               padding: '1rem',
               minHeight: '180px',
               maxHeight: '340px',
@@ -2439,8 +2447,8 @@ export default function SessionClient({
                         maxWidth: '82%',
                         padding: '0.55rem 0.85rem',
                         borderRadius: isOwn ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
-                        background: isOwn ? '#C6F135' : 'rgba(255,255,255,0.07)',
-                        color: isOwn ? '#000' : 'var(--text)',
+                        background: isOwn ? 'var(--green)' : 'rgba(255,255,255,0.07)',
+                        color: isOwn ? 'var(--black)' : 'var(--text)',
                         fontSize: '14px',
                         fontWeight: 600,
                         lineHeight: 1.5,
@@ -2468,13 +2476,14 @@ export default function SessionClient({
                 flex: 1,
                 background: 'var(--surface2)',
                 border: '1px solid var(--border)',
-                borderRadius: '10px',
+                borderRadius: 'var(--radius-lg)',
                 padding: '0.75rem 1rem',
                 color: 'var(--text)',
-                fontFamily: "'Archivo', sans-serif",
-                fontWeight: 600,
+                fontFamily: 'var(--font-sans)',
+                fontWeight: 500,
                 fontSize: '14px',
-                transition: 'border-color 0.15s ease',
+                minHeight: '44px',
+                transition: 'border-color 160ms ease',
               }}
             />
             <button
@@ -2483,16 +2492,17 @@ export default function SessionClient({
               disabled={sendingMsg || !newMsg.trim()}
               style={{
                 padding: '0.75rem 1.25rem',
-                borderRadius: '10px',
+                borderRadius: 'var(--radius-lg)',
                 border: 'none',
                 background: 'var(--green)',
                 color: 'var(--black)',
-                fontFamily: "'Archivo Black', sans-serif",
-                fontWeight: 900,
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
                 fontSize: '13px',
                 letterSpacing: '-0.015em',
                 cursor: 'pointer',
-                transition: 'background 0.15s ease, transform 0.12s ease',
+                minHeight: '44px',
+                transition: 'background 160ms ease, transform 120ms ease',
                 lineHeight: 1,
               }}
             >
@@ -2545,16 +2555,16 @@ export default function SessionClient({
                 <button
                   style={{
                     width: '100%',
-                    padding: '1.1rem',
-                    fontSize: '17px',
-                    borderRadius: '12px',
+                    minHeight: '56px',
+                    fontSize: '16px',
+                    borderRadius: 'var(--radius-lg)',
                     border: '1px solid rgba(255,255,255,0.14)',
                     cursor: 'pointer',
                     background: 'transparent',
                     color: 'var(--text)',
-                    fontFamily: "'Archivo Black', sans-serif",
-                    fontWeight: 900,
-                    letterSpacing: '-0.03em',
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    letterSpacing: '-0.025em',
                     lineHeight: 1,
                   }}
                 >
@@ -2566,16 +2576,16 @@ export default function SessionClient({
                 <button
                   style={{
                     width: '100%',
-                    padding: '1.1rem',
-                    fontSize: '17px',
-                    borderRadius: '12px',
+                    minHeight: '56px',
+                    fontSize: '16px',
+                    borderRadius: 'var(--radius-lg)',
                     border: 'none',
                     cursor: 'pointer',
-                    background: '#C6F135',
-                    color: '#000',
-                    fontFamily: "'Archivo Black', sans-serif",
-                    fontWeight: 900,
-                    letterSpacing: '-0.03em',
+                    background: 'var(--green)',
+                    color: 'var(--black)',
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    letterSpacing: '-0.025em',
                     lineHeight: 1,
                   }}
                 >
@@ -2607,9 +2617,9 @@ export default function SessionClient({
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: '#111111',
-              border: '1px solid #222222',
-              borderRadius: '16px',
+              background: 'var(--surface)',
+              border: '1px solid var(--border-strong)',
+              borderRadius: 'var(--radius-xl)',
               padding: '2rem',
               width: '100%',
               maxWidth: '400px',
@@ -2629,14 +2639,14 @@ export default function SessionClient({
                     justifyContent: 'center',
                     fontSize: '22px',
                     margin: '0 auto 1.25rem',
-                    color: '#C6F135',
+                    color: 'var(--green)',
                   }}
                 >
                   ✓
                 </div>
                 <div
                   style={{
-                    fontFamily: "'Archivo Black', sans-serif",
+                    fontFamily: 'var(--font-display)',
                     fontSize: '20px',
                     letterSpacing: '-0.04em',
                     marginBottom: '0.5rem',
@@ -2661,16 +2671,16 @@ export default function SessionClient({
                   className="btn-g"
                   style={{
                     width: '100%',
-                    padding: '0.9rem',
+                    minHeight: '52px',
                     fontSize: '15px',
-                    borderRadius: '12px',
+                    borderRadius: 'var(--radius-lg)',
                     border: 'none',
                     cursor: 'pointer',
-                    background: '#C6F135',
-                    color: '#000',
-                    fontFamily: "'Archivo Black', sans-serif",
-                    fontWeight: 900,
-                    letterSpacing: '-0.025em',
+                    background: 'var(--green)',
+                    color: 'var(--black)',
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    letterSpacing: '-0.015em',
                     lineHeight: 1,
                   }}
                 >
@@ -2681,7 +2691,7 @@ export default function SessionClient({
               <>
                 <div
                   style={{
-                    fontFamily: "'Archivo Black', sans-serif",
+                    fontFamily: 'var(--font-display)',
                     fontSize: '22px',
                     letterSpacing: '-0.04em',
                     marginBottom: '0.5rem',
@@ -2705,13 +2715,14 @@ export default function SessionClient({
                   <div>
                     <label
                       style={{
-                        fontSize: '10px',
-                        color: 'var(--muted)',
+                        fontSize: '11px',
+                        color: 'var(--text-secondary)',
                         display: 'block',
-                        fontWeight: 700,
+                        fontWeight: 600,
                         textTransform: 'uppercase',
-                        letterSpacing: '0.12em',
-                        marginBottom: '7px',
+                        letterSpacing: '0.1em',
+                        marginBottom: '8px',
+                        fontFamily: 'var(--font-sans)',
                       }}
                     >
                       Email
@@ -2727,28 +2738,30 @@ export default function SessionClient({
                         width: '100%',
                         background: 'var(--surface2)',
                         border: '1px solid var(--border)',
-                        borderRadius: '10px',
-                        padding: '0.8rem 1rem',
+                        borderRadius: 'var(--radius-lg)',
+                        padding: '0.875rem 1rem',
                         color: 'var(--text)',
-                        fontFamily: "'Archivo', sans-serif",
+                        fontFamily: 'var(--font-sans)',
                         fontSize: '15px',
-                        fontWeight: 600,
+                        fontWeight: 500,
                         outline: 'none',
+                        minHeight: '48px',
                         boxSizing: 'border-box',
-                        transition: 'border-color 0.15s ease',
+                        transition: 'border-color 160ms ease',
                       }}
                     />
                   </div>
                   <div>
                     <label
                       style={{
-                        fontSize: '10px',
-                        color: 'var(--muted)',
+                        fontSize: '11px',
+                        color: 'var(--text-secondary)',
                         display: 'block',
-                        fontWeight: 700,
+                        fontWeight: 600,
                         textTransform: 'uppercase',
-                        letterSpacing: '0.12em',
-                        marginBottom: '7px',
+                        letterSpacing: '0.1em',
+                        marginBottom: '8px',
+                        fontFamily: 'var(--font-sans)',
                       }}
                     >
                       Password
@@ -2765,15 +2778,16 @@ export default function SessionClient({
                         width: '100%',
                         background: 'var(--surface2)',
                         border: '1px solid var(--border)',
-                        borderRadius: '10px',
-                        padding: '0.8rem 1rem',
+                        borderRadius: 'var(--radius-lg)',
+                        padding: '0.875rem 1rem',
                         color: 'var(--text)',
-                        fontFamily: "'Archivo', sans-serif",
+                        fontFamily: 'var(--font-sans)',
                         fontSize: '15px',
-                        fontWeight: 600,
+                        fontWeight: 500,
                         outline: 'none',
+                        minHeight: '48px',
                         boxSizing: 'border-box',
-                        transition: 'border-color 0.15s ease',
+                        transition: 'border-color 160ms ease',
                       }}
                     />
                   </div>
@@ -2797,18 +2811,19 @@ export default function SessionClient({
                     className={!regLoading ? 'btn-g' : ''}
                     style={{
                       width: '100%',
-                      padding: '1rem',
-                      fontSize: '16px',
-                      borderRadius: '12px',
+                      minHeight: '52px',
+                      fontSize: '15px',
+                      borderRadius: 'var(--radius-lg)',
                       border: 'none',
                       cursor: regLoading ? 'not-allowed' : 'pointer',
-                      background: regLoading ? 'var(--surface2)' : '#C6F135',
-                      color: regLoading ? 'var(--muted)' : '#000',
-                      fontFamily: "'Archivo Black', sans-serif",
-                      fontWeight: 900,
-                      letterSpacing: '-0.025em',
+                      background: regLoading ? 'var(--surface2)' : 'var(--green)',
+                      color: regLoading ? 'var(--text-secondary)' : 'var(--black)',
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 700,
+                      letterSpacing: '-0.015em',
                       lineHeight: 1,
-                      transition: 'background 0.15s ease, color 0.15s ease',
+                      opacity: regLoading ? 0.5 : 1,
+                      transition: 'background 160ms ease, color 160ms ease, transform 160ms var(--ease-out), box-shadow 160ms ease',
                     }}
                   >
                     {regLoading ? 'Creating account…' : 'Create account'}
@@ -2824,7 +2839,7 @@ export default function SessionClient({
                       fontSize: '13px',
                       fontWeight: 600,
                       cursor: 'pointer',
-                      fontFamily: "'Archivo', sans-serif",
+                      fontFamily: 'var(--font-sans)',
                       letterSpacing: '-0.01em',
                       padding: 0,
                       textDecoration: 'underline',
