@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -168,6 +169,10 @@ export async function POST(req: NextRequest) {
       })
 
     if (playerError) {
+      Sentry.captureException(new Error(playerError.message), {
+        tags: { route: 'POST /api/join', step: 'player_insert' },
+        extra: { session_id: sessionId, slot_id: slotId },
+      })
       console.error('Player insert error:', playerError.message)
       return NextResponse.json({ error: 'Failed to add player' }, { status: 500 })
     }
@@ -287,6 +292,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ sessionId, playerCount })
   } catch (err) {
+    Sentry.captureException(err, {
+      tags: { route: 'POST /api/join' },
+    })
     console.error('join error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -395,6 +403,13 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment) {
     )
   } else {
     const failures = results.filter(r => r.status === 'rejected')
+    Sentry.captureException(
+      new Error(`${failures.length}/${allPlayers.length} payment(s) failed for session ${sessionId}`),
+      {
+        tags: { route: 'POST /api/join', step: 'trigger_payments', session_id: sessionId },
+        extra: { session_id: sessionId, failure_count: failures.length, total_players: allPlayers.length },
+      },
+    )
     console.error(`${failures.length} payment(s) failed for session ${sessionId}`)
   }
 }

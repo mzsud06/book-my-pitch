@@ -216,7 +216,7 @@ export default function MyBookingsClient() {
           My bookings
         </div>
         <div className="anim-fade-up d-80" style={{ fontSize: '14px', color: 'var(--muted)', fontWeight: 500 }}>
-          Sessions you&apos;ve joined
+          Games you&apos;ve joined
         </div>
       </div>
 
@@ -285,7 +285,7 @@ export default function MyBookingsClient() {
             No bookings yet
           </div>
           <div style={{ fontSize: '15px', color: 'var(--muted)', marginBottom: '2rem', fontWeight: 500, lineHeight: 1.6 }}>
-            Find a slot and join a session to get started.
+            Find a game time and join a game to get started.
           </div>
           <Link href="/slots" style={{ textDecoration: 'none' }}>
             <button
@@ -305,7 +305,7 @@ export default function MyBookingsClient() {
                 lineHeight: 1,
               }}
             >
-              Find a slot →
+              Find a game time →
             </button>
           </Link>
         </div>

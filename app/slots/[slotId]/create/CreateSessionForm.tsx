@@ -217,7 +217,7 @@ export default function CreateSessionForm({ slot }: Props) {
           marginBottom: '1rem',
         }}
       >
-        You already have a game for this slot.
+        You already have a game for this game time.
       </div>
       <Link href={`/session/${existingSessionId}`} style={{ textDecoration: 'none' }}>
         <button

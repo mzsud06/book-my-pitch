@@ -249,7 +249,7 @@ function PaymentStep({
       >
         <span style={{ flexShrink: 0, marginTop: '1px' }}>🔒</span>
         <span>
-          <strong style={{ color: 'var(--green)' }}>Nothing is charged now.</strong> Your card is only charged when the 10th player joins. If the session doesn&apos;t fill, you pay nothing.
+          <strong style={{ color: 'var(--green)' }}>Nothing is charged now.</strong> Your card is only charged when the 10th player joins. If the game doesn&apos;t fill, you pay nothing.
         </span>
       </div>
 
@@ -373,7 +373,7 @@ function PaymentStep({
           fontWeight: 500,
         }}
       >
-        Secured by Stripe · Card only charged when session is full
+        Secured by Stripe · Card only charged when game is full
       </div>
 
       <button

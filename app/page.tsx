@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import Nav from '@/components/Nav'
 import PageReveal from '@/components/PageReveal'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -13,7 +14,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 //  HERO BACKGROUND
 //  Line 14 below. Set to a path, e.g. '/images/hero.jpg', to replace
 //  the gradient glow with a full-bleed photo + dark overlay.
-const HERO_IMAGE: string | null = null
+const HERO_IMAGE: string | null = '/hero-pitch.jpg'
 
 //  CARD PHOTOS
 //  Lines 33-35 below. Set each entry to swap in a card photo.
@@ -122,29 +123,25 @@ export default async function HomePage() {
           }}
         >
           {/* ── Background: gradient glow (null) or photo ── */}
-          {HERO_IMAGE ? (
-            /* When HERO_IMAGE is set: photo + dark overlay */
-            <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-              <img
-                src={HERO_IMAGE}
-                alt=""
-                style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%' }}
-              />
-              <div style={{
-                position: 'absolute', inset: 0,
-                background: 'linear-gradient(to top, rgba(8,8,8,0.90) 0%, rgba(8,8,8,0.55) 45%, rgba(8,8,8,0.25) 100%)',
-              }} />
-            </div>
-          ) : (
-            /* Fallback: moody off-centre acid-green glow into pitch-green into black */
-            <div aria-hidden style={{
-              position: 'absolute', inset: 0, zIndex: 0,
-              background: [
-                'radial-gradient(ellipse 110% 70% at 50% 140%, rgba(22,48,31,0.75) 0%, transparent 55%)',
-                'radial-gradient(ellipse 60% 45% at 50% 130%, rgba(198,241,53,0.065) 0%, transparent 50%)',
-              ].join(', '),
+          {/* Hero photo + layered overlay */}
+          <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+            <Image
+              src={HERO_IMAGE!}
+              alt=""
+              fill
+              priority
+              quality={85}
+              sizes="100vw"
+              style={{ objectFit: 'cover', objectPosition: 'center 30%' }}
+            />
+            {/* Base layer — uniform dark so text is readable on mobile at any crop */}
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.42)' }} />
+            {/* Directional layer — heavier at bottom (stats/CTA) and top (sky), lighter in centre (pitch/lights) */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(to top, rgba(8,8,8,0.55) 0%, rgba(8,8,8,0.08) 45%, rgba(8,8,8,0.28) 100%)',
             }} />
-          )}
+          </div>
 
           {/* ── Hero content ── */}
           <div style={{ position: 'relative', zIndex: 1 }}>
@@ -192,7 +189,7 @@ export default async function HomePage() {
                     color: 'var(--text)',
                   }}
                 >
-                  Fill the team.
+                  Need 10 players?
                 </h1>
                 <h1
                   className="anim-fade-up d-150"
@@ -206,7 +203,7 @@ export default async function HomePage() {
                     color: 'var(--green)',
                   }}
                 >
-                  Book the pitch.
+                  We&apos;ve got you.
                 </h1>
 
                 {/* Subcopy */}
@@ -222,13 +219,13 @@ export default async function HomePage() {
                     fontWeight: 400,
                   }}
                 >
-                  Share a link with your mates. Once 10 players join, everyone pays their share. The pitch is yours.
+                  Share one link. Nobody pays until the game is full.
                 </p>
 
                 {/* Primary CTA */}
                 <div className="anim-fade-up d-300" style={{ marginBottom: '3.5rem' }}>
                   <Link href="/slots" style={{ textDecoration: 'none' }}>
-                    <Button size="lg" arrow>Find a slot</Button>
+                    <Button size="lg" arrow>Find a game time</Button>
                   </Link>
                 </div>
 
@@ -448,6 +445,17 @@ export default async function HomePage() {
                     }}>
                       {game.playerCount}/10 joined · {10 - game.playerCount} spots left
                     </div>
+                    {game.playerCount >= 8 && (
+                      <div style={{
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: 'var(--amber)',
+                        marginTop: '4px',
+                      }}>
+                        🔥 Only {10 - game.playerCount} spot{10 - game.playerCount !== 1 ? 's' : ''} left!
+                      </div>
+                    )}
                   </div>
                 </Card>
               </Link>
@@ -592,15 +600,15 @@ export default async function HomePage() {
                 }
               />
               <Link href="/slots" style={{ textDecoration: 'none', flexShrink: 0 }}>
-                <Button variant="ghost" size="md" arrow>Browse slots</Button>
+                <Button variant="ghost" size="md" arrow>Browse game times</Button>
               </Link>
             </div>
 
             {/* Step cards */}
             <div className="steps-grid-new">
               {[
-                { n: '01', t: 'Find an open slot', d: 'Browse available times at Globe Pitch and pick one that works for you.' },
-                { n: '02', t: 'Share the link', d: 'You get a unique link for your session. Drop it in the group chat in seconds.' },
+                { n: '01', t: 'Find an open game time', d: 'Browse available times at Globe Pitch and pick one that works for you.' },
+                { n: '02', t: 'Share the link', d: 'You get a unique link for your game. Drop it in the group chat in seconds.' },
                 { n: '03', t: 'Mates join', d: "Friends click the link and add their card. Nobody is charged yet. Zero commitment." },
                 { n: '04', t: '10 players = booked', d: 'The moment the 10th player joins, everyone pays their share. Pitch confirmed.' },
               ].map((step, idx) => {

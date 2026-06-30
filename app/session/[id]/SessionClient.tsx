@@ -184,6 +184,10 @@ export default function SessionClient({
   const playerCount = allPlayers.length
   const remaining = 10 - playerCount
   const isFull = isFilling && playerCount >= slot.max_players
+  const isLFOOrMatched = !!(session.matched_session_id || session.game_type === 'looking_for_opposition')
+  const urgencyCap = isLFOOrMatched ? 5 : slot.max_players
+  const urgencySpotsLeft = urgencyCap - playerCount
+  const showJoinUrgency = isFilling && !isFull && urgencySpotsLeft > 0 && urgencySpotsLeft <= (isLFOOrMatched ? 1 : 2)
   const returningPlayerIndex = returningPlayer ? allPlayers.findIndex(p => p.id === returningPlayer.id) : -1
   const returningPlayerJerseyNumber = returningPlayerIndex >= 0 ? returningPlayerIndex + 1 : null
 
@@ -844,7 +848,7 @@ export default function SessionClient({
                 lineHeight: 1,
               }}
             >
-              Find another slot →
+              Find another game time →
             </button>
           </Link>
         </div>
@@ -859,7 +863,7 @@ export default function SessionClient({
               letterSpacing: '-0.01em',
             }}
           >
-            ← Browse all slots
+            ← Browse all game times
           </Link>
         </div>
       </div>
@@ -1295,7 +1299,7 @@ export default function SessionClient({
           }}
         >
           <span style={{ flexShrink: 0, fontSize: '16px' }}>⚡</span>
-          <span>Another group is also trying to fill this slot. First to 10 gets it.</span>
+          <span>Another group is also trying to fill this game time. First to 10 gets it.</span>
         </div>
       )}
 
@@ -1393,7 +1397,7 @@ export default function SessionClient({
                 minHeight: '44px',
               }}
             >
-              Find another slot →
+              Find another game time →
             </button>
           </Link>
         </div>
@@ -1828,6 +1832,23 @@ export default function SessionClient({
             </div>
           )}
 
+          {/* Urgency — spots nearly gone */}
+          {showJoinUrgency && !localAlreadyIn && !isOrganiserUser && (
+            <div
+              className="anim-fade-up d-280"
+              style={{
+                textAlign: 'center',
+                fontSize: '13px',
+                fontWeight: 700,
+                color: 'var(--amber)',
+                marginBottom: '0.5rem',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              🔥 Only {urgencySpotsLeft} spot{urgencySpotsLeft !== 1 ? 's' : ''} left!
+            </div>
+          )}
+
           {/* Join CTA */}
           {!localAlreadyIn && !isOrganiserUser && (
             isFull ? (
@@ -1846,7 +1867,7 @@ export default function SessionClient({
                   This game is full
                 </div>
                 <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
-                  All spots have been taken. Find another slot below.
+                  All spots have been taken. Find another game time below.
                 </div>
                 <Link href="/slots" style={{ textDecoration: 'none' }}>
                   <button
@@ -1864,7 +1885,7 @@ export default function SessionClient({
                       lineHeight: 1,
                     }}
                   >
-                    Browse slots →
+                    Browse game times →
                   </button>
                 </Link>
               </div>
@@ -1919,7 +1940,7 @@ export default function SessionClient({
                     boxShadow: '0 6px 28px rgba(198,241,53,0.35)',
                   }}
                 >
-                  Join this session — £{perPlayerPounds} if confirmed
+                  Join this game — £{perPlayerPounds} if confirmed
                 </button>
               </Link>
             )
@@ -2133,7 +2154,7 @@ export default function SessionClient({
                         marginBottom: '4px',
                       }}
                     >
-                      Not in this session
+                      Not in this game
                     </div>
                     <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6 }}>
                       That number doesn&apos;t match anyone in this game yet.
@@ -2159,7 +2180,7 @@ export default function SessionClient({
                             transition: 'background 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
                           }}
                         >
-                          Join this session →
+                          Join this game →
                         </button>
                       </Link>
                     )}
@@ -2212,7 +2233,7 @@ export default function SessionClient({
                 lineHeight: 1,
               }}
             >
-              {canOrganiserLeave ? 'Leave session' : 'Leave game'}
+              Leave game
             </button>
           )}
           {isOrganiserUser && isFilling && (session.game_type === 'private' || session.game_type === 'looking_for_opposition') && (
@@ -2337,8 +2358,8 @@ export default function SessionClient({
             </div>
             <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
               {session.matched_session_id
-                ? "Your team's spot will be removed and the original session will be freed up for other challengers. No one will be charged."
-                : 'All players will lose their spot and the slot will open back up. No one will be charged.'}
+                ? "Your team's spot will be removed and the original game will be freed up for other challengers. No one will be charged."
+                : 'All players will lose their spot and the game time will open back up. No one will be charged.'}
             </div>
             {cancelError && (
               <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
@@ -2394,7 +2415,7 @@ export default function SessionClient({
               marginBottom: '1rem',
             }}
           >
-            Session chat
+            Game chat
           </div>
           <div
             style={{
@@ -2524,7 +2545,7 @@ export default function SessionClient({
             letterSpacing: '-0.01em',
           }}
         >
-          ← Browse all slots
+          ← Browse all game times
         </Link>
       </div>
 
@@ -2589,7 +2610,7 @@ export default function SessionClient({
                     lineHeight: 1,
                   }}
                 >
-                  Join this session — £{perPlayerPounds} if confirmed
+                  Join this game — £{perPlayerPounds} if confirmed
                 </button>
               </Link>
             )}

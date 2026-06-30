@@ -1,5 +1,6 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
@@ -108,6 +109,16 @@ function CardStep({
         // The SetupIntent may have moved to an unretryable state (e.g. setup_intent_unexpected_state).
         // Signal the parent to fetch a fresh SetupIntent so the next attempt uses a clean one.
         console.error('[CardStep] stripe.confirmSetup error:', JSON.stringify(confirmError, Object.getOwnPropertyNames(confirmError)))
+        Sentry.captureException(new Error(confirmError.message ?? 'Stripe confirmSetup failed'), {
+          tags: {
+            error_code: confirmError.code ?? 'unknown',
+            error_type: confirmError.type ?? 'unknown',
+          },
+          extra: {
+            slot_id: slot.id,
+            challenge_session_id: challengeSessionId,
+          },
+        })
         onConfirmError(confirmError.message ?? 'Card setup failed. Please try again.')
         return
       }

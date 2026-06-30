@@ -374,7 +374,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   <path d="M18 11v7M18 21v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '15px', margin: 0, fontWeight: 400 }}>
-                  No slots here — try another day
+                  No game times here — try another day
                 </p>
               </div>
             ) : (
@@ -662,7 +662,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                           onClick={() => setOpenDropdown(o => o === selectedTemplate.startTime ? null : selectedTemplate.startTime)}
                           style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', textAlign: 'left', color: 'var(--text)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', lineHeight: 1 }}
                         >
-                          <span>See {allPublicSessions.length} other game{allPublicSessions.length !== 1 ? 's' : ''} for this slot</span>
+                          <span>See {allPublicSessions.length} other game{allPublicSessions.length !== 1 ? 's' : ''} for this game time</span>
                           <span style={{ fontSize: '11px', opacity: 0.5, flexShrink: 0, marginLeft: '8px' }}>{dropOpen ? '▲' : '▼'}</span>
                         </button>
                       </div>
@@ -732,7 +732,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                     </div>
                   ) : booked ? (
                     <div style={{ padding: '16px 20px', textAlign: 'center' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--red)' }}>Slot taken</span>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--red)' }}>Game time taken</span>
                     </div>
                   ) : null}
                 </div>

@@ -373,7 +373,7 @@ export default function Nav() {
                     gap: '5px',
                   }}
                 >
-                  Find a slot
+                  Find a game time
                   <span aria-hidden="true">→</span>
                 </button>
               </Link>

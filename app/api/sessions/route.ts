@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -54,7 +55,10 @@ export async function DELETE(req: NextRequest) {
     // there is no back-link to clear.
 
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, {
+      tags: { route: 'DELETE /api/sessions' },
+    })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -174,6 +178,10 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error || !session) {
+      Sentry.captureException(new Error(error?.message ?? 'Session insert returned no data'), {
+        tags: { route: 'POST /api/sessions', step: 'session_insert' },
+        extra: { slot_id: slotId, game_type: gameType },
+      })
       console.error('create session error:', error?.message)
       return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
     }
@@ -187,7 +195,10 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ sessionId: session.id })
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err, {
+      tags: { route: 'POST /api/sessions' },
+    })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
