@@ -10,35 +10,6 @@ interface AuthUser {
   email: string
 }
 
-/* Minimal pitch-corner arc mark — two lines of a pitch corner + quarter-circle arc */
-function PitchMark({ size = 20 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 20 20"
-      fill="none"
-      aria-hidden="true"
-      style={{ flexShrink: 0, color: 'var(--green)' }}
-    >
-      <path
-        d="M3 17L3 3L17 3"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M3 13A10 10 0 0 1 13 3"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        fill="none"
-      />
-    </svg>
-  )
-}
-
 export default function Nav() {
   const pathname = usePathname()
   const router = useRouter()
@@ -129,7 +100,7 @@ export default function Nav() {
             minHeight: '44px',
           }}
         >
-          <PitchMark size={18} />
+          <img src="/logo.png" alt="BookMyPitch" style={{ height: '48px', width: 'auto', display: 'block' }} />
           <span
             style={{
               fontFamily: 'var(--font-display)',
