@@ -70,6 +70,43 @@ function startOfDay(date: Date): Date {
 const DAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
 const MONTH_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
+const CARD_DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const CARD_MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+function fmtCardDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${CARD_DAY_NAMES[d.getDay()]} ${d.getDate()} ${CARD_MONTH_NAMES[d.getMonth()]}`
+}
+
+function ClockIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M8 4.6V8l2.6 1.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function PinIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <path d="M8 14.5s5-4.2 5-8.2A5 5 0 0 0 3 6.3c0 4 5 8.2 5 8.2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <circle cx="8" cy="6.3" r="1.8" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  )
+}
+
+function PeopleIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <circle cx="6" cy="5" r="2.2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M2 13c0-2.2 1.8-3.6 4-3.6s4 1.4 4 3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="11.5" cy="5.5" r="1.7" stroke="currentColor" strokeWidth="1.3" opacity="0.75" />
+      <path d="M9.8 9.6c1.8.2 3.2 1.5 3.2 3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.75" />
+    </svg>
+  )
+}
+
 export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlotSessionMap, userSessionIds, userId }: Props) {
   const userSessionSet = new Set(userSessionIds)
   const router = useRouter()
@@ -78,7 +115,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [availableOnly, setAvailableOnly] = useState(false)
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
   const [slotIdMap, setSlotIdMap] = useState<Map<string, string>>(
     () => new Map(dbSlots.map(s => [`${s.date}_${s.start_time.slice(0, 5)}`, s.id]))
@@ -129,13 +165,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
       const key = slot.start_time.slice(0, 5)
       if (!daySessionMap.has(key)) daySessionMap.set(key, [])
       daySessionMap.get(key)!.push({ ...s, slots: slot })
-    }
-  })
-
-  const challengerCounts = new Map<string, number>()
-  sessions.forEach(s => {
-    if (s.matched_session_id && s.status === 'filling') {
-      challengerCounts.set(s.matched_session_id, (challengerCounts.get(s.matched_session_id) ?? 0) + 1)
     }
   })
 
@@ -306,7 +335,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                       if (!isPast) {
                         setSelectedDate(startOfDay(day))
                         setSelectedTime(null)
-                        setOpenDropdown(null)
                       }
                     }}
                     disabled={isPast}
@@ -462,7 +490,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                       onClick={() => {
                         if (!booked) {
                           setSelectedTime(t => t === template.startTime ? null : template.startTime)
-                          setOpenDropdown(null)
                         }
                       }}
                       disabled={booked}
@@ -549,7 +576,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
               : undefined
             const fillingFast = !booked && !userSessionId && allPublicSessions.some(s => totalCount(s) >= 7)
             const hasSessions = userSlotSessions.length > 0 || allPublicSessions.length > 0
-            const dropOpen = openDropdown === selectedTemplate.startTime
             const typeLabel = selectedTemplate.type === 'peak' ? 'Peak' : selectedTemplate.type === 'offpeak' ? 'Off-peak' : 'Weekend'
             const perPlayerPrice = (selectedTemplate.priceGBP / 10).toFixed(2)
 
@@ -683,64 +709,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                     )
                   })}
 
-                  {/* Public sessions toggle */}
-                  {allPublicSessions.length > 0 && (
-                    <>
-                      <div style={{ padding: userSlotSessions.length > 0 ? '6px 12px 8px' : '8px 12px' }}>
-                        <button
-                          className="games-toggle"
-                          onClick={() => setOpenDropdown(o => o === selectedTemplate.startTime ? null : selectedTemplate.startTime)}
-                          style={{ width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', textAlign: 'left', color: 'var(--text)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', lineHeight: 1 }}
-                        >
-                          <span>See {allPublicSessions.length} other game{allPublicSessions.length !== 1 ? 's' : ''} for this game time</span>
-                          <span style={{ fontSize: '11px', opacity: 0.5, flexShrink: 0, marginLeft: '8px' }}>{dropOpen ? '▲' : '▼'}</span>
-                        </button>
-                      </div>
-                      <div style={{ maxHeight: dropOpen ? '600px' : '0px', overflow: 'hidden', transition: 'max-height 0.3s ease' }}>
-                        {allPublicSessions.map((s) => {
-                          const isLFO = s.game_type === 'looking_for_opposition' || s.game_type === null
-                          const cap = isLFO ? 5 : 10
-                          const count = Math.min(totalCount(s), cap)
-                          const icon = isLFO ? '⚡' : '🟢'
-                          const label = s.team_name || s.organiser_name || 'Public game'
-                          const subtext = `Public · ${count}/${cap} players`
-                          const rivals = isLFO ? (challengerCounts.get(s.id) ?? 0) : 0
-                          return (
-                            <div
-                              key={s.id}
-                              className="dropdown-row"
-                              onClick={() => router.push(`/session/${s.id}`)}
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1.25rem', borderTop: '1px solid var(--border-subtle)' }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
-                                <span style={{ fontSize: '13px', flexShrink: 0 }}>{icon}</span>
-                                <div style={{ minWidth: 0 }}>
-                                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
-                                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 500 }}>{subtext}</div>
-                                  {rivals > 0 && (
-                                    <div style={{ fontSize: '11px', color: 'var(--amber)', fontWeight: 500, marginTop: '2px' }}>
-                                      {rivals === 1 ? '1 team also challenging' : `${rivals} teams also challenging`}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <span onClick={e => e.stopPropagation()} style={{ flexShrink: 0, marginLeft: '12px' }}>
-                                <Link
-                                  href={isLFO && selectedInfo.slotId ? `/slots/${selectedInfo.slotId}/create?challenge=${s.id}` : `/session/${s.id}`}
-                                  style={{ textDecoration: 'none' }}
-                                >
-                                  <button className="dropdown-action-btn" style={{ background: 'var(--green)', color: 'var(--black)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '0.5rem 0.9rem', fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-display)', cursor: 'pointer', letterSpacing: '-0.015em', lineHeight: 1, whiteSpace: 'nowrap' }}>
-                                    {isLFO ? 'Challenge →' : 'Join →'}
-                                  </button>
-                                </Link>
-                              </span>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </>
-                  )}
-
                   {/* Create game CTA */}
                   {href ? (
                     <div style={{ padding: '16px 20px', borderTop: hasSessions ? '1px solid var(--border-subtle)' : 'none' }}>
@@ -805,27 +773,24 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   const slot = s.slots
                   const playerCount = totalCount(s as SessionData)
                   const maxPlayers = slot.max_players
-                  const spotsLeft = Math.max(0, maxPlayers - playerCount)
                   const perPlayer = (slot.price / maxPlayers).toFixed(2)
                   const title = s.team_name || s.organiser_name || 'Public game'
-                  const fillPct = Math.min((playerCount / maxPlayers) * 100, 100)
-                  const isHot = playerCount >= 7
-                  const isPeakSlot = slot.type === 'peak'
+                  const typeVariant = slot.type === 'peak' ? 'peak' : slot.type === 'weekend' ? 'neutral' : 'offpeak'
+                  const typeLabel = slot.type === 'peak' ? 'Peak' : slot.type === 'weekend' ? 'Weekend' : 'Off-peak'
 
                   return (
                     <Link
                       key={s.id}
                       href={`/session/${s.id}`}
                       className="open-game-card-link"
-                      style={{ animationName: 'fadeUp', animationDuration: '0.45s', animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)', animationFillMode: 'both', animationDelay: `${idx * 60}ms` }}
+                      style={{ animationName: 'fadeUp', animationDuration: '0.45s', animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)', animationFillMode: 'both', animationDelay: `${idx * 60}ms`, cursor: 'pointer' }}
                     >
-                      <div className="open-game-card">
+                      <div className="open-game-card" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        {/* Top half — pitch photo placeholder */}
                         <div
                           style={{
                             position: 'relative',
-                            paddingTop: '56.25%',
-                            overflow: 'hidden',
-                            borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
+                            height: '180px',
                             background: 'linear-gradient(160deg, var(--pitch-green) 0%, var(--black) 100%)',
                           }}
                         >
@@ -837,111 +802,59 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                               pointerEvents: 'none',
                             }}
                           />
-                          <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                            <Badge variant={isPeakSlot ? 'peak' : 'offpeak'}>
-                              {slot.start_time.slice(0, 5)}
-                            </Badge>
-                          </div>
                           <div
                             style={{
-                              position: 'absolute',
-                              bottom: '12px',
-                              left: '12px',
-                              display: 'flex',
-                              alignItems: 'baseline',
-                              gap: '4px',
+                              position: 'absolute', top: '10px', left: '10px',
+                              display: 'inline-flex', alignItems: 'center', gap: '5px',
+                              padding: '4px 10px', borderRadius: 'var(--radius-full)',
+                              background: 'var(--green)', color: 'var(--black)',
+                              fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
+                              letterSpacing: '0.02em',
                             }}
                           >
-                            <span
-                              style={{
-                                fontFamily: 'var(--font-display)',
-                                fontSize: '20px',
-                                fontWeight: 700,
-                                color: 'var(--green)',
-                                fontVariantNumeric: 'tabular-nums',
-                                letterSpacing: '-0.025em',
-                                lineHeight: 1,
-                              }}
-                            >
-                              £{perPlayer}
-                            </span>
-                            <span style={{ fontSize: '11px', color: 'rgba(247,244,238,0.55)', fontWeight: 400 }}>
-                              /player
-                            </span>
+                            <PeopleIcon /> {playerCount}/{maxPlayers} players
                           </div>
                         </div>
 
-                        <div style={{ padding: '14px 16px 16px' }}>
-                          <div style={{ marginBottom: '10px' }}>
-                            <div
-                              style={{
-                                fontFamily: 'var(--font-display)',
-                                fontSize: '16px',
-                                fontWeight: 700,
-                                letterSpacing: '-0.015em',
-                                color: 'var(--text)',
-                                lineHeight: 1.25,
-                                marginBottom: '3px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {title}
-                            </div>
-                            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 400, fontVariantNumeric: 'tabular-nums' }}>
-                              {slot.start_time.slice(0, 5)}-{slot.end_time.slice(0, 5)}
-                            </div>
+                        {/* Bottom half — game details */}
+                        <div style={{ background: '#0e0e0e', padding: '1rem 1.2rem' }}>
+                          <div
+                            style={{
+                              fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
+                              letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {title}
                           </div>
-
-                          <div style={{ marginBottom: '12px' }}>
-                            <div
-                              style={{
-                                height: '4px',
-                                background: 'rgba(255,255,255,0.08)',
-                                borderRadius: '99px',
-                                overflow: 'hidden',
-                                marginBottom: '6px',
-                              }}
-                            >
-                              <div
-                                className={`slot-bar-fill${isHot ? ' glow-amber' : ' glow-green'}`}
-                                style={{
-                                  width: `${fillPct}%`,
-                                  background: isHot ? 'var(--amber)' : 'var(--green)',
-                                }}
-                              />
-                            </div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                              {playerCount}/{maxPlayers} joined · {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left
-                              {isHot && (
-                                <span style={{ color: 'var(--amber)', marginLeft: '6px', fontWeight: 600 }}>
-                                  · Filling fast
-                                </span>
-                              )}
-                            </div>
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            fontFamily: 'var(--font-sans)', fontSize: '12px',
+                            color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
+                          }}>
+                            <ClockIcon /> {fmtCardDate(slot.date)} · {slot.start_time.slice(0, 5)} – {slot.end_time.slice(0, 5)}
                           </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                background: 'var(--green)',
-                                color: 'var(--black)',
-                                fontFamily: 'var(--font-display)',
-                                fontSize: '13px',
-                                fontWeight: 700,
-                                borderRadius: 'var(--radius-lg)',
-                                padding: '8px 16px',
-                                letterSpacing: '-0.01em',
-                                lineHeight: 1,
-                                minHeight: '36px',
-                              }}
-                            >
-                              Join →
-                            </span>
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            fontFamily: 'var(--font-sans)', fontSize: '12px',
+                            color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
+                          }}>
+                            <PinIcon /> Globe Football Pitch · Bethnal Green
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <Badge variant={typeVariant}>{typeLabel}</Badge>
+                            <div style={{
+                              display: 'inline-flex', alignItems: 'baseline', gap: '4px',
+                              padding: '5px 12px', borderRadius: 'var(--radius-full)',
+                              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
+                            }}>
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
+                                £{perPlayer}
+                              </span>
+                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
+                                per player
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import type { CSSProperties } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { SectionHeading } from '@/components/ui/SectionHeading'
+import { Badge } from '@/components/ui/Badge'
 
 const BMP_SESSIONS_KEY = 'bmp_my_sessions'
 
@@ -24,6 +27,7 @@ interface BookingCard {
   playerCount: number
   venueName: string
   gameType: string
+  organiserName: string | null
   matchedSessionId: string | null
 }
 
@@ -40,45 +44,207 @@ interface RawSession {
   id: string
   status: string
   game_type: string
+  organiser_name: string | null
   matched_session_id?: string | null
   slots: RawSlot | RawSlot[] | null
   players: { count: number }[]
 }
 
-function gameTypeBadge(gameType: string) {
-  if (gameType === 'looking_for_opposition' || gameType === 'open') {
-    return (
-      <span style={{
-        display: 'inline-block',
-        fontSize: '11px',
-        fontWeight: 700,
-        padding: '3px 8px',
-        borderRadius: '6px',
-        background: 'rgba(34,197,94,0.08)',
-        color: 'var(--green)',
-        border: '1px solid rgba(34,197,94,0.18)',
-        letterSpacing: '0.01em',
-        marginTop: '5px',
-      }}>
-        Public
-      </span>
-    )
-  }
+// ── Icons — small line-art SVGs, currentColor so they inherit surrounding text colour ──
+function ClockIcon() {
   return (
-    <span style={{
-      display: 'inline-block',
-      fontSize: '11px',
-      fontWeight: 700,
-      padding: '3px 8px',
-      borderRadius: '6px',
-      background: 'rgba(255,255,255,0.05)',
-      color: 'var(--text-secondary)',
-      border: '1px solid rgba(255,255,255,0.09)',
-      letterSpacing: '0.01em',
-      marginTop: '5px',
-    }}>
-      Private
-    </span>
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M8 4.6V8l2.6 1.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function PinIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <path d="M8 14.5s5-4.2 5-8.2A5 5 0 0 0 3 6.3c0 4 5 8.2 5 8.2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <circle cx="8" cy="6.3" r="1.8" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  )
+}
+
+function PeopleIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <circle cx="6" cy="5" r="2.2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M2 13c0-2.2 1.8-3.6 4-3.6s4 1.4 4 3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="11.5" cy="5.5" r="1.7" stroke="currentColor" strokeWidth="1.3" opacity="0.75" />
+      <path d="M9.8 9.6c1.8.2 3.2 1.5 3.2 3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.75" />
+    </svg>
+  )
+}
+
+function InfoIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M8 7.2v4M8 5.2v.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M3 9.5h18" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+// ── Shared pill style — matches components/ui/Badge visual language ──
+function pillStyle(color: string, bg: string, border: string): CSSProperties {
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    fontFamily: 'var(--font-sans)',
+    fontSize: '11px',
+    fontWeight: 700,
+    padding: '4px 10px',
+    borderRadius: 'var(--radius-full)',
+    background: bg,
+    color,
+    border: `1px solid ${border}`,
+    letterSpacing: '0.03em',
+    lineHeight: 1.4,
+    whiteSpace: 'nowrap',
+  }
+}
+
+// Status badge — Filling (amber) / Confirmed (lime) / Cancelled (grey), driven directly by c.status
+function statusPillInfo(status: string): { label: string; color: string; bg: string; border: string } {
+  if (status === 'confirmed') {
+    return { label: 'Confirmed', color: 'var(--green)', bg: 'rgba(198,241,53,0.1)', border: 'rgba(198,241,53,0.2)' }
+  }
+  if (status === 'cancelled') {
+    return { label: 'Cancelled', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' }
+  }
+  return { label: 'Filling', color: 'var(--amber)', bg: 'rgba(255,184,0,0.1)', border: 'rgba(255,184,0,0.2)' }
+}
+
+// Slot type badge — Peak / Off-peak / Weekend
+function slotTypeInfo(type: string): { label: string; variant: 'peak' | 'offpeak' | 'neutral' } {
+  if (type === 'peak') return { label: 'Peak', variant: 'peak' }
+  if (type === 'weekend') return { label: 'Weekend', variant: 'neutral' }
+  return { label: 'Off-peak', variant: 'offpeak' }
+}
+
+function cancelReasonText(c: BookingCard): string | null {
+  if (c.status !== 'cancelled') return null
+  return c.matchedSessionId ? 'Cancelled — another team got there first' : 'Cancelled by organiser'
+}
+
+function SectionLabel({
+  label,
+  color,
+  lineColor,
+  opacity = 1,
+  lineOpacity = 1,
+}: {
+  label: string
+  color: string
+  lineColor: string
+  opacity?: number
+  lineOpacity?: number
+}) {
+  return (
+    <div
+      style={{
+        fontSize: '10px',
+        fontWeight: 700,
+        letterSpacing: '0.16em',
+        textTransform: 'uppercase',
+        fontFamily: 'var(--font-sans)',
+        color,
+        marginBottom: '1rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        opacity,
+      }}
+    >
+      <span style={{ width: '18px', height: '2px', background: lineColor, display: 'block', borderRadius: '2px', opacity: lineOpacity }} />
+      {label}
+    </div>
+  )
+}
+
+// ── Booking card — Champz-style card (homepage / slots public game cards), no photo area ──
+function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard; dimmed?: boolean; animationDelay?: string }) {
+  const status = statusPillInfo(c.status)
+  const typeInfo = slotTypeInfo(c.type)
+  const perPlayer = (c.price / 10 + 0.50 + 0.30).toFixed(2)
+  const reason = cancelReasonText(c)
+
+  return (
+    <Link href={`/session/${c.sessionId}`} className="anim-fade-up" style={{ textDecoration: 'none', display: 'block', animationDelay }}>
+      <div
+        className="booking-card"
+        style={{
+          background: '#0e0e0e',
+          borderRadius: '16px',
+          border: '1px solid rgba(255,255,255,0.06)',
+          padding: '1.2rem',
+          cursor: 'pointer',
+          opacity: dimmed ? 0.6 : 1,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '0.9rem' }}>
+          <span style={pillStyle(status.color, status.bg, status.border)}>
+            {c.status === 'filling' && <span className="live-dot" style={{ width: '6px', height: '6px' }} />}
+            {status.label}
+          </span>
+          <span
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '5px',
+              padding: '4px 10px', borderRadius: 'var(--radius-full)',
+              background: 'var(--green)', color: 'var(--black)',
+              fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
+              letterSpacing: '0.02em',
+            }}
+          >
+            <PeopleIcon /> {c.playerCount}/10 players
+          </span>
+        </div>
+
+        <div
+          style={{
+            fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
+            letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1.2, marginBottom: '8px',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}
+        >
+          {c.organiserName ? `${c.organiserName}'s game` : "Someone's game"}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px' }}>
+          <ClockIcon /> {formatDate(c.date)} · {c.startTime}–{c.endTime}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: reason ? '4px' : '0.9rem' }}>
+          <PinIcon /> Globe Football Pitch · Bethnal Green
+        </div>
+        {reason && (
+          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: '0.9rem' }}>
+            {reason}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
+            £{perPlayer} <span style={{ fontWeight: 600, opacity: 0.85, fontSize: '11px' }}>per player</span>
+          </span>
+        </div>
+      </div>
+    </Link>
   )
 }
 
@@ -96,6 +262,7 @@ function toCard(s: RawSession): BookingCard | null {
     playerCount: s.players?.[0]?.count ?? 0,
     venueName: slot.venues?.name ?? 'Globe Football Pitch',
     gameType: s.game_type ?? 'private',
+    organiserName: s.organiser_name ?? null,
     matchedSessionId: s.matched_session_id ?? null,
   }
 }
@@ -116,7 +283,7 @@ export default function MyBookingsClient() {
           .select(`
             joined_at,
             sessions(
-              id, status, game_type, matched_session_id,
+              id, status, game_type, organiser_name, matched_session_id,
               slots(date, start_time, end_time, type, price, venues(name)),
               players(count)
             )
@@ -143,7 +310,7 @@ export default function MyBookingsClient() {
           const { data } = await supabase
             .from('sessions')
             .select(`
-              id, status, game_type, matched_session_id,
+              id, status, game_type, organiser_name, matched_session_id,
               slots!inner(date, start_time, end_time, type, price, venues(name)),
               players(count)
             `)
@@ -174,32 +341,42 @@ export default function MyBookingsClient() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: '640px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
-        <div style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500 }}>Loading…</div>
+      <div style={{ maxWidth: '640px', margin: '0 auto', padding: 'clamp(2rem, 6vh, 2.5rem) clamp(1rem, 4vw, 1.5rem) 4rem' }}>
+        <div style={{ marginBottom: '2.5rem' }}>
+          <div className="skeleton" style={{ width: '160px', height: '14px', borderRadius: '4px', marginBottom: '0.75rem' }} />
+          <div className="skeleton" style={{ width: '220px', height: '30px', borderRadius: '6px' }} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {[0, 1].map(i => (
+            <div
+              key={i}
+              style={{
+                background: '#0e0e0e',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: '16px',
+                padding: '1.2rem',
+              }}
+            >
+              <div className="skeleton" style={{ width: '75%', height: '20px', borderRadius: '5px', marginBottom: '10px' }} />
+              <div className="skeleton" style={{ width: '50%', height: '13px', borderRadius: '4px', marginBottom: '14px' }} />
+              <div className="skeleton" style={{ width: '100%', height: '7px', borderRadius: '3px' }} />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
 
   return (
-    <div style={{ maxWidth: '640px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
+    <div style={{ maxWidth: '640px', margin: '0 auto', padding: 'clamp(2rem, 6vh, 2.5rem) clamp(1rem, 4vw, 1.5rem) 4rem' }}>
 
       {/* Header */}
-      <div style={{ marginBottom: '2.5rem' }}>
-        <div
-          className="anim-fade-up"
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(24px, 5vw, 32px)',
-            letterSpacing: '-0.04em',
-            lineHeight: 0.95,
-            marginBottom: '0.4rem',
-          }}
-        >
-          My bookings
-        </div>
-        <div className="anim-fade-up d-80" style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-          Games you&apos;ve joined
-        </div>
+      <div className="anim-fade-up" style={{ marginBottom: '2.5rem' }}>
+        <SectionHeading
+          eyebrow="Your games"
+          heading="My bookings"
+          sub="Games you've joined"
+        />
       </div>
 
       {/* Guest device notice */}
@@ -207,6 +384,9 @@ export default function MyBookingsClient() {
         <div
           className="anim-fade-up d-100"
           style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px',
             background: 'rgba(198,241,53,0.04)',
             border: '1px solid rgba(198,241,53,0.12)',
             borderRadius: '12px',
@@ -218,11 +398,14 @@ export default function MyBookingsClient() {
             lineHeight: 1.6,
           }}
         >
-          Bookings are saved to this device.{' '}
-          <Link href="/auth/login" style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 700 }}>
-            Log in
-          </Link>{' '}
-          to access them from anywhere.
+          <span style={{ color: 'var(--green)', marginTop: '2px' }}><InfoIcon /></span>
+          <span>
+            Bookings are saved to this device.{' '}
+            <Link href="/auth/login" style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 700 }}>
+              Log in
+            </Link>{' '}
+            to access them from anywhere.
+          </span>
         </div>
       )}
 
@@ -232,7 +415,7 @@ export default function MyBookingsClient() {
           className="anim-fade-up d-100"
           style={{
             textAlign: 'center',
-            padding: '4rem 1.5rem',
+            padding: 'clamp(3rem, 10vw, 4rem) 1.5rem',
             background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
             border: '1px solid rgba(255,255,255,0.07)',
             borderRadius: '20px',
@@ -250,10 +433,10 @@ export default function MyBookingsClient() {
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 1.5rem',
-              fontSize: '28px',
+              color: 'var(--green)',
             }}
           >
-            ⚽
+            <CalendarIcon />
           </div>
           <div
             style={{
@@ -296,118 +479,11 @@ export default function MyBookingsClient() {
       {/* Upcoming */}
       {upcoming.length > 0 && (
         <div style={{ marginBottom: '2.5rem' }}>
-          <div
-            style={{
-              fontSize: '10px',
-              fontWeight: 700,
-              letterSpacing: '0.16em',
-              textTransform: 'uppercase',
-              fontFamily: 'var(--font-sans)',
-              color: 'var(--green)',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <span style={{ width: '18px', height: '2px', background: 'var(--green)', display: 'block', borderRadius: '2px' }} />
-            Upcoming
-          </div>
+          <SectionLabel label="Upcoming" color="var(--green)" lineColor="var(--green)" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {upcoming.map(c => {
-              const isConfirmed = c.status === 'confirmed'
-              const isFilling = c.status === 'filling'
-              const isAmber = c.playerCount >= 7 && c.playerCount < 10
-              const perPlayer = (c.price / 10 + 0.50 + 0.30).toFixed(2)
-              const segColor = isConfirmed ? 'lit-green' : isAmber ? 'lit-amber' : 'lit-green'
-              return (
-                <Link
-                  key={c.sessionId}
-                  href={`/session/${c.sessionId}`}
-                  style={{ textDecoration: 'none', display: 'block' }}
-                >
-                  <div
-                    className={`booking-card ${isConfirmed ? 'booking-card-confirmed' : ''}`}
-                    style={{
-                      background: isConfirmed
-                        ? 'linear-gradient(145deg, rgba(198,241,53,0.05) 0%, #0f0f0f 100%)'
-                        : 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                      border: `1px solid ${isConfirmed ? 'rgba(198,241,53,0.22)' : 'rgba(255,255,255,0.07)'}`,
-                      borderRadius: '16px',
-                      padding: '1.25rem 1.5rem',
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: '22px',
-                            letterSpacing: '-0.04em',
-                            lineHeight: 1,
-                            marginBottom: '6px',
-                          }}
-                        >
-                          {c.startTime} – {c.endTime}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                          {c.venueName} · {formatDate(c.date)}
-                        </div>
-                        {gameTypeBadge(c.gameType)}
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
-                        <div
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            fontSize: '10px',
-                            fontWeight: 700,
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            background: isConfirmed ? 'rgba(198,241,53,0.1)' : 'rgba(255,184,0,0.1)',
-                            color: isConfirmed ? 'var(--green)' : 'var(--amber)',
-                            border: `1px solid ${isConfirmed ? 'rgba(198,241,53,0.2)' : 'rgba(255,184,0,0.2)'}`,
-                            letterSpacing: '0.08em',
-                            textTransform: 'uppercase' as const,
-                            marginBottom: '6px',
-                          }}
-                        >
-                          {isConfirmed && (
-                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />
-                          )}
-                          {isFilling && <span className="live-dot" style={{ width: '6px', height: '6px' }} />}
-                          {isConfirmed ? 'Confirmed' : 'Filling…'}
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                          £{perPlayer} if full
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Player count */}
-                    <div className="seg-bar" style={{ marginTop: '2px', marginBottom: '8px' }}>
-                      {Array.from({ length: 10 }, (_, i) => (
-                        <div
-                          key={i}
-                          className={`seg-bar-seg ${i < c.playerCount ? segColor : 'unlit'}`}
-                        />
-                      ))}
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
-                      <strong style={{ color: 'var(--text)', fontWeight: 800 }}>{c.playerCount}/10 players</strong>
-                      {c.playerCount === 9
-                        ? ' — last spot!'
-                        : c.playerCount < 10
-                        ? ` — ${10 - c.playerCount} more needed`
-                        : ' — full'}
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
+            {upcoming.map((c, idx) => (
+              <BookingCardTile key={c.sessionId} c={c} animationDelay={`${idx * 60}ms`} />
+            ))}
           </div>
         </div>
       )}
@@ -415,98 +491,11 @@ export default function MyBookingsClient() {
       {/* Cancelled */}
       {cancelled.length > 0 && (
         <div style={{ marginBottom: '2.5rem' }}>
-          <div
-            style={{
-              fontSize: '10px',
-              fontWeight: 700,
-              letterSpacing: '0.16em',
-              textTransform: 'uppercase',
-              fontFamily: 'var(--font-sans)',
-              color: 'var(--red)',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              opacity: 0.7,
-            }}
-          >
-            <span style={{ width: '18px', height: '2px', background: 'var(--red)', display: 'block', borderRadius: '2px', opacity: 0.5 }} />
-            Cancelled
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', opacity: 0.6 }}>
-            {cancelled.map(c => {
-              const perPlayer = (c.price / 10 + 0.50 + 0.30).toFixed(2)
-              return (
-                <div
-                  key={c.sessionId}
-                  style={{
-                    background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                    border: '1px solid rgba(255,68,68,0.14)',
-                    borderRadius: '16px',
-                    padding: '1.25rem 1.5rem',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                    <div>
-                      <div
-                        style={{
-                          fontFamily: 'var(--font-display)',
-                          fontSize: '22px',
-                          letterSpacing: '-0.04em',
-                          lineHeight: 1,
-                          marginBottom: '6px',
-                          color: 'var(--text-secondary)',
-                        }}
-                      >
-                        {c.startTime} – {c.endTime}
-                      </div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                        {c.venueName} · {formatDate(c.date)}
-                      </div>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          background: 'rgba(255,68,68,0.08)',
-                          color: 'var(--red)',
-                          border: '1px solid rgba(255,68,68,0.18)',
-                          letterSpacing: '0.01em',
-                          marginTop: '6px',
-                        }}
-                      >
-                        {c.matchedSessionId
-                          ? 'Cancelled — another team got there first'
-                          : 'Cancelled by organiser'}
-                      </span>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                        £{perPlayer} if full
-                      </div>
-                    </div>
-                  </div>
-                  <Link
-                    href="/slots"
-                    style={{ textDecoration: 'none' }}
-                    onClick={e => e.stopPropagation()}
-                  >
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        color: 'var(--green)',
-                        letterSpacing: '-0.01em',
-                      }}
-                    >
-                      Find another game →
-                    </span>
-                  </Link>
-                </div>
-              )
-            })}
+          <SectionLabel label="Cancelled" color="var(--red)" lineColor="var(--red)" opacity={0.7} lineOpacity={0.5} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {cancelled.map(c => (
+              <BookingCardTile key={c.sessionId} c={c} dimmed />
+            ))}
           </div>
         </div>
       )}
@@ -514,74 +503,10 @@ export default function MyBookingsClient() {
       {/* Past */}
       {past.length > 0 && (
         <div>
-          <div
-            style={{
-              fontSize: '10px',
-              fontWeight: 700,
-              letterSpacing: '0.16em',
-              textTransform: 'uppercase',
-              fontFamily: 'var(--font-sans)',
-              color: 'var(--text-secondary)',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <span
-              style={{
-                width: '18px',
-                height: '2px',
-                background: 'var(--muted)',
-                display: 'block',
-                borderRadius: '2px',
-                opacity: 0.4,
-              }}
-            />
-            Past
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', opacity: 0.55 }}>
+          <SectionLabel label="Past" color="var(--text-secondary)" lineColor="var(--muted)" lineOpacity={0.4} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {past.map(c => (
-              <Link key={c.sessionId} href={`/session/${c.sessionId}`} style={{ textDecoration: 'none' }}>
-                <div
-                  className="booking-card"
-                  style={{
-                    background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: '14px',
-                    padding: '1rem 1.35rem',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div
-                        style={{
-                          fontFamily: 'var(--font-display)',
-                          fontSize: '18px',
-                          letterSpacing: '-0.03em',
-                          lineHeight: 1,
-                          marginBottom: '4px',
-                        }}
-                      >
-                        {c.startTime} – {c.endTime}
-                      </div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                        {c.venueName} · {formatDate(c.date)}
-                      </div>
-                      {gameTypeBadge(c.gameType)}
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 700, letterSpacing: '0.04em' }}>
-                        Played ✓
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '2px' }}>
-                        {c.playerCount}/10 players
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
+              <BookingCardTile key={c.sessionId} c={c} dimmed />
             ))}
           </div>
         </div>

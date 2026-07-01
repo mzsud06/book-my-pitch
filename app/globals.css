@@ -729,28 +729,6 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
   .dropdown-row:hover { background: rgba(255,255,255,0.06) !important; }
 }
 
-/* Slot dropdown toggle ("See X other games") */
-.games-toggle {
-  transition: color 0.15s ease, background 0.15s ease;
-}
-@media (hover: hover) and (pointer: fine) {
-  .games-toggle:hover { background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.13) !important; }
-}
-.games-toggle:active { transform: scale(0.98) !important; transition-duration: 0.06s !important; }
-
-/* Challenge / Join action buttons inside slot dropdown */
-.dropdown-action-btn {
-  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-}
-@media (hover: hover) and (pointer: fine) {
-  .dropdown-action-btn:hover {
-    background: #aace2c !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 14px rgba(198,241,53,0.3) !important;
-  }
-}
-.dropdown-action-btn:active { transform: scale(0.96) !important; transition-duration: 0.06s !important; }
-
 /* Organiser game-settings option buttons */
 .settings-btn {
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
