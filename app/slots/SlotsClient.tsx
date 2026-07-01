@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -86,6 +86,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
 
   const today = startOfDay(new Date())
   const weekDays = Array.from({ length: 14 }, (_, i) => addDays(today, i))
+
+  const dateScrollRef = useRef<HTMLDivElement>(null)
+  const scrollDatesBy = (direction: 1 | -1) => {
+    const el = dateScrollRef.current
+    if (!el) return
+    const cardWidth = el.scrollWidth / weekDays.length
+    el.scrollBy({ left: direction * cardWidth, behavior: 'smooth' })
+  }
 
   useEffect(() => {
     const channel = supabase
@@ -274,8 +282,19 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
               </button>
             </div>
 
-            {/* 7-day chip row — no arrows */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+            {/* Date row — horizontal scroll on mobile, arrow nav on desktop */}
+            <div className="date-picker-wrap">
+              <button
+                type="button"
+                className="date-arrow date-arrow-left"
+                onClick={() => scrollDatesBy(-1)}
+                aria-label="Previous dates"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <div className="date-picker-row" ref={dateScrollRef}>
               {weekDays.map(day => {
                 const active = formatDate(day) === dayStr
                 const isPast = day < today
@@ -349,6 +368,17 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   </button>
                 )
               })}
+              </div>
+              <button
+                type="button"
+                className="date-arrow date-arrow-right"
+                onClick={() => scrollDatesBy(1)}
+                aria-label="Next dates"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             </div>
           </div>
 

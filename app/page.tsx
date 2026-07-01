@@ -55,6 +55,39 @@ function fmtSlotDate(dateStr: string): string {
   return `${DAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`
 }
 
+function typeLabelFromVariant(variant: 'peak' | 'offpeak' | 'neutral'): string {
+  return variant === 'peak' ? 'Peak' : variant === 'offpeak' ? 'Off-peak' : 'Weekend'
+}
+
+function PeopleIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="6" cy="5" r="2.2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M2 13c0-2.2 1.8-3.6 4-3.6s4 1.4 4 3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="11.5" cy="5.5" r="1.7" stroke="currentColor" strokeWidth="1.3" opacity="0.75" />
+      <path d="M9.8 9.6c1.8.2 3.2 1.5 3.2 3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.75" />
+    </svg>
+  )
+}
+
+function ClockIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M8 4.6V8l2.6 1.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function PinIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 14.5s5-4.2 5-8.2A5 5 0 0 0 3 6.3c0 4 5 8.2 5 8.2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <circle cx="8" cy="6.3" r="1.8" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  )
+}
+
 const STATS = [
   { n: '10',  l: 'players needed' },
   { n: '£0',  l: 'charged until full' },
@@ -94,6 +127,7 @@ export default async function HomePage() {
       const type = slot.type as 'peak' | 'offpeak' | 'weekend'
       return {
         id: s.id,
+        organiserName: s.organiser_name,
         time: `${slot.start_time.slice(0, 5)} – ${slot.end_time.slice(0, 5)}`,
         date: fmtSlotDate(slot.date),
         price: `£${(slot.price / 10).toFixed(2)}`,
@@ -379,94 +413,72 @@ export default async function HomePage() {
                 key={game.id}
                 href={`/session/${game.id}`}
                 className="preview-card-link anim-fade-up"
-                style={{ animationDelay: `${idx * 80}ms` }}
+                style={{ animationDelay: `${idx * 80}ms`, cursor: 'pointer' }}
               >
-                <Card hover style={{ overflow: 'hidden', height: '100%' }}>
-                  <div style={{ position: 'relative', paddingTop: '56.25%' }}>
-                    <div style={{
-                      position: 'absolute', inset: 0,
-                      background: idx === 0
-                        ? 'linear-gradient(145deg, #1a3322 0%, #0f1f14 55%, #080808 100%)'
-                        : idx === 1
-                        ? 'linear-gradient(145deg, #142519 0%, #0c1a10 55%, #080808 100%)'
-                        : 'linear-gradient(145deg, #111a12 0%, #0a1309 55%, #080808 100%)',
-                    }}>
-                      <div aria-hidden style={{
-                        position: 'absolute', inset: 0,
-                        background: 'radial-gradient(ellipse 70% 55% at 50% 100%, rgba(198,241,53,0.05) 0%, transparent 60%)',
-                      }} />
-                    </div>
-                    <div aria-hidden style={{
-                      position: 'absolute', inset: 0,
-                      background: 'linear-gradient(to top, rgba(8,8,8,0.80) 0%, rgba(8,8,8,0.2) 50%, transparent 100%)',
-                    }} />
-                    <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                      <Badge variant={game.badgeVariant}>{game.badgeLabel}</Badge>
-                    </div>
-                    <div style={{ position: 'absolute', bottom: '12px', left: '14px' }}>
-                      <div className="tabular" style={{
-                        fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700,
-                        color: 'var(--green)', lineHeight: 1, letterSpacing: '-0.01em',
-                        textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-                      }}>
-                        {game.price}
-                      </div>
-                      <div style={{
-                        fontFamily: 'var(--font-sans)', fontSize: '10px',
-                        color: 'rgba(155,163,154,0.85)', marginTop: '2px',
-                        fontWeight: 500, letterSpacing: '0.04em',
-                      }}>
-                        per player
-                      </div>
+                <Card
+                  hover
+                  style={{
+                    padding: 0,
+                    overflow: 'hidden',
+                    height: '100%',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  {/* Top half — pitch photo placeholder */}
+                  <div style={{ position: 'relative', height: '180px', background: '#111111' }}>
+                    <div
+                      style={{
+                        position: 'absolute', top: '10px', left: '10px',
+                        display: 'inline-flex', alignItems: 'center', gap: '5px',
+                        padding: '4px 10px', borderRadius: 'var(--radius-full)',
+                        background: game.playerCount >= 8 ? 'var(--green)' : 'rgba(0,0,0,0.6)',
+                        color: game.playerCount >= 8 ? 'var(--black)' : '#fff',
+                        fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      <PeopleIcon /> {game.playerCount}/10 players
                     </div>
                   </div>
-                  <div style={{ padding: '1.2rem 1.35rem 1.3rem' }}>
-                    <div className="tabular" style={{
+
+                  {/* Bottom half — game details */}
+                  <div style={{ background: '#0e0e0e', padding: '1rem 1.2rem' }}>
+                    <div style={{
                       fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                      letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1, marginBottom: '3px',
+                      letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
                     }}>
-                      {game.time}
+                      {game.organiserName ? `${game.organiserName}'s game` : "Someone's game"}
                     </div>
                     <div style={{
-                      fontFamily: 'var(--font-sans)', fontSize: '11px',
-                      color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.75rem', opacity: 0.7,
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      fontFamily: 'var(--font-sans)', fontSize: '12px',
+                      color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
                     }}>
-                      {game.date}
+                      <ClockIcon /> {game.date} · {game.time}
                     </div>
                     <div style={{
-                      height: '3px', borderRadius: '99px',
-                      background: 'rgba(255,255,255,0.07)', overflow: 'hidden', marginBottom: '0.55rem',
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      fontFamily: 'var(--font-sans)', fontSize: '12px',
+                      color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
                     }}>
+                      <PinIcon /> Globe Football Pitch · Bethnal Green
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                      <Badge variant={game.badgeVariant}>{typeLabelFromVariant(game.badgeVariant)}</Badge>
                       <div style={{
-                        height: '100%',
-                        width: `${(game.playerCount / 10) * 100}%`,
-                        borderRadius: '99px',
-                        background: game.badgeVariant === 'peak'
-                          ? 'linear-gradient(90deg, var(--amber), rgba(255,184,0,0.7))'
-                          : 'var(--green)',
-                        boxShadow: game.badgeVariant === 'peak'
-                          ? '0 0 6px rgba(255,184,0,0.4)'
-                          : '0 0 6px rgba(198,241,53,0.35)',
-                        transition: 'width 0.6s var(--ease-out)',
-                      }} />
-                    </div>
-                    <div style={{
-                      fontFamily: 'var(--font-sans)', fontSize: '11px',
-                      color: 'var(--text-secondary)', fontWeight: 500,
-                    }}>
-                      {game.playerCount}/10 joined · {10 - game.playerCount} spots left
-                    </div>
-                    {game.playerCount >= 8 && (
-                      <div style={{
-                        fontFamily: 'var(--font-sans)',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        color: 'var(--amber)',
-                        marginTop: '4px',
+                        display: 'inline-flex', alignItems: 'baseline', gap: '4px',
+                        padding: '5px 12px', borderRadius: 'var(--radius-full)',
+                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
                       }}>
-                        🔥 Only {10 - game.playerCount} spot{10 - game.playerCount !== 1 ? 's' : ''} left!
+                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
+                          {game.price}
+                        </span>
+                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
+                          per player
+                        </span>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </Card>
               </Link>
@@ -481,97 +493,78 @@ export default async function HomePage() {
                   className="preview-card-link anim-fade-up"
                   style={{ animationDelay: `${idx * 80}ms`, cursor: 'default' }}
                 >
-                  <Card style={{ overflow: 'hidden', height: '100%' }}>
-                    <div style={{ position: 'relative', paddingTop: '56.25%' }}>
-                      {card.image ? (
-                        <img
-                          src={card.image}
-                          alt=""
-                          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      ) : (
-                        <div style={{
-                          position: 'absolute', inset: 0,
-                          background: idx === 0
-                            ? 'linear-gradient(145deg, #1a3322 0%, #0f1f14 55%, #080808 100%)'
-                            : idx === 1
-                            ? 'linear-gradient(145deg, #142519 0%, #0c1a10 55%, #080808 100%)'
-                            : 'linear-gradient(145deg, #111a12 0%, #0a1309 55%, #080808 100%)',
-                        }}>
-                          <div aria-hidden style={{
-                            position: 'absolute', inset: 0,
-                            background: 'radial-gradient(ellipse 70% 55% at 50% 100%, rgba(198,241,53,0.05) 0%, transparent 60%)',
-                          }} />
-                        </div>
-                      )}
+                  <Card
+                    style={{
+                      padding: 0,
+                      overflow: 'hidden',
+                      height: '100%',
+                      borderRadius: '16px',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    {/* Top half — pitch photo placeholder */}
+                    <div style={{ position: 'relative', height: '180px', background: '#111111' }}>
+                      <div
+                        style={{
+                          position: 'absolute', top: '10px', left: '10px',
+                          display: 'inline-flex', alignItems: 'center', gap: '5px',
+                          padding: '4px 10px', borderRadius: 'var(--radius-full)',
+                          background: card.players >= 8 ? 'var(--green)' : 'rgba(0,0,0,0.6)',
+                          color: card.players >= 8 ? 'var(--black)' : '#fff',
+                          fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
+                          letterSpacing: '0.02em',
+                        }}
+                      >
+                        <PeopleIcon /> {card.players}/10 players
+                      </div>
+                      {/* EXAMPLE watermark — centred, honest labelling */}
                       <div aria-hidden style={{
                         position: 'absolute', inset: 0,
-                        background: 'linear-gradient(to top, rgba(8,8,8,0.80) 0%, rgba(8,8,8,0.2) 50%, transparent 100%)',
-                      }} />
-                      <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                        <Badge variant={card.badge}>{card.badgeLabel}</Badge>
-                      </div>
-                      {/* EXAMPLE label — top right, muted, honest labelling */}
-                      <div style={{
-                        position: 'absolute', top: '12px', right: '12px',
-                        fontFamily: 'var(--font-sans)', fontSize: '9px', fontWeight: 600,
-                        letterSpacing: '0.1em', textTransform: 'uppercase',
-                        color: 'rgba(155,163,154,0.5)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700,
+                        letterSpacing: '0.25em', textTransform: 'uppercase',
+                        color: 'rgba(255,255,255,0.08)',
                       }}>
                         Example
                       </div>
-                      <div style={{ position: 'absolute', bottom: '12px', left: '14px' }}>
-                        <div className="tabular" style={{
-                          fontFamily: 'var(--font-display)', fontSize: '26px', fontWeight: 700,
-                          color: 'var(--green)', lineHeight: 1, letterSpacing: '-0.01em',
-                          textShadow: '0 1px 8px rgba(0,0,0,0.5)',
-                        }}>
-                          {card.price}
-                        </div>
-                        <div style={{
-                          fontFamily: 'var(--font-sans)', fontSize: '10px',
-                          color: 'rgba(155,163,154,0.85)', marginTop: '2px',
-                          fontWeight: 500, letterSpacing: '0.04em',
-                        }}>
-                          per player
-                        </div>
-                      </div>
                     </div>
-                    <div style={{ padding: '1.2rem 1.35rem 1.3rem' }}>
-                      <div className="tabular" style={{
+
+                    {/* Bottom half — game details */}
+                    <div style={{ background: '#0e0e0e', padding: '1rem 1.2rem' }}>
+                      <div style={{
                         fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                        letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1, marginBottom: '3px',
+                        letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
                       }}>
-                        {card.time}
+                        Example game
                       </div>
                       <div style={{
-                        fontFamily: 'var(--font-sans)', fontSize: '11px',
-                        color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.75rem', opacity: 0.7,
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        fontFamily: 'var(--font-sans)', fontSize: '12px',
+                        color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
                       }}>
-                        {exampleDates[i]}
+                        <ClockIcon /> {exampleDates[i]} · {card.time}
                       </div>
                       <div style={{
-                        height: '3px', borderRadius: '99px',
-                        background: 'rgba(255,255,255,0.07)', overflow: 'hidden', marginBottom: '0.55rem',
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        fontFamily: 'var(--font-sans)', fontSize: '12px',
+                        color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
                       }}>
+                        <PinIcon /> Globe Football Pitch · Bethnal Green
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                        <Badge variant={card.badge}>{typeLabelFromVariant(card.badge)}</Badge>
                         <div style={{
-                          height: '100%',
-                          width: `${(card.players / 10) * 100}%`,
-                          borderRadius: '99px',
-                          background: card.badge === 'peak'
-                            ? 'linear-gradient(90deg, var(--amber), rgba(255,184,0,0.7))'
-                            : 'var(--green)',
-                          boxShadow: card.badge === 'peak'
-                            ? '0 0 6px rgba(255,184,0,0.4)'
-                            : '0 0 6px rgba(198,241,53,0.35)',
-                          transition: 'width 0.6s var(--ease-out)',
-                        }} />
-                      </div>
-                      <div style={{
-                        fontFamily: 'var(--font-sans)', fontSize: '11px',
-                        color: 'var(--text-secondary)', fontWeight: 500,
-                      }}>
-                        {card.players}/10 joined · {10 - card.players} spots left
+                          display: 'inline-flex', alignItems: 'baseline', gap: '4px',
+                          padding: '5px 12px', borderRadius: 'var(--radius-full)',
+                          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
+                        }}>
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
+                            {card.price}
+                          </span>
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
+                            per player
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </Card>

@@ -1003,6 +1003,65 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
   transition-duration: 0.06s !important;
 }
 
+/* Date picker — horizontal swipe-scroll on mobile, arrow nav (7-up) on desktop */
+.date-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.date-picker-row {
+  display: flex;
+  flex-wrap: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 6px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.date-picker-row::-webkit-scrollbar { display: none; }
+
+.date-picker-row > button {
+  flex: 0 0 68px;
+  scroll-snap-align: start;
+}
+
+.date-arrow {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .date-arrow:hover {
+    border-color: rgba(198,241,53,0.30);
+    background: rgba(198,241,53,0.07);
+  }
+}
+.date-arrow:active {
+  transform: scale(0.92);
+  transition-duration: 0.06s;
+}
+
+@media (min-width: 768px) {
+  .date-picker-row > button {
+    flex: 0 0 calc((100% - 6px * 6) / 7);
+  }
+  .date-arrow {
+    display: flex;
+  }
+}
+
 /* Slot detail panel entrance */
 .slot-detail-panel {
   animation: fadeUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
