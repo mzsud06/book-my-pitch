@@ -167,7 +167,7 @@ export default function CreateSessionForm({ slot }: Props) {
       name: name.trim(),
       phone: trimmedPhone,
       gameType,
-      teamName: gameType === 'looking_for_opposition' ? teamName.trim() : '',
+      teamName: '',
     }))
     // Ensure JoinForm on the create payment page can read the same values
     sessionStorage.setItem('join_details', JSON.stringify({ name: name.trim(), phone: trimmedPhone }))
