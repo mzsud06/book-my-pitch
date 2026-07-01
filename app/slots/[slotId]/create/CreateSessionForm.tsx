@@ -576,23 +576,6 @@ export default function CreateSessionForm({ slot }: Props) {
             </div>
           </div>
         )}
-        {gameType === 'looking_for_opposition' && !challengeSessionId && (
-          <div>
-            <label style={labelStyle}>Team name (optional)</label>
-            <input
-              className="field-input"
-              type="text"
-              value={teamName}
-              onChange={(e) => {
-                const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, '')
-                setTeamName(cleaned.slice(0, 30))
-              }}
-              placeholder="e.g. Sunday Ballers"
-              style={inputStyle}
-            />
-          </div>
-        )}
-
         <button
           type="submit"
           disabled={!isReady}
