@@ -17,33 +17,13 @@ import { FaqAccordion } from '@/components/FaqAccordion'
 //  the gradient glow with a full-bleed photo + dark overlay.
 const HERO_IMAGE: string | null = '/hero-pitch.jpg'
 
-//  CARD PHOTOS
-//  Lines 33-35 below. Set each entry to swap in a card photo.
-const PREVIEW_CARDS = [
-  {
-    image: null as string | null,   // swap → '/images/peak.jpg'
-    badge: 'peak' as const,
-    badgeLabel: 'Peak · Every day',
-    time: '18:30 – 19:30',
-    price: '£5.00',
-    players: 8,
-  },
-  {
-    image: null as string | null,   // swap → '/images/offpeak.jpg'
-    badge: 'offpeak' as const,
-    badgeLabel: 'Off-peak · Mon–Fri',
-    time: '16:30 – 17:30',
-    price: '£3.00',
-    players: 4,
-  },
-  {
-    image: null as string | null,   // swap → '/images/weekend.jpg'
-    badge: 'neutral' as const,
-    badgeLabel: 'Weekend',
-    time: '09:30 – 10:30',
-    price: '£4.00',
-    players: 2,
-  },
+//  PLACEHOLDER CARDS
+//  Hardcoded stand-ins shown when there are fewer than 3 real public games.
+//  These are not real sessions (no id, not clickable) — always 0/10 players.
+const PLACEHOLDER_CARDS = [
+  { badge: 'peak' as const, time: '18:30 – 19:30', price: '£5.00', dayOfWeek: 1 },
+  { badge: 'offpeak' as const, time: '16:30 – 17:30', price: '£3.00', dayOfWeek: 3 },
+  { badge: 'weekend' as const, time: '10:30 – 11:30', price: '£4.00', dayOfWeek: 6 },
 ]
 // ─────────────────────────────────────────────────────────────────────
 
@@ -55,7 +35,14 @@ function fmtSlotDate(dateStr: string): string {
   return `${DAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`
 }
 
-function typeLabelFromVariant(variant: 'peak' | 'offpeak' | 'neutral'): string {
+function nextWeekdayDate(dayOfWeek: number): string {
+  const d = new Date()
+  const diff = ((dayOfWeek - d.getDay() + 7) % 7) || 7
+  d.setDate(d.getDate() + diff)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function typeLabelFromVariant(variant: 'peak' | 'offpeak' | 'weekend'): string {
   return variant === 'peak' ? 'Peak' : variant === 'offpeak' ? 'Off-peak' : 'Weekend'
 }
 
@@ -133,7 +120,7 @@ export default async function HomePage() {
         price: `£${(slot.price / 10).toFixed(2)}`,
         playerCount,
         type,
-        badgeVariant: (type === 'peak' ? 'peak' : type === 'weekend' ? 'neutral' : 'offpeak') as 'peak' | 'offpeak' | 'neutral',
+        badgeVariant: (type === 'peak' ? 'peak' : type === 'weekend' ? 'weekend' : 'offpeak') as 'peak' | 'offpeak' | 'weekend',
         badgeLabel: type === 'peak' ? 'Peak · Every day' : type === 'offpeak' ? 'Off-peak · Mon–Fri' : 'Weekend',
       }
     })
@@ -141,14 +128,10 @@ export default async function HomePage() {
 
   const liveGames = allPublicGames.slice(0, 3)
 
-  const exampleCards = PREVIEW_CARDS.slice(0, Math.max(0, 3 - liveGames.length))
-
-  // Compute plausible near-future dates for example cards (today, tomorrow, day after)
-  const exampleDates = PREVIEW_CARDS.map((_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() + i)
-    return fmtSlotDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
-  })
+  const exampleCards = PLACEHOLDER_CARDS.slice(0, Math.max(0, 3 - liveGames.length)).map(card => ({
+    ...card,
+    date: fmtSlotDate(nextWeekdayDate(card.dayOfWeek)),
+  }))
   // ──────────────────────────────────────────────────────────────────────
 
   return (
@@ -425,15 +408,23 @@ export default async function HomePage() {
                     border: '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
-                  {/* Top half — pitch photo placeholder */}
-                  <div style={{ position: 'relative', height: '180px', background: '#111111' }}>
+                  {/* Top half — pitch photo */}
+                  <div
+                    style={{
+                      position: 'relative', height: '180px',
+                      backgroundImage: 'url(/example-pitch.jpg)',
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  >
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.4)' }} />
                     <div
                       style={{
                         position: 'absolute', top: '10px', left: '10px',
                         display: 'inline-flex', alignItems: 'center', gap: '5px',
                         padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                        background: game.playerCount >= 8 ? 'var(--green)' : 'rgba(0,0,0,0.6)',
-                        color: game.playerCount >= 8 ? 'var(--black)' : '#fff',
+                        background: '#C6F135',
+                        color: '#080808',
                         fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
                         letterSpacing: '0.02em',
                       }}
@@ -502,30 +493,28 @@ export default async function HomePage() {
                       border: '1px solid rgba(255,255,255,0.06)',
                     }}
                   >
-                    {/* Top half — pitch photo placeholder */}
-                    <div style={{ position: 'relative', height: '180px', background: '#111111' }}>
+                    {/* Top half — pitch photo */}
+                    <div
+                      style={{
+                        position: 'relative', height: '180px',
+                        backgroundImage: 'url(/game-card.jpg)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                      }}
+                    >
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.4)' }} />
                       <div
                         style={{
                           position: 'absolute', top: '10px', left: '10px',
                           display: 'inline-flex', alignItems: 'center', gap: '5px',
                           padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                          background: card.players >= 8 ? 'var(--green)' : 'rgba(0,0,0,0.6)',
-                          color: card.players >= 8 ? 'var(--black)' : '#fff',
+                          background: '#C6F135',
+                          color: '#080808',
                           fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
                           letterSpacing: '0.02em',
                         }}
                       >
-                        <PeopleIcon /> {card.players}/10 players
-                      </div>
-                      {/* EXAMPLE watermark — centred, honest labelling */}
-                      <div aria-hidden style={{
-                        position: 'absolute', inset: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700,
-                        letterSpacing: '0.25em', textTransform: 'uppercase',
-                        color: 'rgba(255,255,255,0.08)',
-                      }}>
-                        Example
+                        <PeopleIcon /> 0/10 players
                       </div>
                     </div>
 
@@ -535,14 +524,14 @@ export default async function HomePage() {
                         fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
                         letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
                       }}>
-                        Example game
+                        {typeLabelFromVariant(card.badge)} · {card.time}
                       </div>
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: '6px',
                         fontFamily: 'var(--font-sans)', fontSize: '12px',
                         color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
                       }}>
-                        <ClockIcon /> {exampleDates[i]} · {card.time}
+                        <ClockIcon /> {card.date} · {card.time}
                       </div>
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: '6px',
@@ -572,6 +561,15 @@ export default async function HomePage() {
               )
             })}
           </div>
+          {allPublicGames.length > 3 && (
+            <Container>
+              <div className="anim-fade-up" style={{ marginTop: '2rem', textAlign: 'center' }}>
+                <Link href="/public-games" style={{ textDecoration: 'none' }}>
+                  <Button arrow>See all public games</Button>
+                </Link>
+              </div>
+            </Container>
+          )}
         </section>
 
         {/* ============================================================

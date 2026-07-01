@@ -55,7 +55,7 @@ export default async function PublicGamesPage() {
         price: `£${(slot.price / 10).toFixed(2)}`,
         playerCount,
         type,
-        badgeVariant: (type === 'peak' ? 'peak' : type === 'weekend' ? 'neutral' : 'offpeak') as 'peak' | 'offpeak' | 'neutral',
+        badgeVariant: (type === 'peak' ? 'peak' : type === 'weekend' ? 'weekend' : 'offpeak') as 'peak' | 'offpeak' | 'weekend',
         typeLabel: type === 'peak' ? 'Peak' : type === 'offpeak' ? 'Off-peak' : 'Weekend',
       }
     })

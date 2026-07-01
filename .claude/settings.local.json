@@ -37,7 +37,8 @@
       "PowerShell(npm run *)",
       "Skill(run)",
       "PowerShell(Get-Process *)",
-      "PowerShell(Head *)"
+      "PowerShell(Head *)",
+      "PowerShell(node --version)"
     ]
   }
 }
