@@ -1111,6 +1111,21 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 }
 
 /* ============================================================
+   TESTIMONIALS — 1-col mobile / 3-col desktop card grid
+   ============================================================ */
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 768px) {
+  .testimonials-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+}
+
+/* ============================================================
    HOW IT WORKS — step grid, flow connector, payoff accent
    ============================================================ */
 .steps-grid-new {

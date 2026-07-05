@@ -8,6 +8,11 @@ function isValidUUID(val: unknown): val is string {
   return typeof val === 'string' && UUID_RE.test(val)
 }
 
+function redactPhone(phone: string | null | undefined): string {
+  if (!phone) return '(none)'
+  return `${phone.slice(0, 3)}****`
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -45,6 +50,7 @@ export async function POST(req: NextRequest) {
       id: string
       name: string
       phone: string | null
+      user_id: string | null
       stripe_payment_method_id: string | null
       stripe_customer_id: string | null
     }
@@ -53,7 +59,7 @@ export async function POST(req: NextRequest) {
     if (user?.id) {
       const { data } = await svc
         .from('players')
-        .select('id, name, phone, stripe_payment_method_id, stripe_customer_id')
+        .select('id, name, phone, user_id, stripe_payment_method_id, stripe_customer_id')
         .eq('session_id', sessionId)
         .eq('user_id', user.id)
         .maybeSingle()
@@ -61,17 +67,36 @@ export async function POST(req: NextRequest) {
     } else if (trimmedPhone) {
       const { data } = await svc
         .from('players')
-        .select('id, name, phone, stripe_payment_method_id, stripe_customer_id')
+        .select('id, name, phone, user_id, stripe_payment_method_id, stripe_customer_id')
         .eq('session_id', sessionId)
         .eq('phone', trimmedPhone)
         .maybeSingle()
       player = data as PlayerRow | null
+
+      // A phone was supplied but doesn't match any player in this session —
+      // flag it, since this is the shape of an attempt to remove someone else's
+      // guest entry by guessing/knowing their number.
+      if (!player) {
+        console.warn(`[leave] suspicious: phone ${redactPhone(trimmedPhone)} does not match any player in session ${sessionId}`)
+      }
     } else {
       return NextResponse.json({ error: 'Cannot identify player' }, { status: 401 })
     }
 
     if (!player) {
       return NextResponse.json({ error: 'You are not in this session' }, { status: 404 })
+    }
+
+    // Defense-in-depth: re-assert identity right before any mutation, even though
+    // the lookups above already scope by user_id/phone. Never detach a payment
+    // method or delete a row unless the caller is that authenticated user, or
+    // supplied the exact phone number stored on the row.
+    const identityConfirmed =
+      (!!user?.id && player.user_id === user.id) ||
+      (!!trimmedPhone && player.phone === trimmedPhone)
+    if (!identityConfirmed) {
+      console.warn(`[leave] suspicious: identity not confirmed for player ${player.id} in session ${sessionId}`)
+      return NextResponse.json({ error: 'Cannot identify player' }, { status: 401 })
     }
 
     const sesh = session as { organiser_name: string | null; organiser_phone: string | null; organiser_id: string | null; game_type: string | null }

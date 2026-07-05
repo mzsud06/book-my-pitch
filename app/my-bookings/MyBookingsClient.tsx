@@ -6,8 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Badge } from '@/components/ui/Badge'
-
-const BMP_SESSIONS_KEY = 'bmp_my_sessions'
+import { readMySessions } from '@/lib/clientStorage'
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
@@ -301,8 +300,7 @@ export default function MyBookingsClient() {
         setIsGuest(true)
         let stored: { sessionId: string }[] = []
         try {
-          const raw = JSON.parse(localStorage.getItem(BMP_SESSIONS_KEY) ?? '[]')
-          if (Array.isArray(raw)) stored = raw
+          stored = readMySessions()
         } catch {}
 
         if (stored.length > 0) {

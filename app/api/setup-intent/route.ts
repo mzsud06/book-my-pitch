@@ -2,18 +2,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 import Stripe from 'stripe'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isValidUUID(val: unknown): val is string {
   return typeof val === 'string' && UUID_RE.test(val)
 }
 
+const RATE_LIMIT_MAX = 10
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
+
 export async function POST(req: NextRequest) {
   const reqTs = new Date().toISOString()
+
+  if (!checkRateLimit(`setup-intent:${getClientIp(req)}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS)) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+  }
+
   try {
     const body = await req.json()
     const { name, phone, sessionId, slotId } = body
-    console.log(`[setup-intent] POST at ${reqTs} slotId=${slotId ?? 'none'} sessionId=${sessionId ?? 'none'} name=${typeof name === 'string' ? name : '?'}`)
+    const redactedName = typeof name === 'string' && name.length > 0 ? `${name.slice(0, 1)}***` : '?'
+    console.log(`[setup-intent] POST at ${reqTs} slotId=${slotId ?? 'none'} sessionId=${sessionId ?? 'none'} name=${redactedName}`)
 
     const trimmedName = typeof name === 'string' ? name.trim() : ''
     if (!trimmedName || trimmedName.length > 100) {

@@ -5,10 +5,9 @@ import { useRouter } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { createClient } from '@/lib/supabase/client'
+import { writePlayerDetails, writeSessionPlayer, upsertMySession } from '@/lib/clientStorage'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
-
-const LS_KEY = 'bmp_player_details'
 
 interface SlotData {
   id: string
@@ -410,16 +409,11 @@ export default function PlayerPaymentForm({ sessionId, slot, existingPlayerCount
     sessionStorage.removeItem('join_details')
     if (!isLoggedIn) {
       try {
-        localStorage.setItem(LS_KEY, JSON.stringify({ name, phone }))
+        writePlayerDetails(name, phone)
         const sid = dest.split('/session/')[1]?.split('?')[0]
         if (sid) {
-          const raw = JSON.parse(localStorage.getItem('bmp_my_sessions') ?? '[]')
-          const existing = Array.isArray(raw) ? raw : []
-          localStorage.setItem('bmp_my_sessions', JSON.stringify([
-            { sessionId: sid, name, isOrganiser: false, joinedAt: new Date().toISOString() },
-            ...existing.filter((b: { sessionId: string }) => b.sessionId !== sid),
-          ]))
-          localStorage.setItem(`bmp_player_${sid}`, JSON.stringify({ phone, name, joinedAt: new Date().toISOString() }))
+          upsertMySession(sid, name)
+          writeSessionPlayer(sid, name, phone)
         }
       } catch { /* ignore */ }
     } else {

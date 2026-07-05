@@ -2,6 +2,10 @@ import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+
+const RATE_LIMIT_MAX = 10
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -69,6 +73,10 @@ function isValidUUID(val: unknown): val is string {
 }
 
 export async function POST(req: NextRequest) {
+  if (!checkRateLimit(`sessions-post:${getClientIp(req)}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS)) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+  }
+
   try {
     const body = await req.json()
     const { slotId, name, phone, teamName, gameType, matchedSessionId } = body
@@ -124,6 +132,30 @@ export async function POST(req: NextRequest) {
 
     if (!slot) {
       return NextResponse.json({ error: 'Slot not found' }, { status: 404 })
+    }
+
+    // A challenger may only link to a real, still-open, unclaimed LFO session —
+    // otherwise a client could point matched_session_id at an arbitrary session
+    // (wrong game_type, already confirmed/cancelled, or already claimed by another
+    // challenger) and corrupt that session's matching state or payment flow.
+    if (matchedSessionId) {
+      const svcCheck = createServiceClient()
+      const { data: targetSession } = await svcCheck
+        .from('sessions')
+        .select('id, game_type, status, matched_session_id')
+        .eq('id', matchedSessionId)
+        .maybeSingle()
+
+      const t = targetSession as unknown as { id: string; game_type: string | null; status: string; matched_session_id: string | null } | null
+
+      if (
+        !t ||
+        t.game_type !== 'looking_for_opposition' ||
+        t.status !== 'filling' ||
+        t.matched_session_id !== null
+      ) {
+        return NextResponse.json({ error: 'That opposition session is no longer available to challenge' }, { status: 400 })
+      }
     }
 
     // Challenge flows (matchedSessionId provided) are exempt from both guards below:

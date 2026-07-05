@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import PhoneInput, { parsePhone } from '@/components/PhoneInput'
+import { readPlayerDetails, readMySessions, readSessionPlayer, removeSessionPlayer, removeMySession } from '@/lib/clientStorage'
 
 interface Player {
   id: string
@@ -189,10 +190,15 @@ export default function SessionClient({
   useEffect(() => {
     function refetchSession() {
       Promise.all([
+        // organiser_phone is intentionally NOT selected here — it's server-side-only
+        // PII fetched once by the SSR page and passed down as a prop. Re-fetching it
+        // from the browser client would require exposing it via an anon/authenticated
+        // grant, which leaks it to anyone viewing the session. We preserve the
+        // existing value from state below instead of overwriting it from this query.
         supabase
           .from('sessions')
           .select(`
-            id, status, created_at, organiser_name, organiser_phone, organiser_id, matched_session_id, team_name, game_type, is_public,
+            id, status, created_at, organiser_name, organiser_id, matched_session_id, team_name, game_type, is_public,
             slots(id, date, start_time, end_time, type, price, max_players,
               venues(id, name, address)
             )
@@ -210,11 +216,12 @@ export default function SessionClient({
         const s = Array.isArray(rawSlots) ? rawSlots[0] : rawSlots
         const rawVenues = (s as { venues: unknown })?.venues
         const v = Array.isArray(rawVenues) ? rawVenues[0] : rawVenues
-        setSession({
+        setSession(prev => ({
           ...(data as unknown as Session),
+          organiser_phone: prev.organiser_phone,
           slots: { ...(s as Session['slots']), venues: v as Session['slots']['venues'] },
           players: ((rawPlayers ?? []) as Player[]).filter(p => p.session_id === session.id),
-        })
+        }))
       })
     }
 
@@ -239,23 +246,21 @@ export default function SessionClient({
       // Returning guest: check session-specific localStorage entry and validate phone via DB
       if (!user) {
         try {
-          const lsEntry = localStorage.getItem(`bmp_player_${initialSession.id}`)
-          if (lsEntry) {
-            const { phone: storedPhone } = JSON.parse(lsEntry) as { phone?: string }
-            if (storedPhone) {
-              const { data: rp } = await supabase
-                .from('players')
-                .select('id, name, joined_at, session_id, user_id')
-                .eq('session_id', initialSession.id)
-                .eq('phone', storedPhone)
-                .maybeSingle()
-              if (rp) {
-                const p = rp as Player
-                setReturningPlayer(p)
-                setMyPlayer({ id: p.id, name: p.name })
-                setMyPhone(storedPhone)
-                setLocalAlreadyIn(true)
-              }
+          const storedPlayer = readSessionPlayer(initialSession.id)
+          const storedPhone = storedPlayer?.phone
+          if (storedPhone) {
+            const { data: rp } = await supabase
+              .from('players')
+              .select('id, name, joined_at, session_id, user_id')
+              .eq('session_id', initialSession.id)
+              .eq('phone', storedPhone)
+              .maybeSingle()
+            if (rp) {
+              const p = rp as Player
+              setReturningPlayer(p)
+              setMyPlayer({ id: p.id, name: p.name })
+              setMyPhone(storedPhone)
+              setLocalAlreadyIn(true)
             }
           }
         } catch {}
@@ -264,12 +269,10 @@ export default function SessionClient({
 
       // Guest: check localStorage for a prior join to this session
       try {
-        const sessions = JSON.parse(localStorage.getItem('bmp_my_sessions') ?? '[]')
-        const entry = Array.isArray(sessions)
-          ? sessions.find((b: { sessionId: string }) => b.sessionId === initialSession.id)
-          : null
+        const sessions = readMySessions()
+        const entry = sessions.find(b => b.sessionId === initialSession.id)
         if (entry?.name) {
-          const details = JSON.parse(localStorage.getItem('bmp_player_details') ?? 'null')
+          const details = readPlayerDetails()
           const phone = details?.phone ?? null
           setMyPhone(phone)
           const matched = initialSession.players.find(
@@ -454,11 +457,11 @@ export default function SessionClient({
         return
       }
       const userId = data.user?.id
-      if (userId && myPlayer?.id && myPlayer.id !== 'organiser') {
+      if (userId && myPlayer?.id && myPlayer.id !== 'organiser' && myPhone) {
         await fetch('/api/link-player-account', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ playerId: myPlayer.id, userId }),
+          body: JSON.stringify({ playerId: myPlayer.id, userId, phone: myPhone }),
         })
       }
       setRegSuccess(true)
@@ -517,12 +520,7 @@ export default function SessionClient({
         return
       }
       try {
-        const stored = JSON.parse(localStorage.getItem('bmp_my_sessions') ?? '[]')
-        if (Array.isArray(stored)) {
-          localStorage.setItem('bmp_my_sessions', JSON.stringify(
-            stored.filter((b: { sessionId: string }) => b.sessionId !== session.id)
-          ))
-        }
+        removeMySession(session.id)
       } catch {}
       router.push('/slots')
     } catch {
@@ -553,12 +551,7 @@ export default function SessionClient({
       setLeaveOpen(false)
       setSession(prev => ({ ...prev, organiser_id: null, organiser_name: null, organiser_phone: null }))
       try {
-        const stored = JSON.parse(localStorage.getItem('bmp_my_sessions') ?? '[]')
-        if (Array.isArray(stored)) {
-          localStorage.setItem('bmp_my_sessions', JSON.stringify(
-            stored.filter((b: { sessionId: string }) => b.sessionId !== session.id)
-          ))
-        }
+        removeMySession(session.id)
       } catch {}
     } catch {
       setLeaveError('Something went wrong. Please try again.')
@@ -582,13 +575,8 @@ export default function SessionClient({
         return
       }
       try {
-        localStorage.removeItem(`bmp_player_${session.id}`)
-        const stored = JSON.parse(localStorage.getItem('bmp_my_sessions') ?? '[]')
-        if (Array.isArray(stored)) {
-          localStorage.setItem('bmp_my_sessions', JSON.stringify(
-            stored.filter((b: { sessionId: string }) => b.sessionId !== session.id)
-          ))
-        }
+        removeSessionPlayer(session.id)
+        removeMySession(session.id)
       } catch {}
       setReturningPlayer(null)
       setMyPlayer(null)
@@ -643,12 +631,9 @@ export default function SessionClient({
         return
       }
       try {
-        const ls = localStorage.getItem('bmp_player_details')
-        if (ls) {
-          const { name: n, phone: p } = JSON.parse(ls)
-          if (n) setJoinName(n)
-          if (p) setJoinPhone(p)
-        }
+        const details = readPlayerDetails()
+        if (details?.name) setJoinName(details.name)
+        if (details?.phone) setJoinPhone(details.phone)
       } catch { /* ignore */ }
     }
     autofill()
@@ -686,13 +671,23 @@ export default function SessionClient({
     e.preventDefault()
     if (!newMsg.trim() || sendingMsg) return
     setSendingMsg(true)
-    await supabase.from('messages').insert({
-      session_id: session.id,
-      content: newMsg.trim(),
-      sender_name: myPlayer?.name ?? null,
-    })
-    setNewMsg('')
-    setSendingMsg(false)
+    // Eligibility (auth user_id or guest phone matching a player row in this
+    // session) is verified server-side in /api/send-message using the service
+    // role client — phone numbers never touch the messages table or the
+    // browser-readable RLS path.
+    const phone = currentUserId
+      ? undefined
+      : (readSessionPlayer(session.id)?.phone ?? readPlayerDetails()?.phone ?? undefined)
+    try {
+      const res = await fetch('/api/send-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: session.id, content: newMsg.trim(), phone }),
+      })
+      if (res.ok) setNewMsg('')
+    } finally {
+      setSendingMsg(false)
+    }
   }
 
   const perPlayerPounds = (slot.price / 10 + 0.50 + 0.30).toFixed(2)

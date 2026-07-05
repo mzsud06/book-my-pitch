@@ -1,7 +1,17 @@
 import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
+import { timingSafeEqual } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import { stripe, PLATFORM_FEE_PENCE, STRIPE_PROCESSING_PENCE } from '@/lib/stripe'
+
+function secretsMatch(provided: string, expected: string): boolean {
+  const a = Buffer.from(provided)
+  const b = Buffer.from(expected)
+  // timingSafeEqual throws on length mismatch — compare lengths first (not
+  // secret-dependent timing, since length alone isn't sensitive here).
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
+}
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isValidUUID(val: unknown): val is string {
@@ -18,7 +28,7 @@ export async function POST(req: NextRequest) {
   }
 
   const providedSecret = req.headers.get('x-internal-secret')
-  if (!providedSecret || providedSecret !== internalSecret) {
+  if (!providedSecret || !secretsMatch(providedSecret, internalSecret)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

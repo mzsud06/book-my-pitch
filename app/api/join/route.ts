@@ -3,13 +3,31 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { stripe, PLATFORM_FEE_PENCE, STRIPE_PROCESSING_PENCE } from '@/lib/stripe'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isValidUUID(val: unknown): val is string {
   return typeof val === 'string' && UUID_RE.test(val)
 }
 
+function redactPhone(phone: unknown): string {
+  if (typeof phone !== 'string' || phone.length === 0) return '(none)'
+  return `${phone.slice(0, 3)}****`
+}
+
+function redactStripeId(id: unknown): string {
+  if (typeof id !== 'string' || id.length === 0) return '(none)'
+  return `${id.slice(0, 6)}...`
+}
+
+const RATE_LIMIT_MAX = 10
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
+
 export async function POST(req: NextRequest) {
+  if (!checkRateLimit(`join:${getClientIp(req)}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS)) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+  }
+
   try {
     const body = await req.json()
     const { slotId, sessionId, isOrganiser, name, phone, paymentMethodId, customerId } = body
@@ -18,10 +36,10 @@ export async function POST(req: NextRequest) {
       slotId,
       sessionId,
       isOrganiser,
-      name,
-      phone,
-      paymentMethodId: typeof paymentMethodId === 'string' ? paymentMethodId : paymentMethodId,
-      customerId: typeof customerId === 'string' ? customerId : customerId,
+      name: typeof name === 'string' ? `${name.slice(0, 1)}***` : name,
+      phone: redactPhone(phone),
+      paymentMethodId: redactStripeId(paymentMethodId),
+      customerId: redactStripeId(customerId),
     }))
 
     // Validate UUIDs
@@ -32,23 +50,23 @@ export async function POST(req: NextRequest) {
 
     // Validate Stripe IDs — must start with expected prefixes
     if (typeof paymentMethodId !== 'string' || !paymentMethodId.startsWith('pm_')) {
-      console.warn('[join] 400 paymentMethodId failed: type=', typeof paymentMethodId, 'value=', paymentMethodId)
+      console.warn('[join] 400 paymentMethodId failed: type=', typeof paymentMethodId, 'value=', redactStripeId(paymentMethodId))
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 })
     }
     if (typeof customerId !== 'string' || !customerId.startsWith('cus_')) {
-      console.warn('[join] 400 customerId failed: type=', typeof customerId, 'value=', customerId)
+      console.warn('[join] 400 customerId failed: type=', typeof customerId, 'value=', redactStripeId(customerId))
       return NextResponse.json({ error: 'Invalid customer' }, { status: 400 })
     }
 
     // Server-side input validation (client also validates, but always re-validate server-side)
     const trimmedName = typeof name === 'string' ? name.trim() : ''
     if (!trimmedName || trimmedName.length > 100 || !/^[A-Za-z\s'-]+$/.test(trimmedName)) {
-      console.warn('[join] 400 name failed: trimmedName=', JSON.stringify(trimmedName), 'length=', trimmedName.length)
+      console.warn('[join] 400 name failed: length=', trimmedName.length)
       return NextResponse.json({ error: 'Invalid name' }, { status: 400 })
     }
     const trimmedPhone = typeof phone === 'string' ? phone.trim() : null
     if (trimmedPhone && !/^\+[0-9]{7,15}$/.test(trimmedPhone)) {
-      console.warn('[join] 400 phone failed: trimmedPhone=', trimmedPhone)
+      console.warn('[join] 400 phone failed: trimmedPhone=', redactPhone(trimmedPhone))
       return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
     }
 
@@ -63,7 +81,7 @@ export async function POST(req: NextRequest) {
     const pm = await stripe.paymentMethods.retrieve(paymentMethodId)
     const pmCustomer = typeof pm.customer === 'string' ? pm.customer : pm.customer?.id
     if (!pmCustomer || pmCustomer !== customerId) {
-      console.warn('[join] 400 stripe-ownership: pm.customer=', pmCustomer, 'claimed customerId=', customerId)
+      console.warn('[join] 400 stripe-ownership: pm.customer=', redactStripeId(pmCustomer), 'claimed customerId=', redactStripeId(customerId))
       return NextResponse.json({ error: 'Invalid payment details' }, { status: 400 })
     }
 

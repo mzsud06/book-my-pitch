@@ -76,7 +76,8 @@ export default function Nav() {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '0 clamp(1.25rem, 4vw, 2rem)',
+        paddingLeft: 'clamp(0.75rem, 2vw, 1.25rem)',
+        paddingRight: 'clamp(1.25rem, 4vw, 2rem)',
         height: '60px',
         borderTop: '2px solid var(--green)',
         borderBottom: '1px solid var(--border)',
@@ -96,7 +97,7 @@ export default function Nav() {
             textDecoration: 'none',
             display: 'flex',
             alignItems: 'center',
-            gap: '9px',
+            gap: '5px',
             minHeight: '44px',
           }}
         >
@@ -320,33 +321,6 @@ export default function Nav() {
                 }}
               >
                 Log in
-              </Link>
-              <Link href="/slots" style={{ textDecoration: 'none', display: 'flex' }}>
-                <button
-                  className="nav-btn-green"
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 600,
-                    fontSize: 'clamp(12px, 3vw, 14px)',
-                    letterSpacing: '-0.01em',
-                    padding: 'clamp(0.5rem, 2vw, 0.6rem) clamp(0.875rem, 3vw, 1.25rem)',
-                    borderRadius: 'var(--radius-lg)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: 'var(--green)',
-                    color: 'var(--black)',
-                    transition: 'background 160ms ease-out, transform 160ms ease-out, box-shadow 160ms ease-out',
-                    whiteSpace: 'nowrap',
-                    lineHeight: 1,
-                    minHeight: '44px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                  }}
-                >
-                  Find a game tonight
-                  <span aria-hidden="true">→</span>
-                </button>
               </Link>
             </>
           )}

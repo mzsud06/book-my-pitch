@@ -239,7 +239,7 @@ export default async function HomePage() {
                 {/* Primary CTA */}
                 <div className="anim-fade-up d-300" style={{ marginBottom: '3.5rem' }}>
                   <Link href="/slots" style={{ textDecoration: 'none' }}>
-                    <Button size="lg" arrow>Find a game tonight</Button>
+                    <Button size="lg" arrow>Find a game</Button>
                   </Link>
                 </div>
 
@@ -686,103 +686,132 @@ export default async function HomePage() {
         </section>
 
         {/* ============================================================
+            TESTIMONIALS
+            ============================================================ */}
+        <section style={{ paddingTop: 'clamp(4rem, 8vh, 6rem)', paddingBottom: 'clamp(4rem, 8vh, 6rem)' }}>
+          <Container>
+            <div className="reveal-scroll" style={{ marginBottom: '3rem' }}>
+              <SectionHeading
+                eyebrow="Testimonials"
+                heading={
+                  <>
+                    What players<br />
+                    <span style={{ color: 'var(--green)' }}>are saying.</span>
+                  </>
+                }
+              />
+            </div>
+
+            <div className="testimonials-grid">
+              {[
+                { quote: "Finally sorted our Wednesday games without the WhatsApp chaos. Everyone just clicks the link and it's done.", name: 'Tariq', location: 'Bethnal Green' },
+                { quote: "Joined a public game last week with people I didn't know. Worked perfectly, good bunch.", name: 'Raheem', location: 'Tower Hamlets' },
+                { quote: "Our group's been using it for three weeks. No complaints.", name: 'Liam', location: 'Mile End' },
+              ].map((t, idx) => (
+                <Card
+                  key={t.name}
+                  hover
+                  className="reveal-scroll testimonial-card"
+                  style={{
+                    padding: '2rem 1.75rem 1.75rem',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    borderTop: '2px solid rgba(198,241,53,0.35)',
+                    animationDelay: `${idx * 60}ms`,
+                  }}
+                >
+                  {/* Sheen overlay — premium depth cue */}
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(160deg, rgba(198,241,53,0.05), transparent 45%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+
+                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <p
+                      style={{
+                        fontSize: '15px',
+                        color: 'var(--text)',
+                        lineHeight: 1.7,
+                        fontWeight: 500,
+                        letterSpacing: '-0.005em',
+                        margin: '0 0 1.75rem',
+                        flex: 1,
+                      }}
+                    >
+                      &ldquo;{t.quote}&rdquo;
+                    </p>
+
+                    <div
+                      style={{
+                        height: '1px',
+                        background: 'var(--border)',
+                        margin: '0 0 1.25rem',
+                      }}
+                    />
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '50%',
+                          background: 'var(--green)',
+                          color: 'var(--black)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '14px',
+                          fontWeight: 700,
+                          fontFamily: 'var(--font-display)',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {t.name[0]}
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-display)',
+                            fontWeight: 600,
+                            fontSize: '14px',
+                            color: 'var(--text)',
+                            letterSpacing: '-0.01em',
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {t.name}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: '11px',
+                            color: 'var(--text-tertiary)',
+                            fontWeight: 600,
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase',
+                            marginTop: '2px',
+                          }}
+                        >
+                          {t.location}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Container>
+        </section>
+
+        {/* ============================================================
             FAQ
             ============================================================ */}
         <FaqAccordion />
-
-        {/* ============================================================
-            PITCH OWNER — pitch-green tinted band
-            ============================================================ */}
-        <section
-          style={{
-            background: 'rgba(22,48,31,0.35)',
-            borderTop: '1px solid rgba(198,241,53,0.12)',
-            borderBottom: '1px solid rgba(198,241,53,0.12)',
-            padding: '6rem 2rem',
-            textAlign: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Decorative concentric rings */}
-          {[640, 440, 260].map((size, i) => (
-            <div
-              key={size}
-              aria-hidden
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: `${size}px`,
-                height: `${size}px`,
-                border: `1px solid rgba(198,241,53,${0.06 + i * 0.03})`,
-                borderRadius: '50%',
-                pointerEvents: 'none',
-              }}
-            />
-          ))}
-
-          <div className="reveal-scroll" style={{ maxWidth: '560px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-            <div
-              style={{
-                fontSize: '10px',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase',
-                color: 'var(--text-tertiary)',
-                fontFamily: 'var(--font-sans)',
-                marginBottom: '1.25rem',
-              }}
-            >
-              For pitch owners
-            </div>
-            <h2
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'clamp(32px, 4vw, 56px)',
-                letterSpacing: '-0.04em',
-                lineHeight: 0.92,
-                marginBottom: '1.5rem',
-                color: 'var(--text)',
-              }}
-            >
-              Want to list your pitch?
-            </h2>
-            <p
-              style={{
-                fontSize: '17px',
-                color: 'var(--text-secondary)',
-                lineHeight: 1.75,
-                fontWeight: 500,
-                marginBottom: '2.5rem',
-              }}
-            >
-              We handle bookings, payments and player coordination automatically. No more WhatsApp messages, no more chasing bank transfers. Money lands in your account the moment a game confirms.
-            </p>
-            <a href="mailto:masud.bookmypitch@gmail.com" style={{ textDecoration: 'none' }}>
-              <button
-                className="btn-g"
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  letterSpacing: '-0.025em',
-                  padding: '1rem 2.5rem',
-                  borderRadius: 'var(--radius-lg)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  background: 'var(--green)',
-                  color: 'var(--black)',
-                  transition: 'background 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
-                  lineHeight: 1,
-                }}
-              >
-                Get in touch →
-              </button>
-            </a>
-          </div>
-        </section>
 
         {/* ============================================================
             FOOTER
