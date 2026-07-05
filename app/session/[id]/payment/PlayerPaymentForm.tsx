@@ -7,7 +7,10 @@ import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-
 import { createClient } from '@/lib/supabase/client'
 import { writePlayerDetails, writeSessionPlayer, upsertMySession } from '@/lib/clientStorage'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
+  betas: [],
+  locale: 'en-GB',
+})
 
 interface SlotData {
   id: string

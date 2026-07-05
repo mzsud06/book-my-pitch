@@ -126,14 +126,21 @@ function statusPillInfo(status: string): { label: string; color: string; bg: str
   if (status === 'cancelled') {
     return { label: 'Cancelled', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' }
   }
-  return { label: 'Filling', color: 'var(--amber)', bg: 'rgba(255,184,0,0.1)', border: 'rgba(255,184,0,0.2)' }
+  return { label: 'Filling', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.2)' }
 }
 
 // Slot type badge — Peak / Off-peak / Weekend
-function slotTypeInfo(type: string): { label: string; variant: 'peak' | 'offpeak' | 'neutral' } {
+function slotTypeInfo(type: string): { label: string; variant: 'peak' | 'offpeak' | 'weekend' } {
   if (type === 'peak') return { label: 'Peak', variant: 'peak' }
-  if (type === 'weekend') return { label: 'Weekend', variant: 'neutral' }
+  if (type === 'weekend') return { label: 'Weekend', variant: 'weekend' }
   return { label: 'Off-peak', variant: 'offpeak' }
+}
+
+// Game type badge — Public (open) / Private
+function gameTypeInfo(gameType: string): { label: string; variant: 'public' | 'neutral' } | null {
+  if (gameType === 'open') return { label: 'Public', variant: 'public' }
+  if (gameType === 'private') return { label: 'Private', variant: 'neutral' }
+  return null
 }
 
 function cancelReasonText(c: BookingCard): string | null {
@@ -180,6 +187,7 @@ function SectionLabel({
 function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard; dimmed?: boolean; animationDelay?: string }) {
   const status = statusPillInfo(c.status)
   const typeInfo = slotTypeInfo(c.type)
+  const gameTypeBadge = gameTypeInfo(c.gameType)
   const perPlayer = (c.price / 10 + 0.50 + 0.30).toFixed(2)
   const reason = cancelReasonText(c)
 
@@ -237,7 +245,10 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>
+            {gameTypeBadge && <Badge variant={gameTypeBadge.variant}>{gameTypeBadge.label}</Badge>}
+          </div>
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
             £{perPlayer} <span style={{ fontWeight: 600, opacity: 0.85, fontSize: '11px' }}>per player</span>
           </span>

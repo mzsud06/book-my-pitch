@@ -786,19 +786,21 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                       style={{ animationName: 'fadeUp', animationDuration: '0.45s', animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)', animationFillMode: 'both', animationDelay: `${idx * 60}ms`, cursor: 'pointer' }}
                     >
                       <div className="open-game-card" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        {/* Top half — pitch photo placeholder */}
+                        {/* Top half — pitch photo */}
                         <div
                           style={{
                             position: 'relative',
                             height: '180px',
-                            background: 'linear-gradient(160deg, var(--pitch-green) 0%, var(--black) 100%)',
+                            backgroundImage: "url('/slot-card.jpg')",
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
                           }}
                         >
                           <div
                             style={{
                               position: 'absolute',
                               inset: 0,
-                              background: 'radial-gradient(ellipse 70% 60% at 25% 70%, rgba(198,241,53,0.07) 0%, transparent 100%)',
+                              background: 'rgba(8,8,8,0.45)',
                               pointerEvents: 'none',
                             }}
                           />

@@ -6,7 +6,10 @@ import { useRouter } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
+  betas: [],
+  locale: 'en-GB',
+})
 
 interface SlotData {
   id: string
@@ -327,6 +330,9 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
   const [formError, setFormError] = useState('')
   // True while fetching a replacement SetupIntent; disables the submit button.
   const [refreshing, setRefreshing] = useState(false)
+  // True if Stripe.js hasn't resolved to a usable instance 5s after clientSecret is set
+  // (e.g. stripe.com blocked by an ad blocker) — PaymentElement would otherwise render nothing.
+  const [stripeLoadError, setStripeLoadError] = useState(false)
 
   const typeLabel = slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'
   const startTime = slot.start_time.slice(0, 5)
@@ -395,6 +401,21 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    if (!clientSecret) return
+    let cancelled = false
+    const timeoutPromise = new Promise<'timeout'>(resolve => setTimeout(() => resolve('timeout'), 5000))
+    Promise.race([stripePromise, timeoutPromise]).then(result => {
+      if (cancelled) return
+      if (result === 'timeout' || !result) {
+        setStripeLoadError(true)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [clientSecret])
+
   const appearance = {
     theme: 'night' as const,
     variables: {
@@ -437,6 +458,47 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
           }}
         >
           ← Back to details
+        </button>
+      </div>
+    )
+  }
+
+  if (stripeLoadError) {
+    return (
+      <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
+        <div
+          style={{
+            background: 'rgba(255,68,68,0.08)',
+            border: '1px solid rgba(255,68,68,0.2)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.85rem 1rem',
+            fontSize: '13px',
+            color: 'var(--red)',
+            fontWeight: 500,
+            marginBottom: '1rem',
+          }}
+        >
+          Payment form failed to load. Please disable any ad blockers and refresh the page, or try a different browser.
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="btn-g"
+          style={{
+            width: '100%',
+            minHeight: '52px',
+            borderRadius: 'var(--radius-lg)',
+            border: 'none',
+            cursor: 'pointer',
+            background: 'var(--green)',
+            color: 'var(--black)',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            fontSize: '15px',
+            letterSpacing: '-0.015em',
+            lineHeight: 1,
+          }}
+        >
+          Refresh page
         </button>
       </div>
     )

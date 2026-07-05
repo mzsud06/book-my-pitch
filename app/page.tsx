@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/Badge'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { FaqAccordion } from '@/components/FaqAccordion'
 
+export const revalidate = 0
+
 // ─── Image swap — edit these two spots when photos are ready ─────────
 //
 //  HERO BACKGROUND

@@ -20,7 +20,7 @@ function redactStripeId(id: unknown): string {
   return `${id.slice(0, 6)}...`
 }
 
-const RATE_LIMIT_MAX = 10
+const RATE_LIMIT_MAX = 50
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
 
 export async function POST(req: NextRequest) {

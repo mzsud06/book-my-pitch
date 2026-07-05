@@ -116,7 +116,7 @@ export default function Nav() {
             BookMyPitch
             <span
               style={{
-                color: 'var(--green)',
+                color: 'var(--text-secondary)',
                 opacity: 0.75,
                 fontSize: '0.72em',
                 fontWeight: 600,
