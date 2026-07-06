@@ -28,6 +28,7 @@ interface BookingCard {
   gameType: string
   organiserName: string | null
   matchedSessionId: string | null
+  slotTakenByRival: boolean
 }
 
 interface RawSlot {
@@ -37,6 +38,7 @@ interface RawSlot {
   type: string
   price: number
   venues: { name: string } | null
+  sessions: { status: string }[] | null
 }
 
 interface RawSession {
@@ -145,7 +147,9 @@ function gameTypeInfo(gameType: string): { label: string; variant: 'public' | 'n
 
 function cancelReasonText(c: BookingCard): string | null {
   if (c.status !== 'cancelled') return null
-  return c.matchedSessionId ? 'Cancelled — another team got there first' : 'Cancelled by organiser'
+  if (c.matchedSessionId) return 'Cancelled — another team got there first'
+  if (c.slotTakenByRival) return 'Cancelled — slot taken by another group'
+  return 'Cancelled by organiser'
 }
 
 function SectionLabel({
@@ -274,6 +278,7 @@ function toCard(s: RawSession): BookingCard | null {
     gameType: s.game_type ?? 'private',
     organiserName: s.organiser_name ?? null,
     matchedSessionId: s.matched_session_id ?? null,
+    slotTakenByRival: (slot.sessions ?? []).some(sib => sib.status === 'confirmed'),
   }
 }
 
@@ -294,7 +299,7 @@ export default function MyBookingsClient() {
             joined_at,
             sessions(
               id, status, game_type, organiser_name, matched_session_id,
-              slots(date, start_time, end_time, type, price, venues(name)),
+              slots(date, start_time, end_time, type, price, venues(name), sessions(status)),
               players(count)
             )
           `)
@@ -320,7 +325,7 @@ export default function MyBookingsClient() {
             .from('sessions')
             .select(`
               id, status, game_type, organiser_name, matched_session_id,
-              slots!inner(date, start_time, end_time, type, price, venues(name)),
+              slots!inner(date, start_time, end_time, type, price, venues(name), sessions(status)),
               players(count)
             `)
             .in('id', ids)
@@ -345,8 +350,9 @@ export default function MyBookingsClient() {
   const byDate = (a: BookingCard, b: BookingCard) =>
     (a.date + 'T' + a.startTime).localeCompare(b.date + 'T' + b.startTime)
   const upcoming = cards.filter(c => c.status === 'confirmed' && c.date >= todayStr).sort(byDate)
-  const past = cards.filter(c => c.status === 'confirmed' && c.date < todayStr).sort(byDate)
   const filling = cards.filter(c => c.status === 'filling' && c.date >= todayStr).sort(byDate)
+  const past = cards.filter(c => c.status === 'confirmed' && c.date < todayStr).sort(byDate)
+  const cancelled = cards.filter(c => c.status === 'cancelled').sort(byDate)
 
   if (loading) {
     return (
@@ -485,12 +491,24 @@ export default function MyBookingsClient() {
         </div>
       )}
 
-      {/* Upcoming */}
+      {/* Confirmed — Upcoming */}
       {upcoming.length > 0 && (
         <div style={{ marginBottom: '2.5rem' }}>
-          <SectionLabel label="Upcoming" color="var(--green)" lineColor="var(--green)" />
+          <SectionLabel label="Confirmed — Upcoming" color="var(--green)" lineColor="var(--green)" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {upcoming.map((c, idx) => (
+              <BookingCardTile key={c.sessionId} c={c} animationDelay={`${idx * 60}ms`} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Filling */}
+      {filling.length > 0 && (
+        <div style={{ marginBottom: '2.5rem' }}>
+          <SectionLabel label="Filling" color="#f59e0b" lineColor="#f59e0b" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {filling.map((c, idx) => (
               <BookingCardTile key={c.sessionId} c={c} animationDelay={`${idx * 60}ms`} />
             ))}
           </div>
@@ -509,13 +527,13 @@ export default function MyBookingsClient() {
         </div>
       )}
 
-      {/* Filling */}
-      {filling.length > 0 && (
+      {/* Cancelled */}
+      {cancelled.length > 0 && (
         <div>
-          <SectionLabel label="Filling" color="#f59e0b" lineColor="#f59e0b" />
+          <SectionLabel label="Cancelled" color="var(--text-secondary)" lineColor="var(--muted)" opacity={0.7} lineOpacity={0.4} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {filling.map((c, idx) => (
-              <BookingCardTile key={c.sessionId} c={c} animationDelay={`${idx * 60}ms`} />
+            {cancelled.map(c => (
+              <BookingCardTile key={c.sessionId} c={c} dimmed />
             ))}
           </div>
         </div>

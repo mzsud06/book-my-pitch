@@ -156,7 +156,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
   }, [])
 
   const dayStr = formatDate(selectedDate)
-  const slotTemplates = getSlotsForDay(selectedDate)
+  const rawSlotTemplates = getSlotsForDay(selectedDate)
+  // Hide slots on today's date whose start time has already passed.
+  const nowTimeStr = dayStr === formatDate(new Date())
+    ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`
+    : null
+  const slotTemplates = nowTimeStr
+    ? rawSlotTemplates.filter(t => t.startTime > nowTimeStr)
+    : rawSlotTemplates
 
   // ── Per-slot session maps ────────────────────────────────────────────────
   const daySessionMap = new Map<string, SessionData[]>()
@@ -194,9 +201,9 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
     const slotSessions = daySessionMap.get(template.startTime) ?? []
     const slotId = slotIdMap.get(`${dayStr}_${template.startTime}`) ?? null
 
-    const confirmed = slotSessions.find(s => s.status === 'confirmed' && totalCount(s) >= 10)
+    const confirmed = slotSessions.find(s => s.status === 'confirmed' && totalCount(s) >= s.slots.max_players)
     if (confirmed) {
-      return { status: 'booked' as const, hasRival: false, playerCount: 10, sessionId: null, slotId: confirmed.slot_id }
+      return { status: 'booked' as const, hasRival: false, playerCount: confirmed.slots.max_players, sessionId: null, slotId: confirmed.slot_id }
     }
 
     const filling = slotSessions.filter(s => s.status === 'filling')
@@ -446,7 +453,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   const isPeak = template.type === 'peak'
 
                   const slotSessionsForTime = daySessionMap.get(template.startTime) ?? []
-                  const userSlotSessions = slotSessionsForTime.filter(s => userSessionSet.has(s.id) && s.status === 'confirmed')
+                  const userSlotSessions = slotSessionsForTime.filter(s => userSessionSet.has(s.id) && s.status !== 'cancelled')
                   const hasUserSession = userSlotSessions.length > 0
 
                   const subtextLabel = hasUserSession
@@ -501,7 +508,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                         border: `1px solid ${pillBorderColor}`,
                         background: pillBg,
                         cursor: booked ? 'not-allowed' : 'pointer',
-                        opacity: booked ? 0.28 : 1,
+                        opacity: booked ? 0.4 : 1,
+                        pointerEvents: booked ? 'none' : 'auto',
                         textAlign: 'center',
                         display: 'flex',
                         flexDirection: 'column',
@@ -526,6 +534,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                           lineHeight: 1,
                           color: isSelected ? 'var(--black)' : booked ? 'var(--text-tertiary)' : 'var(--text)',
                           fontVariantNumeric: 'tabular-nums',
+                          textDecoration: booked ? 'line-through' : 'none',
                         }}
                       >
                         {template.startTime}

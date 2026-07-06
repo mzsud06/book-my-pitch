@@ -134,6 +134,22 @@ export async function POST(req: NextRequest) {
           confirmed_at: new Date().toISOString(),
         }))
       )
+
+      // This slot is now taken — cancel any other groups still competing for it.
+      const { error: cancelRivalsError } = await supabase
+        .from('sessions')
+        .update({ status: 'cancelled' })
+        .eq('slot_id', slot.id)
+        .eq('status', 'filling')
+        .not('id', 'in', `(${sessionIds.join(',')})`)
+
+      if (cancelRivalsError) {
+        Sentry.captureException(new Error('Failed to cancel rival sessions after confirmation'), {
+          tags: { route: 'POST /api/trigger-payments', step: 'cancel_rivals' },
+          extra: { session_id: sessionId, slot_id: slot.id, error: cancelRivalsError.message },
+        })
+      }
+
       return NextResponse.json({ success: true, message: 'All payments succeeded, session confirmed' })
     } else {
       Sentry.captureException(

@@ -113,7 +113,7 @@ export default function Nav() {
               userSelect: 'none',
             }}
           >
-            BookMyPitch
+            Book<span style={{ color: '#C6F135' }}>My</span>Pitch
             <span
               style={{
                 color: 'var(--text-secondary)',
