@@ -344,9 +344,9 @@ export default function MyBookingsClient() {
   const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date())
   const byDate = (a: BookingCard, b: BookingCard) =>
     (a.date + 'T' + a.startTime).localeCompare(b.date + 'T' + b.startTime)
-  const upcoming = cards.filter(c => c.status !== 'cancelled' && c.date >= todayStr).sort(byDate)
-  const cancelled = cards.filter(c => c.status === 'cancelled').sort((a, b) => b.date.localeCompare(a.date))
+  const upcoming = cards.filter(c => c.status === 'confirmed' && c.date >= todayStr).sort(byDate)
   const past = cards.filter(c => c.status === 'confirmed' && c.date < todayStr).sort(byDate)
+  const filling = cards.filter(c => c.status === 'filling' && c.date >= todayStr).sort(byDate)
 
   if (loading) {
     return (
@@ -497,25 +497,25 @@ export default function MyBookingsClient() {
         </div>
       )}
 
-      {/* Cancelled */}
-      {cancelled.length > 0 && (
+      {/* Past */}
+      {past.length > 0 && (
         <div style={{ marginBottom: '2.5rem' }}>
-          <SectionLabel label="Cancelled" color="var(--red)" lineColor="var(--red)" opacity={0.7} lineOpacity={0.5} />
+          <SectionLabel label="Past" color="var(--text-secondary)" lineColor="var(--muted)" lineOpacity={0.4} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {cancelled.map(c => (
+            {past.map(c => (
               <BookingCardTile key={c.sessionId} c={c} dimmed />
             ))}
           </div>
         </div>
       )}
 
-      {/* Past */}
-      {past.length > 0 && (
+      {/* Filling */}
+      {filling.length > 0 && (
         <div>
-          <SectionLabel label="Past" color="var(--text-secondary)" lineColor="var(--muted)" lineOpacity={0.4} />
+          <SectionLabel label="Filling" color="#f59e0b" lineColor="#f59e0b" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {past.map(c => (
-              <BookingCardTile key={c.sessionId} c={c} dimmed />
+            {filling.map((c, idx) => (
+              <BookingCardTile key={c.sessionId} c={c} animationDelay={`${idx * 60}ms`} />
             ))}
           </div>
         </div>

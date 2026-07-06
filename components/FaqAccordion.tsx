@@ -159,6 +159,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
 export function FaqAccordion() {
   return (
     <section
+      id="faq"
       style={{
         paddingTop: 'clamp(4rem, 8vh, 6rem)',
         paddingBottom: 'clamp(4rem, 8vh, 6rem)',

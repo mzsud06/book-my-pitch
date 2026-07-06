@@ -8,6 +8,7 @@ import { getSlotsForDay, SlotTemplate } from '@/lib/slots'
 import { Container } from '@/components/ui/Container'
 import { Badge } from '@/components/ui/Badge'
 import { Eyebrow } from '@/components/ui/Eyebrow'
+import { Footer } from '@/components/Footer'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 
 export interface SessionData {
@@ -232,6 +233,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
   const selectedInfo = selectedTemplate ? getSlotStatus(selectedTemplate) : null
 
   return (
+    <>
     <div style={{ paddingBottom: '5rem' }}>
       <Container>
         <div style={{ paddingTop: '2.25rem' }}>
@@ -444,7 +446,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   const isPeak = template.type === 'peak'
 
                   const slotSessionsForTime = daySessionMap.get(template.startTime) ?? []
-                  const userSlotSessions = slotSessionsForTime.filter(s => userSessionSet.has(s.id))
+                  const userSlotSessions = slotSessionsForTime.filter(s => userSessionSet.has(s.id) && s.status === 'confirmed')
                   const hasUserSession = userSlotSessions.length > 0
 
                   const subtextLabel = hasUserSession
@@ -774,7 +776,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   const playerCount = totalCount(s as SessionData)
                   const maxPlayers = slot.max_players
                   const perPlayer = (slot.price / maxPlayers).toFixed(2)
-                  const title = s.team_name || s.organiser_name || 'Public game'
+                  const title = s.team_name || (s.organiser_name ? `${s.organiser_name}'s game` : 'Public game')
                   const typeVariant = slot.type === 'peak' ? 'peak' : slot.type === 'weekend' ? 'neutral' : 'offpeak'
                   const typeLabel = slot.type === 'peak' ? 'Peak' : slot.type === 'weekend' ? 'Weekend' : 'Off-peak'
 
@@ -870,5 +872,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
         </div>
       </Container>
     </div>
+    <Footer />
+    </>
   )
 }

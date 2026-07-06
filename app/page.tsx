@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { FaqAccordion } from '@/components/FaqAccordion'
+import { Footer } from '@/components/Footer'
 
 export const revalidate = 0
 
@@ -818,46 +819,7 @@ export default async function HomePage() {
         {/* ============================================================
             FOOTER
             ============================================================ */}
-        <footer
-          style={{
-            borderTop: '1px solid var(--border)',
-            padding: '2.5rem 2rem',
-          }}
-        >
-          <div
-            style={{
-              maxWidth: '1140px',
-              margin: '0 auto',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '0.75rem',
-            }}
-          >
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'baseline',
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  letterSpacing: '-0.03em',
-                  marginRight: '12px',
-                  lineHeight: 1,
-                }}
-              >
-                Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
-                <span style={{ color: 'var(--green)', fontSize: '10px', verticalAlign: 'super', marginLeft: '1px', opacity: 0.75, fontWeight: 600 }}>.uk</span>
-              </span>
-              Globe Football Pitch · 110 Globe Rd, Bethnal Green E1 4DZ
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 500 }}>
-              © 2025 BookMyPitch.uk
-            </div>
-          </div>
-        </footer>
+        <Footer />
 
       </main>
     </PageReveal>

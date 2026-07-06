@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import PhoneInput, { parsePhone } from '@/components/PhoneInput'
 import { readPlayerDetails, readMySessions, readSessionPlayer, removeSessionPlayer, removeMySession } from '@/lib/clientStorage'
+import { Footer } from '@/components/Footer'
 
 interface Player {
   id: string
@@ -924,6 +925,7 @@ export default function SessionClient({
   }
 
   return (
+    <>
     <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
 
       {/* ============================================================
@@ -2730,5 +2732,7 @@ export default function SessionClient({
         </div>
       )}
     </div>
+    <Footer />
+    </>
   )
 }
