@@ -442,7 +442,7 @@ export default async function HomePage() {
                       fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
                       letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
                     }}>
-                      {game.organiserName ? `${game.organiserName}'s game` : "Someone's game"}
+                      {game.organiserName ? `${game.organiserName}'s game` : "Public game"}
                     </div>
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: '6px',

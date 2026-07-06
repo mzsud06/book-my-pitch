@@ -164,7 +164,7 @@ export default async function PublicGamesPage() {
                       </div>
 
                       <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '1.1rem' }}>
-                        {game.organiserName ? `${game.organiserName}'s game` : "Someone's game"}
+                        {game.organiserName ? `${game.organiserName}'s game` : "Public game"}
                       </div>
 
                       <div style={{

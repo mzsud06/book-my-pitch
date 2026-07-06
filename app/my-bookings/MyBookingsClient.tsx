@@ -233,7 +233,7 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}
         >
-          {c.organiserName ? `${c.organiserName}'s game` : "Someone's game"}
+          {c.organiserName ? `${c.organiserName}'s game` : "Public game"}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px' }}>
