@@ -340,7 +340,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
               {slot.venue?.address ?? '110 Globe Rd, Bethnal Green E1 4DZ'}
             </div>
             <div style={{ marginTop: '10px' }}>
-              <Badge variant={slot.type === 'peak' ? 'peak' : slot.type === 'offpeak' ? 'offpeak' : 'neutral'}>
+              <Badge variant={slot.type === 'peak' ? 'peak' : slot.type === 'offpeak' ? 'offpeak' : 'weekend'}>
                 {typeLabel}
               </Badge>
             </div>

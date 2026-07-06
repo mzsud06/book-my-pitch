@@ -706,7 +706,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                           {rangeEndTime}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <Badge variant={selectedTemplate.type === 'peak' ? 'peak' : 'offpeak'}>
+                          <Badge variant={selectedTemplate.type === 'peak' ? 'peak' : selectedTemplate.type === 'weekend' ? 'weekend' : 'offpeak'}>
                             {typeLabel}
                           </Badge>
                           <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 400 }}>
@@ -843,7 +843,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   const maxPlayers = slot.max_players
                   const perPlayer = (slot.price / maxPlayers).toFixed(2)
                   const title = s.team_name || (s.organiser_name ? `${s.organiser_name}'s game` : 'Public game')
-                  const typeVariant = slot.type === 'peak' ? 'peak' : slot.type === 'weekend' ? 'neutral' : 'offpeak'
+                  const typeVariant = slot.type === 'peak' ? 'peak' : slot.type === 'weekend' ? 'weekend' : 'offpeak'
                   const typeLabel = slot.type === 'peak' ? 'Peak' : slot.type === 'weekend' ? 'Weekend' : 'Off-peak'
 
                   return (
