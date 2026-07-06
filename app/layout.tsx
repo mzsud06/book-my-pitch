@@ -5,7 +5,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "BookMyPitch — Play football tonight at Globe Pitch",
   description: "Find a game at Globe Pitch, Bethnal Green, or start one in under a minute. No bank transfers — everyone pays automatically when the team is full.",
-  icons: { icon: "/favicon.png" },
+  icons: {
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/logo.png', type: 'image/png' },
+    ],
+    apple: '/logo.png',
+  },
 };
 
 export const viewport: Viewport = {
