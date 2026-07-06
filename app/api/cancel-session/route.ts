@@ -70,6 +70,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to cancel session' }, { status: 500 })
     }
 
+    // Notify every player with an account that their game was cancelled.
+    const { data: sessionPlayers } = await svc
+      .from('players')
+      .select('user_id')
+      .eq('session_id', sessionId)
+      .not('user_id', 'is', null)
+
+    if (sessionPlayers && sessionPlayers.length > 0) {
+      await svc.from('notifications').insert(
+        (sessionPlayers as unknown as { user_id: string }[]).map(p => ({
+          user_id: p.user_id,
+          session_id: sessionId,
+          message: 'A game you joined was cancelled. No charge was made.',
+        }))
+      )
+    }
+
     // If this was a challenger, free the LFO session's back-reference so new
     // challengers can claim it. Only clear it if it still points at this session
     // (another challenger may have already won the race and set it to their id).

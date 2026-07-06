@@ -131,9 +131,17 @@ export async function POST(req: NextRequest) {
       })
     )
 
-    const failures = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as { pi: { status: string } }).pi.status !== 'succeeded'))
+    const succeededPIIds: string[] = []
+    const failedPlayerIds: string[] = []
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled' && (r.value as { pi: { id: string; status: string } }).pi.status === 'succeeded') {
+        succeededPIIds.push((r.value as { pi: { id: string; status: string } }).pi.id)
+      } else {
+        failedPlayerIds.push(allPlayers[i].id)
+      }
+    })
 
-    if (failures.length === 0) {
+    if (failedPlayerIds.length === 0) {
       const sessionIds = isMatchedGame ? [sessionId, matchedSessionId!] : [sessionId]
       await Promise.all(
         sessionIds.map(sid => supabase.from('sessions').update({ status: 'confirmed' }).eq('id', sid))
@@ -178,8 +186,30 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ success: true, message: 'All payments succeeded, session confirmed' })
     } else {
+      // One or more payments failed — refund everyone who did succeed so nobody
+      // is charged for a game that never confirmed, and drop the failed
+      // player(s) so their spot reopens for a retry with a working card.
+      if (succeededPIIds.length > 0) {
+        const refundResults = await Promise.allSettled(
+          succeededPIIds.map(piId => stripe.refunds.create({ payment_intent: piId }))
+        )
+        const refundFailures = refundResults.filter(r => r.status === 'rejected')
+        if (refundFailures.length > 0) {
+          Sentry.captureException(new Error(`Failed to refund ${refundFailures.length} successful payment(s) after partial failure for session ${sessionId}`), {
+            tags: { route: 'POST /api/trigger-payments', step: 'refund_after_failure' },
+            extra: { session_id: sessionId },
+          })
+        }
+      }
+
+      await supabase.from('players').delete().in('id', failedPlayerIds)
+
+      // Session status is left as 'filling' — it was never marked confirmed
+      // above, so no update is needed here. The failed player's spot is now
+      // open again and the next join attempt will re-trigger payment collection.
+
       Sentry.captureException(
-        new Error(`${failures.length}/${allPlayers.length} payment(s) failed for session ${sessionId}`),
+        new Error(`${failedPlayerIds.length}/${allPlayers.length} payment(s) failed for session ${sessionId}`),
         {
           tags: { route: 'POST /api/trigger-payments', session_id: sessionId },
           extra: {
@@ -187,14 +217,15 @@ export async function POST(req: NextRequest) {
             matched_session_id: matchedSessionId,
             is_matched_game: isMatchedGame,
             total_players: allPlayers.length,
-            failure_count: failures.length,
+            failure_count: failedPlayerIds.length,
+            refunded_count: succeededPIIds.length,
           },
         },
       )
-      console.error(`${failures.length} payment(s) failed for session ${sessionId}`)
+      console.error(`${failedPlayerIds.length} payment(s) failed for session ${sessionId} — refunded ${succeededPIIds.length} successful payment(s), removed ${failedPlayerIds.length} failed player(s)`)
       return NextResponse.json({
         success: false,
-        message: 'Some payments failed',
+        message: 'Some payments failed. Successful charges have been refunded and affected players removed so they can rejoin with a working card.',
       }, { status: 422 })
     }
   } catch (err) {

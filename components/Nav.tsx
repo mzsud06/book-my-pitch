@@ -6,8 +6,29 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 interface AuthUser {
+  id: string
   name: string
   email: string
+}
+
+interface NotificationRow {
+  id: string
+  message: string
+  read: boolean
+  created_at: string
+  session_id: string | null
+}
+
+function formatNotifTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diffMs / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
 export default function Nav() {
@@ -17,6 +38,10 @@ export default function Nav() {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const [notifications, setNotifications] = useState<NotificationRow[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const notifRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -24,6 +49,7 @@ export default function Nav() {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setUser({
+          id: data.user.id,
           name: data.user.user_metadata?.name ?? '',
           email: data.user.email ?? '',
         })
@@ -33,6 +59,7 @@ export default function Nav() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       if (session?.user) {
         setUser({
+          id: session.user.id,
           name: session.user.user_metadata?.name ?? '',
           email: session.user.email ?? '',
         })
@@ -45,6 +72,39 @@ export default function Nav() {
   }, [])
 
   useEffect(() => {
+    const supabase = createClient()
+    let cancelled = false
+
+    async function loadNotifications() {
+      if (!user) {
+        if (!cancelled) {
+          setNotifications([])
+          setUnreadCount(0)
+        }
+        return
+      }
+
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('read', false)
+      if (!cancelled) setUnreadCount(count ?? 0)
+
+      const { data } = await supabase
+        .from('notifications')
+        .select('id, message, read, created_at, session_id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      if (!cancelled) setNotifications((data ?? []) as NotificationRow[])
+    }
+
+    loadNotifications()
+    return () => { cancelled = true }
+  }, [user])
+
+  useEffect(() => {
     if (!dropdownOpen) return
     function handleClickOutside(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -54,6 +114,30 @@ export default function Nav() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [dropdownOpen])
+
+  useEffect(() => {
+    if (!notifOpen) return
+    function handleClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [notifOpen])
+
+  async function handleNotificationClick(n: NotificationRow) {
+    setNotifOpen(false)
+    if (!n.read) {
+      const supabase = createClient()
+      await supabase.from('notifications').update({ read: true }).eq('id', n.id)
+      setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
+      setUnreadCount(c => Math.max(0, c - 1))
+    }
+    if (n.session_id) {
+      router.push(`/session/${n.session_id}`)
+    }
+  }
 
   async function handleSignOut() {
     const supabase = createClient()
@@ -132,10 +216,146 @@ export default function Nav() {
         {/* Right side */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {user ? (
+            <>
+              <div ref={notifRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => { setDropdownOpen(false); setNotifOpen(o => !o) }}
+                  aria-label="Notifications"
+                  aria-expanded={notifOpen}
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    border: '1px solid var(--border)',
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.15s ease, background 0.15s ease',
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '1px',
+                        right: '1px',
+                        minWidth: '15px',
+                        height: '15px',
+                        padding: '0 3px',
+                        borderRadius: '999px',
+                        background: '#FF4444',
+                        color: '#fff',
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: 'var(--font-sans)',
+                        lineHeight: 1,
+                        border: '2px solid rgba(8,8,8,0.96)',
+                      }}
+                    >
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notifOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 10px)',
+                      right: 0,
+                      background: 'var(--surface2)',
+                      border: '1px solid var(--border)',
+                      borderRadius: '16px',
+                      padding: '6px',
+                      width: '300px',
+                      maxHeight: '360px',
+                      overflowY: 'auto',
+                      zIndex: 400,
+                      boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: '8px 10px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: 'var(--text-secondary)',
+                        fontFamily: 'var(--font-sans)',
+                      }}
+                    >
+                      Notifications
+                    </div>
+                    {notifications.length === 0 ? (
+                      <div
+                        style={{
+                          padding: '20px 10px',
+                          fontSize: '13px',
+                          color: 'var(--text-secondary)',
+                          textAlign: 'center',
+                          fontWeight: 500,
+                        }}
+                      >
+                        No notifications yet
+                      </div>
+                    ) : (
+                      notifications.map(n => (
+                        <div
+                          key={n.id}
+                          onClick={() => handleNotificationClick(n)}
+                          className="dropdown-item"
+                          style={{
+                            padding: '10px',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            marginBottom: '2px',
+                            background: n.read ? 'transparent' : 'rgba(198,241,53,0.06)',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: '13px',
+                              color: 'var(--text)',
+                              fontWeight: n.read ? 500 : 700,
+                              lineHeight: 1.4,
+                              fontFamily: 'var(--font-sans)',
+                            }}
+                          >
+                            {n.message}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '11px',
+                              color: 'var(--text-secondary)',
+                              marginTop: '4px',
+                              fontWeight: 500,
+                            }}
+                          >
+                            {formatNotifTime(n.created_at)}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
             <div ref={dropdownRef} style={{ position: 'relative' }}>
               <button
                 className="profile-btn"
-                onClick={() => setDropdownOpen(o => !o)}
+                onClick={() => { setNotifOpen(false); setDropdownOpen(o => !o) }}
                 aria-label="Account menu"
                 aria-expanded={dropdownOpen}
                 style={{
@@ -300,6 +520,7 @@ export default function Nav() {
                 </div>
               )}
             </div>
+            </>
           ) : (
             <>
               <Link

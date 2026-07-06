@@ -213,6 +213,12 @@ export async function POST(req: NextRequest) {
     const existingSessionSlotIds = (existingSession as unknown as { slot_ids: string[] | null }).slot_ids
     const sessionSlotIds: string[] = existingSessionSlotIds && existingSessionSlotIds.length > 0 ? existingSessionSlotIds : [slot.id]
 
+    // Set when a triggered payment batch below fails for one or more players —
+    // checked just before the final success response so the joining player
+    // (who is always part of that batch) hears about it instead of getting a
+    // silent 200.
+    let paymentFailure = false
+
     if (sessionMatchedId) {
       // This session has a partner. Two scenarios:
       // (a) Challenger — matched_session_id was set at creation, pointing at the LFO.
@@ -269,8 +275,9 @@ export async function POST(req: NextRequest) {
             .not('stripe_payment_method_id', 'is', null)
             .not('stripe_customer_id', 'is', null)
           if ((lfoCount ?? 0) >= 5) {
-            await triggerPayments(sessionId, slot as unknown as SlotForPayment, [slot.id])
-            await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment, [slot.id])
+            const r1 = await triggerPayments(sessionId, slot as unknown as SlotForPayment, [slot.id])
+            const r2 = await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment, [slot.id])
+            if (!r1.ok || !r2.ok) paymentFailure = true
           }
           // If LFO isn't at 5 yet, payments fire when their 5th player joins
           // (they'll see partner.matched_session_id === sessionId → mutual-match path below).
@@ -285,8 +292,9 @@ export async function POST(req: NextRequest) {
             .not('stripe_payment_method_id', 'is', null)
             .not('stripe_customer_id', 'is', null)
           if ((partnerCount ?? 0) >= 5) {
-            await triggerPayments(sessionId, slot as unknown as SlotForPayment, [slot.id])
-            await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment, [slot.id])
+            const r1 = await triggerPayments(sessionId, slot as unknown as SlotForPayment, [slot.id])
+            const r2 = await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment, [slot.id])
+            if (!r1.ok || !r2.ok) paymentFailure = true
           }
 
         } else {
@@ -311,8 +319,15 @@ export async function POST(req: NextRequest) {
         organiserReady = (organiserPaidCount ?? 0) > 0
       }
       if (organiserReady) {
-        await triggerPayments(sessionId, slot as unknown as SlotForPayment, sessionSlotIds)
+        const r = await triggerPayments(sessionId, slot as unknown as SlotForPayment, sessionSlotIds)
+        if (!r.ok) paymentFailure = true
       }
+    }
+
+    if (paymentFailure) {
+      return NextResponse.json({
+        error: 'A payment failed for one of the players. No one has been charged and all payments have been refunded. Their spot has been freed up — once they rejoin with a working card the game will confirm.',
+      }, { status: 402 })
     }
 
     return NextResponse.json({ sessionId, playerCount })
@@ -333,7 +348,7 @@ interface SlotForPayment {
   max_players?: number
 }
 
-async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds: string[]) {
+async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds: string[]): Promise<{ ok: boolean }> {
   const serviceSupabase = createServiceClient()
 
   // Short-circuit if already confirmed or cancelled to avoid double-charging.
@@ -342,7 +357,7 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
     .select('id, status, matched_session_id')
     .eq('id', sessionId)
     .single()
-  if (!sessionRow || sessionRow.status === 'confirmed' || sessionRow.status === 'cancelled') return
+  if (!sessionRow || sessionRow.status === 'confirmed' || sessionRow.status === 'cancelled') return { ok: true }
 
   const { data: venue } = await serviceSupabase
     .from('venues')
@@ -371,32 +386,33 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
 
   const { data: players } = await serviceSupabase
     .from('players')
-    .select('id, stripe_customer_id, stripe_payment_method_id, name')
+    .select('id, stripe_customer_id, stripe_payment_method_id, name, user_id')
     .eq('session_id', sessionId)
     .not('stripe_payment_method_id', 'is', null)
     .not('stripe_customer_id', 'is', null)
     .limit(perSessionLimit)
+  const playersWithSession = (players ?? []).map(p => ({ ...p, sessionId }))
 
-  let matchedPlayers: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }[] = []
+  let matchedPlayers: (typeof playersWithSession) = []
   if (matchedId) {
     const { data: mp } = await serviceSupabase
       .from('players')
-      .select('id, stripe_customer_id, stripe_payment_method_id, name')
+      .select('id, stripe_customer_id, stripe_payment_method_id, name, user_id')
       .eq('session_id', matchedId)
       .not('stripe_payment_method_id', 'is', null)
       .not('stripe_customer_id', 'is', null)
       .limit(5)
-    matchedPlayers = (mp ?? []) as typeof matchedPlayers
+    matchedPlayers = (mp ?? []).map(p => ({ ...p, sessionId: matchedId }))
   }
 
-  const allPlayers = [...(players ?? []), ...matchedPlayers]
+  const allPlayers = [...playersWithSession, ...matchedPlayers]
   if (allPlayers.length === 0) {
     console.error('No players with payment methods found for session', sessionId)
-    return
+    return { ok: true }
   }
 
   const results = await Promise.allSettled(
-    allPlayers.map(async (player: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }) => {
+    allPlayers.map(async (player) => {
       return stripe.paymentIntents.create({
         amount: totalPerPlayer,
         currency: 'gbp',
@@ -414,11 +430,18 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
     })
   )
 
-  const allSucceeded = results.every(
-    r => r.status === 'fulfilled' && (r.value as { status: string }).status === 'succeeded'
-  )
+  const succeededPIIds: string[] = []
+  const failedPlayers: typeof allPlayers = []
+  results.forEach((r, i) => {
+    if (r.status === 'fulfilled' && (r.value as { id: string; status: string }).status === 'succeeded') {
+      succeededPIIds.push((r.value as { id: string; status: string }).id)
+    } else {
+      failedPlayers.push(allPlayers[i])
+    }
+  })
+  const failedPlayerIds = failedPlayers.map(p => p.id)
 
-  if (allSucceeded) {
+  if (failedPlayerIds.length === 0) {
     const sessionIds = matchedId ? [sessionId, matchedId] : [sessionId]
     await Promise.all(
       sessionIds.map(sid =>
@@ -437,6 +460,18 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
         )
       )
     )
+
+    // Notify every player with an account that the game is confirmed.
+    const playersToNotify = allPlayers.filter(p => p.user_id)
+    if (playersToNotify.length > 0) {
+      await serviceSupabase.from('notifications').insert(
+        playersToNotify.map(p => ({
+          user_id: p.user_id as string,
+          session_id: p.sessionId,
+          message: 'Your game is confirmed! See you on the pitch.',
+        }))
+      )
+    }
 
     // These slots are now taken — cancel any other groups still competing for
     // any of them, whether as their primary slot_id or elsewhere in their own
@@ -466,15 +501,55 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
         },
       })
     }
-  } else {
-    const failures = results.filter(r => r.status === 'rejected')
-    Sentry.captureException(
-      new Error(`${failures.length}/${allPlayers.length} payment(s) failed for session ${sessionId}`),
-      {
-        tags: { route: 'POST /api/join', step: 'trigger_payments', session_id: sessionId },
-        extra: { session_id: sessionId, failure_count: failures.length, total_players: allPlayers.length },
-      },
-    )
-    console.error(`${failures.length} payment(s) failed for session ${sessionId}`)
+    return { ok: true }
   }
+
+  // One or more payments failed — refund everyone who did succeed so nobody is
+  // charged for a game that never confirmed, and drop the failed player(s) so
+  // their spot reopens for a retry with a working card.
+  if (succeededPIIds.length > 0) {
+    const refundResults = await Promise.allSettled(
+      succeededPIIds.map(piId => stripe.refunds.create({ payment_intent: piId }))
+    )
+    const refundFailures = refundResults.filter(r => r.status === 'rejected')
+    if (refundFailures.length > 0) {
+      Sentry.captureException(new Error(`Failed to refund ${refundFailures.length} successful payment(s) after partial failure for session ${sessionId}`), {
+        tags: { route: 'POST /api/join', step: 'refund_after_failure' },
+        extra: { session_id: sessionId },
+      })
+    }
+  }
+
+  await serviceSupabase.from('players').delete().in('id', failedPlayerIds)
+
+  // Notify any failed player who has an account that their spot was freed up.
+  const failedPlayersToNotify = failedPlayers.filter(p => p.user_id)
+  if (failedPlayersToNotify.length > 0) {
+    await serviceSupabase.from('notifications').insert(
+      failedPlayersToNotify.map(p => ({
+        user_id: p.user_id as string,
+        session_id: p.sessionId,
+        message: 'Your payment failed for a game you joined — your spot has been freed up. Rejoin with a working card to secure your place.',
+      }))
+    )
+  }
+
+  // Session status is left as 'filling' — it was never marked confirmed above,
+  // so no update is needed here. The failed player's spot is now open again
+  // and the next join attempt will re-trigger payment collection.
+
+  Sentry.captureException(
+    new Error(`${failedPlayerIds.length}/${allPlayers.length} payment(s) failed for session ${sessionId}`),
+    {
+      tags: { route: 'POST /api/join', step: 'trigger_payments', session_id: sessionId },
+      extra: {
+        session_id: sessionId,
+        failure_count: failedPlayerIds.length,
+        total_players: allPlayers.length,
+        refunded_count: succeededPIIds.length,
+      },
+    },
+  )
+  console.error(`${failedPlayerIds.length} payment(s) failed for session ${sessionId} — refunded ${succeededPIIds.length} successful payment(s), removed ${failedPlayerIds.length} failed player(s)`)
+  return { ok: false }
 }
