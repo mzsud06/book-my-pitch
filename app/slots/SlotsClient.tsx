@@ -21,6 +21,7 @@ export interface SessionData {
   is_public: boolean
   game_type: string | null
   matched_session_id: string | null
+  slot_ids: string[] | null
   slots: {
     id: string
     date: string
@@ -115,6 +116,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
   const [sessions, setSessions] = useState<SessionData[]>(initialSessions)
   const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  const [selectedDuration, setSelectedDuration] = useState(60)
   const [availableOnly, setAvailableOnly] = useState(false)
 
   const [slotIdMap, setSlotIdMap] = useState<Map<string, string>>(
@@ -144,7 +146,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
       const endStr = formatDate(addDays(startOfDay(new Date()), 14))
       supabase
         .from('sessions')
-        .select('id, slot_id, organiser_id, status, organiser_name, team_name, is_public, game_type, matched_session_id, slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id), players(count)')
+        .select('id, slot_id, organiser_id, status, organiser_name, team_name, is_public, game_type, matched_session_id, slot_ids, slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id), players(count)')
         .eq('slots.venue_id', venueId)
         .gte('slots.date', nowStr)
         .lte('slots.date', endStr)
@@ -197,15 +199,25 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
     }))
     .sort((a, b) => totalCount(b as SessionData) - totalCount(a as SessionData))
 
+  // Every slot id locked by a confirmed session — either as its primary slot_id
+  // or as one of the other hours in a multi-hour (60/120/180 min) booking's
+  // slot_ids array. A slot in here is booked and non-clickable everywhere,
+  // even if it isn't the primary slot of the session that confirmed it.
+  const confirmedSlotIdSet = new Set<string>()
+  sessions.forEach(s => {
+    if (s.status !== 'confirmed') return
+    const ids = s.slot_ids && s.slot_ids.length > 0 ? s.slot_ids : [s.slot_id]
+    ids.forEach(id => confirmedSlotIdSet.add(id))
+  })
+
   function getSlotStatus(template: SlotTemplate) {
-    const slotSessions = daySessionMap.get(template.startTime) ?? []
     const slotId = slotIdMap.get(`${dayStr}_${template.startTime}`) ?? null
 
-    const confirmed = slotSessions.find(s => s.status === 'confirmed' && totalCount(s) >= s.slots.max_players)
-    if (confirmed) {
-      return { status: 'booked' as const, hasRival: false, playerCount: confirmed.slots.max_players, sessionId: null, slotId: confirmed.slot_id }
+    if (slotId && confirmedSlotIdSet.has(slotId)) {
+      return { status: 'booked' as const, hasRival: false, playerCount: template.maxPlayers, sessionId: null, slotId }
     }
 
+    const slotSessions = daySessionMap.get(template.startTime) ?? []
     const filling = slotSessions.filter(s => s.status === 'filling')
     if (filling.length === 0) {
       return { status: 'empty' as const, hasRival: false, playerCount: 0, sessionId: null, slotId }
@@ -344,6 +356,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                       if (!isPast) {
                         setSelectedDate(startOfDay(day))
                         setSelectedTime(null)
+                        setSelectedDuration(60)
                       }
                     }}
                     disabled={isPast}
@@ -499,6 +512,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                       onClick={() => {
                         if (!booked) {
                           setSelectedTime(t => t === template.startTime ? null : template.startTime)
+                          setSelectedDuration(60)
                         }
                       }}
                       disabled={booked}
@@ -582,43 +596,82 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
             }
 
             const booked = selectedInfo.status === 'booked'
-            const href = !booked && !userSessionId && selectedInfo.slotId
-              ? `/slots/${selectedInfo.slotId}/create`
+
+            // ── Multi-hour duration availability ──────────────────────────
+            // Each duration option requires N consecutive hourly templates
+            // starting at the selected time. slotTemplates is chronologically
+            // contiguous (each slot's endTime === the next slot's startTime),
+            // so consecutive array indices are consecutive hour blocks.
+            const startIdx = slotTemplates.findIndex(t => t.startTime === selectedTemplate.startTime)
+            function requiredTemplatesFor(durationMins: number): SlotTemplate[] | null {
+              const count = durationMins / 60
+              if (startIdx === -1) return null
+              const slice = slotTemplates.slice(startIdx, startIdx + count)
+              return slice.length === count ? slice : null
+            }
+            function durationAvailable(durationMins: number): boolean {
+              const templates = requiredTemplatesFor(durationMins)
+              if (!templates) return false
+              return templates.every(t => getSlotStatus(t).status !== 'booked')
+            }
+
+            const requiredTemplates = requiredTemplatesFor(selectedDuration) ?? [selectedTemplate]
+            const requiredSlotIds = requiredTemplates
+              .map(t => slotIdMap.get(`${dayStr}_${t.startTime}`))
+              .filter((id): id is string => !!id)
+            const durationFullyAvailable = requiredSlotIds.length === requiredTemplates.length
+              && requiredTemplates.every(t => getSlotStatus(t).status !== 'booked')
+            const rangeEndTime = requiredTemplates[requiredTemplates.length - 1]?.endTime ?? selectedTemplate.endTime
+            const totalPriceGBP = requiredTemplates.reduce((sum, t) => sum + t.priceGBP, 0)
+
+            const href = !booked && !userSessionId && durationFullyAvailable && requiredSlotIds.length > 0
+              ? `/slots/${requiredSlotIds[0]}/create?slotIds=${requiredSlotIds.join(',')}`
               : undefined
             const fillingFast = !booked && !userSessionId && allPublicSessions.some(s => totalCount(s) >= 7)
             const hasSessions = userSlotSessions.length > 0 || allPublicSessions.length > 0
             const typeLabel = selectedTemplate.type === 'peak' ? 'Peak' : selectedTemplate.type === 'offpeak' ? 'Off-peak' : 'Weekend'
-            const perPlayerPrice = (selectedTemplate.priceGBP / 10).toFixed(2)
+            const perPlayerPrice = (totalPriceGBP / 10).toFixed(2)
 
             return (
               <div className="slot-detail-panel" style={{ marginBottom: '2.5rem' }}>
 
                 {/* Duration row */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
-                  <Eyebrow color="secondary">Duration</Eyebrow>
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: 'var(--surface3)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius-full)',
-                      padding: '4px 14px',
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      color: 'var(--text)',
-                      fontFamily: 'var(--font-display)',
-                      letterSpacing: '-0.01em',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    60 Minutes
-                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style={{ opacity: 0.3, flexShrink: 0 }}>
-                      <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="1.3" />
-                      <path d="M5.5 3v2.5l1.5 1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </span>
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ marginBottom: '0.6rem' }}>
+                    <Eyebrow color="secondary">Duration</Eyebrow>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {[60, 120].map(mins => {
+                      const available = durationAvailable(mins)
+                      const isSelectedDuration = selectedDuration === mins
+                      return (
+                        <button
+                          key={mins}
+                          type="button"
+                          disabled={!available}
+                          onClick={() => available && setSelectedDuration(mins)}
+                          style={{
+                            flex: 1,
+                            padding: '8px 6px',
+                            borderRadius: 'var(--radius-full)',
+                            border: `1px solid ${isSelectedDuration ? 'transparent' : 'var(--border)'}`,
+                            background: isSelectedDuration ? 'var(--green)' : 'var(--surface3)',
+                            color: !available ? 'var(--text-tertiary)' : isSelectedDuration ? 'var(--black)' : 'var(--text)',
+                            fontFamily: 'var(--font-display)',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            letterSpacing: '-0.01em',
+                            lineHeight: 1.5,
+                            cursor: available ? 'pointer' : 'not-allowed',
+                            opacity: available ? 1 : 0.4,
+                            textAlign: 'center',
+                          }}
+                        >
+                          {mins} min
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
 
                 {/* Slot card */}
@@ -650,7 +703,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                         >
                           {selectedTemplate.startTime}
                           <span style={{ color: 'var(--text-tertiary)', margin: '0 6px', fontWeight: 400, fontSize: '0.72em' }}>to</span>
-                          {selectedTemplate.endTime}
+                          {rangeEndTime}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <Badge variant={selectedTemplate.type === 'peak' ? 'peak' : 'offpeak'}>
@@ -740,6 +793,10 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   ) : booked ? (
                     <div style={{ padding: '16px 20px', textAlign: 'center' }}>
                       <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--red)' }}>Game time taken</span>
+                    </div>
+                  ) : !userSessionId && !durationFullyAvailable ? (
+                    <div style={{ padding: '16px 20px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--red)' }}>Selected duration unavailable — choose a shorter one</span>
                     </div>
                   ) : null}
                 </div>

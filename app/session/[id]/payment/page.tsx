@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import PlayerPaymentForm from './PlayerPaymentForm'
+import { combineSlots } from '@/lib/slots'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -16,7 +17,7 @@ export default async function PlayerPaymentPage({ params }: Props) {
   const { data: session } = await supabase
     .from('sessions')
     .select(`
-      id, status, organiser_id, game_type,
+      id, status, organiser_id, game_type, slot_ids,
       slots(id, price, max_players),
       players(id, user_id)
     `)
@@ -39,6 +40,20 @@ export default async function PlayerPaymentPage({ params }: Props) {
   const slots = session.slots
   const slot = (Array.isArray(slots) ? slots[0] : slots) as { id: string; price: number; max_players: number } | null
   if (!slot) notFound()
+
+  // Multi-hour (60/120/180 min) bookings span several slot rows — combine
+  // them for the true total price a joining player is shown/charged.
+  const sessionSlotIds = (session as unknown as { slot_ids: string[] | null }).slot_ids
+  if (sessionSlotIds && sessionSlotIds.length > 1) {
+    const { data: allSlotRows } = await supabase
+      .from('slots')
+      .select('id, date, start_time, end_time, price, max_players')
+      .in('id', sessionSlotIds)
+    if (allSlotRows && allSlotRows.length > 0) {
+      const combined = combineSlots(allSlotRows as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; max_players: number }[])
+      slot.price = combined.price
+    }
+  }
 
   const maxPlayers = slot.max_players ?? 10
   const sessionOrganiserId = (session as unknown as { organiser_id: string | null }).organiser_id

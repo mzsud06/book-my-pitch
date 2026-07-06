@@ -79,10 +79,18 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { slotId, name, phone, teamName, gameType, matchedSessionId } = body
+    const { slotId, slotIds, name, phone, teamName, gameType, matchedSessionId } = body
 
     if (!isValidUUID(slotId)) {
       return NextResponse.json({ error: 'Invalid slot ID' }, { status: 400 })
+    }
+
+    // slotIds carries the full list of consecutive slots for a multi-hour
+    // (60/120/180 min) booking. Falls back to just the primary slot for a
+    // normal 60-minute booking.
+    const finalSlotIds: string[] = Array.isArray(slotIds) && slotIds.length > 0 ? slotIds : [slotId]
+    if (!finalSlotIds.every(isValidUUID)) {
+      return NextResponse.json({ error: 'Invalid slot IDs' }, { status: 400 })
     }
 
     const trimmedName = typeof name === 'string' ? name.trim() : ''
@@ -124,14 +132,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const { data: slot } = await supabase
+    const { data: slotsFound } = await supabase
       .from('slots')
       .select('id')
-      .eq('id', slotId)
-      .single()
+      .in('id', finalSlotIds)
 
-    if (!slot) {
-      return NextResponse.json({ error: 'Slot not found' }, { status: 404 })
+    if (!slotsFound || slotsFound.length !== finalSlotIds.length) {
+      return NextResponse.json({ error: 'One or more slots not found' }, { status: 404 })
+    }
+
+    // None of the requested slots may already be locked by a confirmed session —
+    // checked both via the primary slot_id and via the slot_ids array (multi-hour
+    // bookings can occupy a slot without it being their primary).
+    const [{ data: confirmedByPrimary }, { data: confirmedByArray }] = await Promise.all([
+      supabase.from('sessions').select('id').eq('status', 'confirmed').in('slot_id', finalSlotIds),
+      supabase.from('sessions').select('id').eq('status', 'confirmed').overlaps('slot_ids', finalSlotIds),
+    ])
+    if ((confirmedByPrimary?.length ?? 0) > 0 || (confirmedByArray?.length ?? 0) > 0) {
+      return NextResponse.json({ error: 'One or more of the selected time slots is no longer available' }, { status: 409 })
     }
 
     // A challenger may only link to a real, still-open, unclaimed LFO session —
@@ -162,16 +180,14 @@ export async function POST(req: NextRequest) {
     // the challenger is intentionally creating a new session on a slot where they
     // may already be organising or playing in another session.
     if (!matchedSessionId) {
-      // One session per slot per user: block if already organising an active session.
-      const { data: asOrganiser } = await supabase
-        .from('sessions')
-        .select('id')
-        .eq('slot_id', slotId)
-        .eq('organiser_id', user.id)
-        .in('status', ['filling', 'confirmed'])
-        .maybeSingle()
+      // One session per slot per user: block if already organising an active session
+      // — checked via primary slot_id and via slot_ids overlap (multi-hour bookings).
+      const [{ data: asOrganiserPrimary }, { data: asOrganiserArray }] = await Promise.all([
+        supabase.from('sessions').select('id').in('slot_id', finalSlotIds).eq('organiser_id', user.id).in('status', ['filling', 'confirmed']),
+        supabase.from('sessions').select('id').overlaps('slot_ids', finalSlotIds).eq('organiser_id', user.id).in('status', ['filling', 'confirmed']),
+      ])
 
-      if (asOrganiser) {
+      if ((asOrganiserPrimary?.length ?? 0) > 0 || (asOrganiserArray?.length ?? 0) > 0) {
         return NextResponse.json({ error: 'You already have a session for this slot.' }, { status: 400 })
       }
 
@@ -182,7 +198,7 @@ export async function POST(req: NextRequest) {
       const { data: existing } = await supabase
         .from('sessions')
         .select('id')
-        .eq('slot_id', slotId)
+        .eq('slot_id', finalSlotIds[0])
         .eq('organiser_id', user.id)
         .eq('status', 'filling')
         .order('created_at', { ascending: true })
@@ -197,7 +213,8 @@ export async function POST(req: NextRequest) {
     const { data: session, error } = await supabase
       .from('sessions')
       .insert({
-        slot_id: slotId,
+        slot_id: finalSlotIds[0],
+        slot_ids: finalSlotIds,
         status: 'filling',
         organiser_name: trimmedName,
         organiser_phone: trimmedPhone ?? null,

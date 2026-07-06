@@ -58,3 +58,44 @@ export function formatPerPlayer(pitchPrice: number): string {
   const pp = pitchPrice / 10
   return `£${pp.toFixed(2)}`
 }
+
+// ── Multi-hour slot combining ──────────────────────────────────────────────
+// A multi-hour booking (60/120/180 min) spans several consecutive hourly slot
+// rows. These helpers combine them into one logical time range + total price
+// so every page that displays a session's slot can stay unaware of whether
+// it's a 60-minute or multi-hour booking.
+export interface CombinableSlot {
+  id: string
+  date: string
+  start_time: string
+  end_time: string
+  price: number
+  max_players: number
+}
+
+export interface CombinedSlotInfo<T extends CombinableSlot> {
+  ids: string[]
+  date: string
+  start_time: string
+  end_time: string
+  price: number
+  max_players: number
+  first: T
+  last: T
+}
+
+export function combineSlots<T extends CombinableSlot>(slots: T[]): CombinedSlotInfo<T> {
+  const sorted = [...slots].sort((a, b) => a.start_time.localeCompare(b.start_time))
+  const first = sorted[0]
+  const last = sorted[sorted.length - 1]
+  return {
+    ids: sorted.map(s => s.id),
+    date: first.date,
+    start_time: first.start_time,
+    end_time: last.end_time,
+    price: sorted.reduce((sum, s) => sum + s.price, 0),
+    max_players: first.max_players,
+    first,
+    last,
+  }
+}

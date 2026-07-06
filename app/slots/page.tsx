@@ -105,6 +105,7 @@ export default async function SlotsPage() {
         is_public,
         game_type,
         matched_session_id,
+        slot_ids,
         slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id),
         players(count)
       `)

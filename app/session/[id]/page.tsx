@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Nav from '@/components/Nav'
 import SessionClient from './SessionClient'
+import { combineSlots } from '@/lib/slots'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -19,6 +20,7 @@ interface SessionData {
   game_type: string | null
   matched_session_id: string | null
   is_public: boolean
+  slot_ids: string[] | null
   slots: {
     id: string
     date: string
@@ -51,7 +53,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
     supabase
       .from('sessions')
       .select(`
-        id, status, created_at, organiser_name, organiser_phone, organiser_id, team_name, game_type, matched_session_id, is_public,
+        id, status, created_at, organiser_name, organiser_phone, organiser_id, team_name, game_type, matched_session_id, is_public, slot_ids,
         slots(id, date, start_time, end_time, type, price, max_players,
           venues(id, name, address, stripe_account_id)
         )
@@ -78,6 +80,27 @@ export default async function SessionPage({ params, searchParams }: Props) {
   const rawVenues = (slot as { venues: unknown }).venues
   const venue = Array.isArray(rawVenues) ? rawVenues[0] : rawVenues
 
+  // Multi-hour (60/120/180 min) bookings span several slot rows — combine them
+  // so the displayed time range and price reflect the whole booking, e.g.
+  // "18:30 – 20:30" and the summed pitch price, not just the first hour.
+  const sessionSlotIds = (rawSession as unknown as { slot_ids: string[] | null }).slot_ids
+  const multiHourIds = sessionSlotIds && sessionSlotIds.length > 1 ? sessionSlotIds : null
+  let combinedRange: { start_time: string; end_time: string; price: number } = {
+    start_time: (slot as SessionData['slots']).start_time,
+    end_time: (slot as SessionData['slots']).end_time,
+    price: (slot as SessionData['slots']).price,
+  }
+  if (multiHourIds) {
+    const { data: allSlotRows } = await supabase
+      .from('slots')
+      .select('id, date, start_time, end_time, price, max_players')
+      .in('id', multiHourIds)
+    if (allSlotRows && allSlotRows.length > 0) {
+      const combined = combineSlots(allSlotRows as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; max_players: number }[])
+      combinedRange = { start_time: combined.start_time, end_time: combined.end_time, price: combined.price }
+    }
+  }
+
   const normalizedSession: SessionData = {
     id: rawSession.id,
     status: rawSession.status,
@@ -89,8 +112,10 @@ export default async function SessionPage({ params, searchParams }: Props) {
     game_type: (rawSession as unknown as { game_type: string | null }).game_type ?? null,
     matched_session_id: (rawSession as unknown as { matched_session_id: string | null }).matched_session_id ?? null,
     is_public: (rawSession as unknown as { is_public: boolean }).is_public ?? false,
+    slot_ids: sessionSlotIds ?? null,
     slots: {
       ...(slot as SessionData['slots']),
+      ...combinedRange,
       venues: venue as SessionData['slots']['venues'],
     },
     players: (rawPlayers ?? []) as SessionData['players'],

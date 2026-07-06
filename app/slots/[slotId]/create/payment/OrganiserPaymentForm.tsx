@@ -31,6 +31,7 @@ interface CreateDetails {
 
 interface Props {
   slot: SlotData
+  slotIds: string[]
   challengeSessionId: string | null
   challengedTeamName: string | null
   challengedPlayerCount: number | null
@@ -48,6 +49,7 @@ let isConfirmingGlobal = false
 
 function CardStep({
   slot,
+  slotIds,
   details,
   customerId,
   challengeSessionId,
@@ -55,6 +57,7 @@ function CardStep({
   parentDisabled,
 }: {
   slot: SlotData
+  slotIds: string[]
   details: CreateDetails
   customerId: string
   challengeSessionId: string | null
@@ -73,6 +76,10 @@ function CardStep({
   const pitchPerPlayer = (slot.price / slot.max_players).toFixed(2)
   const total = (slot.price / slot.max_players + 0.50 + 0.30).toFixed(2)
   const isDisabled = loading || parentDisabled || !stripe
+
+  const returnUrlParams = new URLSearchParams({ slotIds: slotIds.join(',') })
+  if (challengeSessionId) returnUrlParams.set('challenge', challengeSessionId)
+  const returnUrlQuery = returnUrlParams.toString()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -103,7 +110,7 @@ function CardStep({
         elements,
         redirect: 'if_required',
         confirmParams: {
-          return_url: `${window.location.origin}/slots/${slot.id}/create/payment${challengeSessionId ? `?challenge=${challengeSessionId}` : ''}`,
+          return_url: `${window.location.origin}/slots/${slot.id}/create/payment?${returnUrlQuery}`,
         },
       })
       console.log(`[CardStep] stripe.confirmSetup() returned at ${new Date().toISOString()} | error=${confirmError?.code ?? 'none'}`)
@@ -142,6 +149,7 @@ function CardStep({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           slotId: slot.id,
+          slotIds,
           name: details.name,
           phone: details.phone,
           teamName: details.gameType === 'looking_for_opposition' ? details.teamName : '',
@@ -318,7 +326,7 @@ function CardStep({
   )
 }
 
-export default function OrganiserPaymentForm({ slot, challengeSessionId, challengedTeamName, challengedPlayerCount }: Props) {
+export default function OrganiserPaymentForm({ slot, slotIds, challengeSessionId, challengedTeamName, challengedPlayerCount }: Props) {
   const router = useRouter()
   const [details, setDetails] = useState<CreateDetails | null>(null)
   const [clientSecret, setClientSecret] = useState('')
@@ -616,6 +624,7 @@ export default function OrganiserPaymentForm({ slot, challengeSessionId, challen
         <Elements key={setupKey} stripe={stripePromise} options={{ clientSecret, appearance }}>
           <CardStep
             slot={slot}
+            slotIds={slotIds}
             details={details}
             customerId={customerId}
             challengeSessionId={challengeSessionId}

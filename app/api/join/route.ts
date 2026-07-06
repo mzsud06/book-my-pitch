@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { stripe, PLATFORM_FEE_PENCE, STRIPE_PROCESSING_PENCE } from '@/lib/stripe'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+import { combineSlots } from '@/lib/slots'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isValidUUID(val: unknown): val is string {
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
     // Verify session exists and is still filling — use service client to avoid RLS timing issues
     const { data: existingSession } = await serviceSupabase
       .from('sessions')
-      .select('id, status, organiser_id, matched_session_id, game_type')
+      .select('id, status, organiser_id, matched_session_id, game_type, slot_ids')
       .eq('id', sessionId)
       .single()
 
@@ -206,6 +207,12 @@ export async function POST(req: NextRequest) {
     const playerCount = payingCount ?? 0
     const sessionMatchedId = (existingSession as unknown as { matched_session_id: string | null }).matched_session_id
 
+    // Multi-hour (60/120/180 min) bookings store the full consecutive slot list
+    // here; matched/LFO challenge sessions are always single-slot, so this is
+    // just [slot.id] for them.
+    const existingSessionSlotIds = (existingSession as unknown as { slot_ids: string[] | null }).slot_ids
+    const sessionSlotIds: string[] = existingSessionSlotIds && existingSessionSlotIds.length > 0 ? existingSessionSlotIds : [slot.id]
+
     if (sessionMatchedId) {
       // This session has a partner. Two scenarios:
       // (a) Challenger — matched_session_id was set at creation, pointing at the LFO.
@@ -262,8 +269,8 @@ export async function POST(req: NextRequest) {
             .not('stripe_payment_method_id', 'is', null)
             .not('stripe_customer_id', 'is', null)
           if ((lfoCount ?? 0) >= 5) {
-            await triggerPayments(sessionId, slot as unknown as SlotForPayment)
-            await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment)
+            await triggerPayments(sessionId, slot as unknown as SlotForPayment, [slot.id])
+            await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment, [slot.id])
           }
           // If LFO isn't at 5 yet, payments fire when their 5th player joins
           // (they'll see partner.matched_session_id === sessionId → mutual-match path below).
@@ -278,8 +285,8 @@ export async function POST(req: NextRequest) {
             .not('stripe_payment_method_id', 'is', null)
             .not('stripe_customer_id', 'is', null)
           if ((partnerCount ?? 0) >= 5) {
-            await triggerPayments(sessionId, slot as unknown as SlotForPayment)
-            await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment)
+            await triggerPayments(sessionId, slot as unknown as SlotForPayment, [slot.id])
+            await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment, [slot.id])
           }
 
         } else {
@@ -304,7 +311,7 @@ export async function POST(req: NextRequest) {
         organiserReady = (organiserPaidCount ?? 0) > 0
       }
       if (organiserReady) {
-        await triggerPayments(sessionId, slot as unknown as SlotForPayment)
+        await triggerPayments(sessionId, slot as unknown as SlotForPayment, sessionSlotIds)
       }
     }
 
@@ -326,7 +333,7 @@ interface SlotForPayment {
   max_players?: number
 }
 
-async function triggerPayments(sessionId: string, slot: SlotForPayment) {
+async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds: string[]) {
   const serviceSupabase = createServiceClient()
 
   // Short-circuit if already confirmed or cancelled to avoid double-charging.
@@ -348,7 +355,15 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment) {
     console.warn('Venue has no stripe_account_id — charging directly to platform account (test mode fallback)')
   }
 
-  const perPlayerPitch = Math.round((slot.price * 100) / 10)
+  // Multi-hour (60/120/180 min) bookings span several slot rows — combine
+  // them for the true total price charged.
+  const { data: allSlotRows } = await serviceSupabase
+    .from('slots')
+    .select('*')
+    .in('id', slotIds)
+  const combined = combineSlots((allSlotRows ?? [slot]) as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; max_players: number }[])
+
+  const perPlayerPitch = Math.round((combined.price * 100) / 10)
   const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
 
   const matchedId: string | null = (sessionRow as unknown as { matched_session_id: string | null }).matched_session_id
@@ -389,7 +404,7 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment) {
         payment_method: player.stripe_payment_method_id,
         confirm: true,
         off_session: true,
-        description: `BookMyPitch — Globe Pitch ${slot.type} slot`,
+        description: `BookMyPitch — Globe Pitch ${combined.start_time}–${combined.end_time} ${combined.date}`,
         ...(venueStripeAccountId ? {
           application_fee_amount: PLATFORM_FEE_PENCE,
           transfer_data: { destination: venueStripeAccountId },
@@ -410,15 +425,47 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment) {
         serviceSupabase.from('sessions').update({ status: 'confirmed' }).eq('id', sid)
       )
     )
+    // One booking row per locked slot (a multi-hour booking locks several).
     await Promise.all(
-      sessionIds.map(sid =>
-        serviceSupabase.from('bookings').insert({
-          session_id: sid,
-          slot_id: slot.id,
-          confirmed_at: new Date().toISOString(),
-        })
+      sessionIds.flatMap(sid =>
+        slotIds.map(sid2 =>
+          serviceSupabase.from('bookings').insert({
+            session_id: sid,
+            slot_id: sid2,
+            confirmed_at: new Date().toISOString(),
+          })
+        )
       )
     )
+
+    // These slots are now taken — cancel any other groups still competing for
+    // any of them, whether as their primary slot_id or elsewhere in their own
+    // multi-hour slot_ids array.
+    const [{ error: cancelRivalsByPrimaryError }, { error: cancelRivalsByArrayError }] = await Promise.all([
+      serviceSupabase
+        .from('sessions')
+        .update({ status: 'cancelled' })
+        .in('slot_id', slotIds)
+        .eq('status', 'filling')
+        .not('id', 'in', `(${sessionIds.join(',')})`),
+      serviceSupabase
+        .from('sessions')
+        .update({ status: 'cancelled' })
+        .overlaps('slot_ids', slotIds)
+        .eq('status', 'filling')
+        .not('id', 'in', `(${sessionIds.join(',')})`),
+    ])
+
+    if (cancelRivalsByPrimaryError || cancelRivalsByArrayError) {
+      Sentry.captureException(new Error('Failed to cancel rival sessions after confirmation'), {
+        tags: { route: 'POST /api/join', step: 'cancel_rivals' },
+        extra: {
+          session_id: sessionId,
+          slot_ids: slotIds,
+          error: cancelRivalsByPrimaryError?.message ?? cancelRivalsByArrayError?.message,
+        },
+      })
+    }
   } else {
     const failures = results.filter(r => r.status === 'rejected')
     Sentry.captureException(

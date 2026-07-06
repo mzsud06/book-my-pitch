@@ -20,6 +20,7 @@ interface Slot {
 
 interface Props {
   slot: Slot
+  slotIds: string[]
 }
 
 function formatDate(dateStr: string): string {
@@ -55,7 +56,7 @@ const labelStyle: React.CSSProperties = {
   fontFamily: 'var(--font-sans)',
 }
 
-export default function CreateSessionForm({ slot }: Props) {
+export default function CreateSessionForm({ slot, slotIds }: Props) {
   const router = useRouter()
   const supabase = createClient()
   const [existingSessionId, setExistingSessionId] = useState<string | null>(null)
@@ -168,12 +169,15 @@ export default function CreateSessionForm({ slot }: Props) {
       phone: trimmedPhone,
       gameType,
       teamName: '',
+      slotIds,
     }))
     // Ensure JoinForm on the create payment page can read the same values
     sessionStorage.setItem('join_details', JSON.stringify({ name: name.trim(), phone: trimmedPhone }))
     // Persist phone to user metadata for future autofill (fire-and-forget)
     supabase.auth.updateUser({ data: { phone: trimmedPhone } }).catch(() => {})
-    router.push(`/slots/${slot.id}/create/payment${challengeSessionId ? `?challenge=${challengeSessionId}` : ''}`)
+    const query = new URLSearchParams({ slotIds: slotIds.join(',') })
+    if (challengeSessionId) query.set('challenge', challengeSessionId)
+    router.push(`/slots/${slot.id}/create/payment?${query.toString()}`)
   }
 
   const isReady = name.trim() && parsePhone(phone).localNumber.trim()

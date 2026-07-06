@@ -2,10 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import OrganiserPaymentForm from './OrganiserPaymentForm'
+import { combineSlots } from '@/lib/slots'
 
 interface Props {
   params: Promise<{ slotId: string }>
-  searchParams: Promise<{ challenge?: string }>
+  searchParams: Promise<{ challenge?: string; slotIds?: string }>
 }
 
 interface SlotRow {
@@ -21,7 +22,7 @@ interface SlotRow {
 
 export default async function CreatePaymentPage({ params, searchParams }: Props) {
   const { slotId } = await params
-  const { challenge } = await searchParams
+  const { challenge, slotIds: slotIdsParam } = await searchParams
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -29,25 +30,27 @@ export default async function CreatePaymentPage({ params, searchParams }: Props)
     redirect(`/auth/login?redirect=${encodeURIComponent(`/slots/${slotId}/create`)}&message=Please log in to create a game`)
   }
 
-  const { data: raw } = await supabase
+  const idsToFetch = slotIdsParam ? slotIdsParam.split(',').filter(Boolean) : [slotId]
+
+  const { data: rawSlots } = await supabase
     .from('slots')
     .select('id, date, start_time, end_time, type, price, max_players, venues(name, address)')
-    .eq('id', slotId)
-    .single()
+    .in('id', idsToFetch)
 
-  if (!raw) notFound()
+  if (!rawSlots || rawSlots.length !== idsToFetch.length) notFound()
 
-  const rawVenue = (raw as unknown as SlotRow).venues
+  const combined = combineSlots(rawSlots as unknown as SlotRow[])
+  const rawVenue = combined.first.venues
   const venue = Array.isArray(rawVenue) ? rawVenue[0] : rawVenue
 
   const slot = {
-    id: raw.id,
-    date: raw.date,
-    start_time: raw.start_time,
-    end_time: raw.end_time,
-    type: raw.type,
-    price: raw.price,
-    max_players: raw.max_players,
+    id: combined.first.id,
+    date: combined.date,
+    start_time: combined.start_time,
+    end_time: combined.end_time,
+    type: combined.first.type,
+    price: combined.price,
+    max_players: combined.max_players,
     venue: venue as { name: string; address: string } | null,
   }
 
@@ -71,6 +74,7 @@ export default async function CreatePaymentPage({ params, searchParams }: Props)
       <Nav />
       <OrganiserPaymentForm
         slot={slot}
+        slotIds={combined.ids}
         challengeSessionId={challenge ?? null}
         challengedTeamName={challengedTeamName}
         challengedPlayerCount={challengedPlayerCount}

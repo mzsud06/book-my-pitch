@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import { stripe, PLATFORM_FEE_PENCE, STRIPE_PROCESSING_PENCE } from '@/lib/stripe'
+import { combineSlots } from '@/lib/slots'
 
 function secretsMatch(provided: string, expected: string): boolean {
   const a = Buffer.from(provided)
@@ -55,6 +56,16 @@ export async function POST(req: NextRequest) {
     if (session.status === 'confirmed') return NextResponse.json({ message: 'Already confirmed' })
 
     const slot = session.slots
+    const sessionSlotIds: string[] = (session.slot_ids && session.slot_ids.length > 0) ? session.slot_ids : [slot.id]
+
+    // Multi-hour (60/120/180 min) bookings span several slot rows — combine
+    // them for the true total price and time range charged/locked.
+    const { data: allSlotRows } = await supabase
+      .from('slots')
+      .select('*')
+      .in('id', sessionSlotIds)
+    const combined = combineSlots((allSlotRows ?? [slot]) as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; max_players: number }[])
+
     const { data: venue } = await supabase
       .from('venues')
       .select('stripe_account_id')
@@ -66,7 +77,7 @@ export async function POST(req: NextRequest) {
       console.warn('Venue has no stripe_account_id — charging directly to platform account (test mode fallback)')
     }
 
-    const perPlayerPitch = Math.round((slot.price * 100) / 10)
+    const perPlayerPitch = Math.round((combined.price * 100) / 10)
     const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
 
     const matchedSessionId: string | null = (session as unknown as { matched_session_id: string | null }).matched_session_id
@@ -109,7 +120,7 @@ export async function POST(req: NextRequest) {
           payment_method: player.stripe_payment_method_id,
           confirm: true,
           off_session: true,
-          description: `BookMyPitch — Globe Pitch ${slot.start_time}–${slot.end_time} ${slot.date}`,
+          description: `BookMyPitch — Globe Pitch ${combined.start_time}–${combined.end_time} ${combined.date}`,
           ...(venueStripeAccountId ? {
             application_fee_amount: PLATFORM_FEE_PENCE,
             transfer_data: { destination: venueStripeAccountId },
@@ -127,26 +138,41 @@ export async function POST(req: NextRequest) {
       await Promise.all(
         sessionIds.map(sid => supabase.from('sessions').update({ status: 'confirmed' }).eq('id', sid))
       )
+      // One booking row per locked slot (a multi-hour booking locks several).
       await Promise.all(
-        sessionIds.map(sid => supabase.from('bookings').insert({
+        sessionIds.flatMap(sid => sessionSlotIds.map(sid2 => supabase.from('bookings').insert({
           session_id: sid,
-          slot_id: slot.id,
+          slot_id: sid2,
           confirmed_at: new Date().toISOString(),
-        }))
+        })))
       )
 
-      // This slot is now taken — cancel any other groups still competing for it.
-      const { error: cancelRivalsError } = await supabase
-        .from('sessions')
-        .update({ status: 'cancelled' })
-        .eq('slot_id', slot.id)
-        .eq('status', 'filling')
-        .not('id', 'in', `(${sessionIds.join(',')})`)
+      // These slots are now taken — cancel any other groups still competing for
+      // any of them, whether as their primary slot_id or elsewhere in their
+      // own multi-hour slot_ids array.
+      const [{ error: cancelRivalsByPrimaryError }, { error: cancelRivalsByArrayError }] = await Promise.all([
+        supabase
+          .from('sessions')
+          .update({ status: 'cancelled' })
+          .in('slot_id', sessionSlotIds)
+          .eq('status', 'filling')
+          .not('id', 'in', `(${sessionIds.join(',')})`),
+        supabase
+          .from('sessions')
+          .update({ status: 'cancelled' })
+          .overlaps('slot_ids', sessionSlotIds)
+          .eq('status', 'filling')
+          .not('id', 'in', `(${sessionIds.join(',')})`),
+      ])
 
-      if (cancelRivalsError) {
+      if (cancelRivalsByPrimaryError || cancelRivalsByArrayError) {
         Sentry.captureException(new Error('Failed to cancel rival sessions after confirmation'), {
           tags: { route: 'POST /api/trigger-payments', step: 'cancel_rivals' },
-          extra: { session_id: sessionId, slot_id: slot.id, error: cancelRivalsError.message },
+          extra: {
+            session_id: sessionId,
+            slot_ids: sessionSlotIds,
+            error: cancelRivalsByPrimaryError?.message ?? cancelRivalsByArrayError?.message,
+          },
         })
       }
 
