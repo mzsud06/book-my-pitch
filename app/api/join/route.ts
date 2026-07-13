@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     // Verify session exists and is still filling — use service client to avoid RLS timing issues
     const { data: existingSession } = await serviceSupabase
       .from('sessions')
-      .select('id, status, organiser_id, matched_session_id, game_type, slot_ids')
+      .select('id, status, organiser_id, game_type, slot_ids')
       .eq('id', sessionId)
       .single()
 
@@ -140,7 +140,6 @@ export async function POST(req: NextRequest) {
       .eq('session_id', sessionId)
 
     const capacity: number = (slot as unknown as { max_players?: number }).max_players ?? 10
-    const sessionMatchedIdEarly = (existingSession as unknown as { matched_session_id: string | null }).matched_session_id
     const sessionGameType = (existingSession as unknown as { game_type: string | null }).game_type
     const organiserId = (existingSession as unknown as { organiser_id: string | null }).organiser_id
 
@@ -149,14 +148,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'You must be logged in to join an open game.' }, { status: 401 })
     }
 
-    // Team sessions (LFO or challenger) are always capped at 5 per side.
-    // Open/private 10-player sessions use the slot's full max_players capacity.
-    const isTeamSession = !!sessionMatchedIdEarly || sessionGameType === 'looking_for_opposition'
-    let joinCap = isTeamSession ? 5 : capacity
+    let joinCap = capacity
 
-    // For non-team sessions: reserve one slot for the organiser if they haven't paid yet
-    // so they can't be locked out by non-organisers filling all 10 spots first.
-    if (!isTeamSession && organiserId && user?.id !== organiserId) {
+    // Reserve one slot for the organiser if they haven't paid yet so they can't
+    // be locked out by non-organisers filling all 10 spots first.
+    if (organiserId && user?.id !== organiserId) {
       const { count: organiserRowCount } = await serviceSupabase
         .from('players')
         .select('*', { count: 'exact', head: true })
@@ -168,10 +164,8 @@ export async function POST(req: NextRequest) {
     }
 
     if ((currentCount ?? 0) >= joinCap) {
-      console.warn('[join] 400/409 capacity: currentCount=', currentCount, 'joinCap=', joinCap, 'isTeam=', isTeamSession)
-      return NextResponse.json({
-        error: isTeamSession ? 'This team is already full.' : 'Session is full',
-      }, { status: isTeamSession ? 400 : 409 })
+      console.warn('[join] 409 capacity: currentCount=', currentCount, 'joinCap=', joinCap)
+      return NextResponse.json({ error: 'Session is full' }, { status: 409 })
     }
 
     // Use service-role client for the player insert — removes the requirement for
@@ -205,109 +199,48 @@ export async function POST(req: NextRequest) {
       .not('stripe_customer_id', 'is', null)
 
     const playerCount = payingCount ?? 0
-    const sessionMatchedId = (existingSession as unknown as { matched_session_id: string | null }).matched_session_id
 
-    // Multi-hour (60/120/180 min) bookings store the full consecutive slot list
-    // here; matched/LFO challenge sessions are always single-slot, so this is
-    // just [slot.id] for them.
+    // Notify everyone else already in the session (excluding the player who
+    // just joined) that a new player has arrived.
+    const { data: sessionPlayers } = await serviceSupabase
+      .from('players')
+      .select('user_id')
+      .eq('session_id', sessionId)
+      .not('user_id', 'is', null)
+    const otherUserIds = (sessionPlayers as unknown as { user_id: string }[] ?? [])
+      .map(p => p.user_id)
+      .filter(uid => uid !== (user?.id ?? null))
+    if (otherUserIds.length > 0) {
+      await serviceSupabase.from('notifications').insert(
+        otherUserIds.map(uid => ({
+          user_id: uid,
+          session_id: sessionId,
+          message: `${trimmedName} just joined your game — ${playerCount}/${capacity} players now.`,
+        }))
+      )
+    }
+
+    // One-off nudge to the organiser once the session is one player away from full.
+    if (organiserId && playerCount === capacity - 1) {
+      await serviceSupabase.from('notifications').insert({
+        user_id: organiserId,
+        session_id: sessionId,
+        message: 'Your game is almost full — one more player needed to confirm!',
+      })
+    }
+
+    // Multi-hour (60/120/180 min) bookings store the full consecutive slot list here.
     const existingSessionSlotIds = (existingSession as unknown as { slot_ids: string[] | null }).slot_ids
     const sessionSlotIds: string[] = existingSessionSlotIds && existingSessionSlotIds.length > 0 ? existingSessionSlotIds : [slot.id]
 
-    // Set when a triggered payment batch below fails for one or more players —
+    // Set when the triggered payment batch below fails for one or more players —
     // checked just before the final success response so the joining player
     // (who is always part of that batch) hears about it instead of getting a
     // silent 200.
     let paymentFailure = false
 
-    if (sessionMatchedId) {
-      // This session has a partner. Two scenarios:
-      // (a) Challenger — matched_session_id was set at creation, pointing at the LFO.
-      // (b) Original LFO — matched_session_id was set later when a challenger won the race.
-      if (playerCount >= 5) {
-        const { data: partnerData } = await serviceSupabase
-          .from('sessions')
-          .select('id, status, matched_session_id')
-          .eq('id', sessionMatchedId)
-          .single()
-        const partner = partnerData as unknown as { id: string; status: string; matched_session_id: string | null } | null
-
-        if (!partner || partner.status !== 'filling') {
-          // Partner gone or already confirmed — we're too late.
-          await serviceSupabase.from('sessions').update({ status: 'cancelled' }).eq('id', sessionId)
-          return NextResponse.json({ error: 'The spot was taken. Your session has been cancelled.' }, { status: 409 })
-        }
-
-        if (partner.matched_session_id === null) {
-          // We're a challenger; the LFO hasn't been claimed yet. Race to claim it atomically.
-          // The WHERE ... IS NULL guard means only one concurrent UPDATE can succeed.
-          const { data: claimedRows, error: claimError } = await serviceSupabase
-            .from('sessions')
-            .update({ matched_session_id: sessionId })
-            .eq('id', sessionMatchedId)
-            .is('matched_session_id', null)
-            .select('id')
-
-          if (claimError || !claimedRows || claimedRows.length === 0) {
-            // Another challenger claimed it between our read and our write — we lost.
-            await serviceSupabase.from('sessions').update({ status: 'cancelled' }).eq('id', sessionId)
-            await serviceSupabase
-              .from('sessions')
-              .update({ status: 'cancelled' })
-              .eq('matched_session_id', sessionMatchedId)
-              .eq('status', 'filling')
-              .neq('id', sessionId)
-            return NextResponse.json({ error: 'Another team got there first. Your session has been cancelled.' }, { status: 409 })
-          }
-
-          // We claimed it! Cancel all other competing challengers.
-          await serviceSupabase
-            .from('sessions')
-            .update({ status: 'cancelled' })
-            .eq('matched_session_id', sessionMatchedId)
-            .eq('status', 'filling')
-            .neq('id', sessionId)
-
-          // If the LFO already has 5 paying players, trigger payments for both sides now.
-          const { count: lfoCount } = await serviceSupabase
-            .from('players')
-            .select('*', { count: 'exact', head: true })
-            .eq('session_id', sessionMatchedId)
-            .not('stripe_payment_method_id', 'is', null)
-            .not('stripe_customer_id', 'is', null)
-          if ((lfoCount ?? 0) >= 5) {
-            const r1 = await triggerPayments(sessionId, slot as unknown as SlotForPayment, [slot.id])
-            const r2 = await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment, [slot.id])
-            if (!r1.ok || !r2.ok) paymentFailure = true
-          }
-          // If LFO isn't at 5 yet, payments fire when their 5th player joins
-          // (they'll see partner.matched_session_id === sessionId → mutual-match path below).
-
-        } else if (partner.matched_session_id === sessionId) {
-          // Mutual match — partner already points back at this session (we are the confirmed
-          // winner and the LFO is now filling their side). Trigger if both teams are at 5.
-          const { count: partnerCount } = await serviceSupabase
-            .from('players')
-            .select('*', { count: 'exact', head: true })
-            .eq('session_id', sessionMatchedId)
-            .not('stripe_payment_method_id', 'is', null)
-            .not('stripe_customer_id', 'is', null)
-          if ((partnerCount ?? 0) >= 5) {
-            const r1 = await triggerPayments(sessionId, slot as unknown as SlotForPayment, [slot.id])
-            const r2 = await triggerPayments(sessionMatchedId, slot as unknown as SlotForPayment, [slot.id])
-            if (!r1.ok || !r2.ok) paymentFailure = true
-          }
-
-        } else {
-          // Partner's matched_session_id points at a different session — another challenger won.
-          await serviceSupabase.from('sessions').update({ status: 'cancelled' }).eq('id', sessionId)
-          return NextResponse.json({ error: 'Another team got there first. Your session has been cancelled.' }, { status: 409 })
-        }
-      }
-
-    } else if (sessionGameType !== 'looking_for_opposition' && playerCount >= capacity) {
-      // Regular 10-player open/private session — trigger when full.
-      // Unclaimed LFO sessions (game_type === 'looking_for_opposition') are intentionally
-      // excluded: their trigger fires when a winning challenger claims the spot.
+    if (playerCount >= capacity) {
+      // Session just reached capacity — trigger payment collection.
       let organiserReady = true
       if (organiserId) {
         const { count: organiserPaidCount } = await serviceSupabase
@@ -354,14 +287,14 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
   // Short-circuit if already confirmed or cancelled to avoid double-charging.
   const { data: sessionRow } = await serviceSupabase
     .from('sessions')
-    .select('id, status, matched_session_id')
+    .select('id, status')
     .eq('id', sessionId)
     .single()
   if (!sessionRow || sessionRow.status === 'confirmed' || sessionRow.status === 'cancelled') return { ok: true }
 
   const { data: venue } = await serviceSupabase
     .from('venues')
-    .select('stripe_account_id')
+    .select('name, stripe_account_id')
     .eq('id', slot.venue_id)
     .single()
 
@@ -381,31 +314,15 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
   const perPlayerPitch = Math.round((combined.price * 100) / 10)
   const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
 
-  const matchedId: string | null = (sessionRow as unknown as { matched_session_id: string | null }).matched_session_id
-  const perSessionLimit = matchedId ? 5 : (slot.max_players ?? 10)
-
   const { data: players } = await serviceSupabase
     .from('players')
     .select('id, stripe_customer_id, stripe_payment_method_id, name, user_id')
     .eq('session_id', sessionId)
     .not('stripe_payment_method_id', 'is', null)
     .not('stripe_customer_id', 'is', null)
-    .limit(perSessionLimit)
-  const playersWithSession = (players ?? []).map(p => ({ ...p, sessionId }))
+    .limit(slot.max_players ?? 10)
 
-  let matchedPlayers: (typeof playersWithSession) = []
-  if (matchedId) {
-    const { data: mp } = await serviceSupabase
-      .from('players')
-      .select('id, stripe_customer_id, stripe_payment_method_id, name, user_id')
-      .eq('session_id', matchedId)
-      .not('stripe_payment_method_id', 'is', null)
-      .not('stripe_customer_id', 'is', null)
-      .limit(5)
-    matchedPlayers = (mp ?? []).map(p => ({ ...p, sessionId: matchedId }))
-  }
-
-  const allPlayers = [...playersWithSession, ...matchedPlayers]
+  const allPlayers = players ?? []
   if (allPlayers.length === 0) {
     console.error('No players with payment methods found for session', sessionId)
     return { ok: true }
@@ -420,7 +337,7 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
         payment_method: player.stripe_payment_method_id,
         confirm: true,
         off_session: true,
-        description: `BookMyPitch — Globe Pitch ${combined.start_time}–${combined.end_time} ${combined.date}`,
+        description: `BookMyPitch — ${venue?.name ?? 'your local pitch'} ${combined.start_time}–${combined.end_time} ${combined.date}`,
         ...(venueStripeAccountId ? {
           application_fee_amount: PLATFORM_FEE_PENCE,
           transfer_data: { destination: venueStripeAccountId },
@@ -442,22 +359,15 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
   const failedPlayerIds = failedPlayers.map(p => p.id)
 
   if (failedPlayerIds.length === 0) {
-    const sessionIds = matchedId ? [sessionId, matchedId] : [sessionId]
-    await Promise.all(
-      sessionIds.map(sid =>
-        serviceSupabase.from('sessions').update({ status: 'confirmed' }).eq('id', sid)
-      )
-    )
+    await serviceSupabase.from('sessions').update({ status: 'confirmed' }).eq('id', sessionId)
     // One booking row per locked slot (a multi-hour booking locks several).
     await Promise.all(
-      sessionIds.flatMap(sid =>
-        slotIds.map(sid2 =>
-          serviceSupabase.from('bookings').insert({
-            session_id: sid,
-            slot_id: sid2,
-            confirmed_at: new Date().toISOString(),
-          })
-        )
+      slotIds.map(sid2 =>
+        serviceSupabase.from('bookings').insert({
+          session_id: sessionId,
+          slot_id: sid2,
+          confirmed_at: new Date().toISOString(),
+        })
       )
     )
 
@@ -467,7 +377,7 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
       await serviceSupabase.from('notifications').insert(
         playersToNotify.map(p => ({
           user_id: p.user_id as string,
-          session_id: p.sessionId,
+          session_id: sessionId,
           message: 'Your game is confirmed! See you on the pitch.',
         }))
       )
@@ -476,19 +386,24 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
     // These slots are now taken — cancel any other groups still competing for
     // any of them, whether as their primary slot_id or elsewhere in their own
     // multi-hour slot_ids array.
-    const [{ error: cancelRivalsByPrimaryError }, { error: cancelRivalsByArrayError }] = await Promise.all([
+    const [
+      { data: cancelledByPrimary, error: cancelRivalsByPrimaryError },
+      { data: cancelledByArray, error: cancelRivalsByArrayError },
+    ] = await Promise.all([
       serviceSupabase
         .from('sessions')
         .update({ status: 'cancelled' })
         .in('slot_id', slotIds)
         .eq('status', 'filling')
-        .not('id', 'in', `(${sessionIds.join(',')})`),
+        .neq('id', sessionId)
+        .select('id'),
       serviceSupabase
         .from('sessions')
         .update({ status: 'cancelled' })
         .overlaps('slot_ids', slotIds)
         .eq('status', 'filling')
-        .not('id', 'in', `(${sessionIds.join(',')})`),
+        .neq('id', sessionId)
+        .select('id'),
     ])
 
     if (cancelRivalsByPrimaryError || cancelRivalsByArrayError) {
@@ -501,6 +416,31 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
         },
       })
     }
+
+    // Notify players of the rival sessions that just got cancelled because
+    // this group confirmed the slot first.
+    const cancelledRivalIds = Array.from(new Set([
+      ...((cancelledByPrimary ?? []) as { id: string }[]).map(r => r.id),
+      ...((cancelledByArray ?? []) as { id: string }[]).map(r => r.id),
+    ]))
+    if (cancelledRivalIds.length > 0) {
+      const { data: rivalPlayers } = await serviceSupabase
+        .from('players')
+        .select('user_id, session_id')
+        .in('session_id', cancelledRivalIds)
+        .not('user_id', 'is', null)
+
+      if (rivalPlayers && rivalPlayers.length > 0) {
+        await serviceSupabase.from('notifications').insert(
+          (rivalPlayers as unknown as { user_id: string; session_id: string }[]).map(p => ({
+            user_id: p.user_id,
+            session_id: p.session_id,
+            message: 'Another group confirmed this slot — your game has been cancelled. No charge was made.',
+          }))
+        )
+      }
+    }
+
     return { ok: true }
   }
 
@@ -528,7 +468,7 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
     await serviceSupabase.from('notifications').insert(
       failedPlayersToNotify.map(p => ({
         user_id: p.user_id as string,
-        session_id: p.sessionId,
+        session_id: sessionId,
         message: 'Your payment failed for a game you joined — your spot has been freed up. Rejoin with a working card to secure your place.',
       }))
     )

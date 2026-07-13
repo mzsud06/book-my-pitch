@@ -30,12 +30,14 @@ export default async function SlotsPage() {
   // Look up the venue — avoids needing GLOBE_VENUE_ID in env
   const { data: venue } = await supabase
     .from('venues')
-    .select('id')
+    .select('id, name, address')
     .order('created_at', { ascending: true })
     .limit(1)
     .single()
 
   const venueId = venue?.id ?? process.env.GLOBE_VENUE_ID ?? ''
+  const venueName = venue?.name ?? 'your local pitch'
+  const venueAddress = venue?.address ?? ''
 
   if (venueId) {
     // Ensure every slot template for the next 14 days exists in the DB.
@@ -101,10 +103,8 @@ export default async function SlotsPage() {
         organiser_id,
         status,
         organiser_name,
-        team_name,
         is_public,
         game_type,
-        matched_session_id,
         slot_ids,
         slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id),
         players(count)
@@ -152,6 +152,8 @@ export default async function SlotsPage() {
         initialSessions={(sessions ?? []) as unknown as SessionData[]}
         dbSlots={(dbSlots ?? []) as DbSlot[]}
         venueId={venueId}
+        venueName={venueName}
+        venueAddress={venueAddress}
         userSlotSessionMap={userSlotSessionMap}
         userSessionIds={userSessionIds}
         userId={user?.id ?? null}

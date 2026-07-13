@@ -1,5 +1,5 @@
 // TEST 2: Player cap is never exceeded.
-// Private/open sessions cap at max_players (10). LFO/matched sessions cap at 5 per team.
+// Private/open sessions cap at max_players (10).
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { NextRequest } from 'next/server'
@@ -11,6 +11,7 @@ vi.mock('@/lib/stripe', () => ({
   stripe: {
     paymentMethods: { retrieve: vi.fn(), detach: vi.fn() },
     paymentIntents: { create: vi.fn() },
+    refunds: { create: vi.fn() },
   },
   PLATFORM_FEE_PENCE: 50,
   STRIPE_PROCESSING_PENCE: 30,
@@ -23,8 +24,6 @@ import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 
 const SESSION_ID = '11111111-1111-1111-1111-111111111111'
-const LFO_SESSION_ID = '44444444-4444-4444-4444-444444444444'
-const CHALLENGER_SESSION_ID = '55555555-5555-5555-5555-555555555555'
 const SLOT_ID = '22222222-2222-2222-2222-222222222222'
 const VENUE_ID = '33333333-3333-3333-3333-333333333333'
 const ORGANISER_ID = 'organiser-001'
@@ -89,7 +88,6 @@ describe('private/open session: hard cap at max_players (10)', () => {
         id: SESSION_ID,
         status: 'filling',
         organiser_id: ORGANISER_ID,
-        matched_session_id: null,
         game_type: 'private',
       }],
       players,
@@ -117,9 +115,9 @@ describe('private/open session: hard cap at max_players (10)', () => {
         id: SESSION_ID,
         status: 'filling',
         organiser_id: ORGANISER_ID,
-        matched_session_id: null,
         game_type: 'private',
       }],
+      slots: [mockSlot],
       players,
     })
     const authDb = createMockDb({ slots: [mockSlot] }, { id: 'new-user' })
@@ -134,87 +132,5 @@ describe('private/open session: hard cap at max_players (10)', () => {
 
     expect(res.status).toBe(200)
     expect(svcDb._tables.players.length).toBe(10)
-  })
-})
-
-// ── LFO / matched session 5-per-team cap ─────────────────────────────────
-
-describe('LFO matched session: hard cap at 5 players per team', () => {
-  beforeEach(() => vi.clearAllMocks())
-
-  it('rejects a 6th player on the challenger team when 5 are already in', async () => {
-    // Challenger session points at LFO (matched_session_id set) → isTeamSession = true → cap = 5
-    const players = Array.from({ length: 5 }, (_, i) => makePlayer(i + 1, CHALLENGER_SESSION_ID))
-    const svcDb = createMockDb({
-      sessions: [{
-        id: CHALLENGER_SESSION_ID,
-        status: 'filling',
-        organiser_id: ORGANISER_ID,
-        matched_session_id: LFO_SESSION_ID,
-        game_type: 'private',
-      }],
-      players,
-    })
-    const authDb = createMockDb({ slots: [mockSlot] }, { id: 'new-user' })
-    vi.mocked(createClient).mockResolvedValue(authDb as any)
-    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
-    setupStripeOk()
-
-    const res = await joinSession(makeRequest(joinBody(CHALLENGER_SESSION_ID)))
-    const body = await res.json()
-
-    expect(res.status).toBe(400)
-    expect(body.error).toBe('This team is already full.')
-    expect(svcDb._tables.players.length).toBe(5)
-  })
-
-  it('rejects a 6th player on the LFO team when game_type is looking_for_opposition', async () => {
-    // Unclaimed LFO session (no matched_session_id yet, game_type = 'looking_for_opposition')
-    // isTeamSession = true because game_type is lfo → cap = 5
-    const players = Array.from({ length: 5 }, (_, i) => makePlayer(i + 1, LFO_SESSION_ID))
-    const svcDb = createMockDb({
-      sessions: [{
-        id: LFO_SESSION_ID,
-        status: 'filling',
-        organiser_id: ORGANISER_ID,
-        matched_session_id: null,
-        game_type: 'looking_for_opposition',
-      }],
-      players,
-    })
-    const authDb = createMockDb({ slots: [mockSlot] }, { id: 'new-user' })
-    vi.mocked(createClient).mockResolvedValue(authDb as any)
-    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
-    setupStripeOk()
-
-    const res = await joinSession(makeRequest(joinBody(LFO_SESSION_ID)))
-    const body = await res.json()
-
-    expect(res.status).toBe(400)
-    expect(body.error).toBe('This team is already full.')
-    expect(svcDb._tables.players.length).toBe(5)
-  })
-
-  it('allows a 5th player when only 4 are in the LFO team', async () => {
-    const players = Array.from({ length: 4 }, (_, i) => makePlayer(i + 1, LFO_SESSION_ID))
-    const svcDb = createMockDb({
-      sessions: [{
-        id: LFO_SESSION_ID,
-        status: 'filling',
-        organiser_id: ORGANISER_ID,
-        matched_session_id: null,
-        game_type: 'looking_for_opposition',
-      }],
-      players,
-    })
-    const authDb = createMockDb({ slots: [mockSlot] }, { id: 'new-user' })
-    vi.mocked(createClient).mockResolvedValue(authDb as any)
-    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
-    setupStripeOk()
-
-    const res = await joinSession(makeRequest(joinBody(LFO_SESSION_ID)))
-
-    expect(res.status).toBe(200)
-    expect(svcDb._tables.players.length).toBe(5)
   })
 })

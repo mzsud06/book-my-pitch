@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     const { data: venue } = await supabase
       .from('venues')
-      .select('stripe_account_id')
+      .select('name, stripe_account_id')
       .eq('id', slot.venue_id)
       .single()
 
@@ -80,39 +80,24 @@ export async function POST(req: NextRequest) {
     const perPlayerPitch = Math.round((combined.price * 100) / 10)
     const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
 
-    const matchedSessionId: string | null = (session as unknown as { matched_session_id: string | null }).matched_session_id
-    const isMatchedGame = !!matchedSessionId
-    const perSessionLimit = isMatchedGame ? 5 : (slot.max_players ?? 10)
-    const expectedTotal = isMatchedGame ? 10 : (slot.max_players ?? 10)
+    const expectedTotal = slot.max_players ?? 10
 
     const { data: players } = await supabase
       .from('players')
-      .select('id, stripe_customer_id, stripe_payment_method_id, name')
+      .select('id, stripe_customer_id, stripe_payment_method_id, name, user_id')
       .eq('session_id', sessionId)
       .not('stripe_payment_method_id', 'is', null)
       .not('stripe_customer_id', 'is', null)
-      .limit(perSessionLimit)
+      .limit(expectedTotal)
 
-    let matchedPlayers: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }[] = []
-    if (isMatchedGame && matchedSessionId) {
-      const { data: mp } = await supabase
-        .from('players')
-        .select('id, stripe_customer_id, stripe_payment_method_id, name')
-        .eq('session_id', matchedSessionId)
-        .not('stripe_payment_method_id', 'is', null)
-        .not('stripe_customer_id', 'is', null)
-        .limit(5)
-      matchedPlayers = (mp ?? []) as typeof matchedPlayers
-    }
-
-    const allPlayers = [...(players ?? []), ...matchedPlayers]
+    const allPlayers = players ?? []
 
     if (allPlayers.length < expectedTotal) {
       return NextResponse.json({ error: 'Not enough players' }, { status: 400 })
     }
 
     const results = await Promise.allSettled(
-      allPlayers.map(async (player: { id: string; stripe_customer_id: string; stripe_payment_method_id: string; name: string }) => {
+      allPlayers.map(async (player) => {
         const pi = await stripe.paymentIntents.create({
           amount: totalPerPlayer,
           currency: 'gbp',
@@ -120,7 +105,7 @@ export async function POST(req: NextRequest) {
           payment_method: player.stripe_payment_method_id,
           confirm: true,
           off_session: true,
-          description: `BookMyPitch — Globe Pitch ${combined.start_time}–${combined.end_time} ${combined.date}`,
+          description: `BookMyPitch — ${venue?.name ?? 'your local pitch'} ${combined.start_time}–${combined.end_time} ${combined.date}`,
           ...(venueStripeAccountId ? {
             application_fee_amount: PLATFORM_FEE_PENCE,
             transfer_data: { destination: venueStripeAccountId },
@@ -132,45 +117,60 @@ export async function POST(req: NextRequest) {
     )
 
     const succeededPIIds: string[] = []
-    const failedPlayerIds: string[] = []
+    const failedPlayers: typeof allPlayers = []
     results.forEach((r, i) => {
       if (r.status === 'fulfilled' && (r.value as { pi: { id: string; status: string } }).pi.status === 'succeeded') {
         succeededPIIds.push((r.value as { pi: { id: string; status: string } }).pi.id)
       } else {
-        failedPlayerIds.push(allPlayers[i].id)
+        failedPlayers.push(allPlayers[i])
       }
     })
+    const failedPlayerIds = failedPlayers.map(p => p.id)
 
     if (failedPlayerIds.length === 0) {
-      const sessionIds = isMatchedGame ? [sessionId, matchedSessionId!] : [sessionId]
-      await Promise.all(
-        sessionIds.map(sid => supabase.from('sessions').update({ status: 'confirmed' }).eq('id', sid))
-      )
+      await supabase.from('sessions').update({ status: 'confirmed' }).eq('id', sessionId)
       // One booking row per locked slot (a multi-hour booking locks several).
       await Promise.all(
-        sessionIds.flatMap(sid => sessionSlotIds.map(sid2 => supabase.from('bookings').insert({
-          session_id: sid,
+        sessionSlotIds.map(sid2 => supabase.from('bookings').insert({
+          session_id: sessionId,
           slot_id: sid2,
           confirmed_at: new Date().toISOString(),
-        })))
+        }))
       )
+
+      // Notify every player with an account that the game is confirmed.
+      const playersToNotify = allPlayers.filter(p => p.user_id)
+      if (playersToNotify.length > 0) {
+        await supabase.from('notifications').insert(
+          playersToNotify.map(p => ({
+            user_id: p.user_id as string,
+            session_id: sessionId,
+            message: 'Your game is confirmed! See you on the pitch.',
+          }))
+        )
+      }
 
       // These slots are now taken — cancel any other groups still competing for
       // any of them, whether as their primary slot_id or elsewhere in their
       // own multi-hour slot_ids array.
-      const [{ error: cancelRivalsByPrimaryError }, { error: cancelRivalsByArrayError }] = await Promise.all([
+      const [
+        { data: cancelledByPrimary, error: cancelRivalsByPrimaryError },
+        { data: cancelledByArray, error: cancelRivalsByArrayError },
+      ] = await Promise.all([
         supabase
           .from('sessions')
           .update({ status: 'cancelled' })
           .in('slot_id', sessionSlotIds)
           .eq('status', 'filling')
-          .not('id', 'in', `(${sessionIds.join(',')})`),
+          .neq('id', sessionId)
+          .select('id'),
         supabase
           .from('sessions')
           .update({ status: 'cancelled' })
           .overlaps('slot_ids', sessionSlotIds)
           .eq('status', 'filling')
-          .not('id', 'in', `(${sessionIds.join(',')})`),
+          .neq('id', sessionId)
+          .select('id'),
       ])
 
       if (cancelRivalsByPrimaryError || cancelRivalsByArrayError) {
@@ -182,6 +182,30 @@ export async function POST(req: NextRequest) {
             error: cancelRivalsByPrimaryError?.message ?? cancelRivalsByArrayError?.message,
           },
         })
+      }
+
+      // Notify players of the rival sessions that just got cancelled because
+      // this group confirmed the slot first.
+      const cancelledRivalIds = Array.from(new Set([
+        ...((cancelledByPrimary ?? []) as { id: string }[]).map(r => r.id),
+        ...((cancelledByArray ?? []) as { id: string }[]).map(r => r.id),
+      ]))
+      if (cancelledRivalIds.length > 0) {
+        const { data: rivalPlayers } = await supabase
+          .from('players')
+          .select('user_id, session_id')
+          .in('session_id', cancelledRivalIds)
+          .not('user_id', 'is', null)
+
+        if (rivalPlayers && rivalPlayers.length > 0) {
+          await supabase.from('notifications').insert(
+            (rivalPlayers as unknown as { user_id: string; session_id: string }[]).map(p => ({
+              user_id: p.user_id,
+              session_id: p.session_id,
+              message: 'Another group confirmed this slot — your game has been cancelled. No charge was made.',
+            }))
+          )
+        }
       }
 
       return NextResponse.json({ success: true, message: 'All payments succeeded, session confirmed' })
@@ -204,6 +228,18 @@ export async function POST(req: NextRequest) {
 
       await supabase.from('players').delete().in('id', failedPlayerIds)
 
+      // Notify any failed player who has an account that their spot was freed up.
+      const failedPlayersToNotify = failedPlayers.filter(p => p.user_id)
+      if (failedPlayersToNotify.length > 0) {
+        await supabase.from('notifications').insert(
+          failedPlayersToNotify.map(p => ({
+            user_id: p.user_id as string,
+            session_id: sessionId,
+            message: 'Your payment failed for a game you joined — your spot has been freed up. Rejoin with a working card to secure your place.',
+          }))
+        )
+      }
+
       // Session status is left as 'filling' — it was never marked confirmed
       // above, so no update is needed here. The failed player's spot is now
       // open again and the next join attempt will re-trigger payment collection.
@@ -214,8 +250,6 @@ export async function POST(req: NextRequest) {
           tags: { route: 'POST /api/trigger-payments', session_id: sessionId },
           extra: {
             session_id: sessionId,
-            matched_session_id: matchedSessionId,
-            is_matched_game: isMatchedGame,
             total_players: allPlayers.length,
             failure_count: failedPlayerIds.length,
             refunded_count: succeededPIIds.length,

@@ -105,7 +105,6 @@ export async function POST(req: NextRequest) {
     const isOrganiserByName = !!(sesh.organiser_name && player.name?.toLowerCase() === sesh.organiser_name.toLowerCase())
     const leavingAsOrganiser = isOrganiserById || isOrganiserByPhone || isOrganiserByName
     // Organiser may leave private and open sessions — the game continues without them.
-    // All other types (LFO, matched) keep the block.
     const organiserLeaveAllowed = isOrganiserById && (sesh.game_type === 'private' || sesh.game_type === 'open')
     if (leavingAsOrganiser && !organiserLeaveAllowed) {
       return NextResponse.json({ error: 'The organiser cannot leave their own session' }, { status: 403 })
@@ -150,6 +149,27 @@ export async function POST(req: NextRequest) {
     if ((afterCount ?? 0) === 0 && (sesh.game_type === 'open' || sesh.game_type === 'private')) {
       await svc.from('sessions').update({ status: 'cancelled', is_public: false }).eq('id', sessionId)
       return NextResponse.json({ ok: true })
+    }
+
+    // Notify every remaining player with an account about who left — not just
+    // the organiser, since anyone in the game may want to find a replacement.
+    const { data: remainingPlayers } = await svc
+      .from('players')
+      .select('user_id')
+      .eq('session_id', sessionId)
+      .not('user_id', 'is', null)
+
+    if (remainingPlayers && remainingPlayers.length > 0) {
+      const leaveMessage = organiserLeaveAllowed
+        ? 'The organiser has left the game. The game will continue but needs a new player to fill the spot.'
+        : 'A player has dropped out — the game needs one more player to confirm.'
+      await svc.from('notifications').insert(
+        (remainingPlayers as unknown as { user_id: string }[]).map(p => ({
+          user_id: p.user_id,
+          session_id: sessionId,
+          message: leaveMessage,
+        }))
+      )
     }
 
     const firstName = player.name?.split(' ')[0] ?? 'A player'

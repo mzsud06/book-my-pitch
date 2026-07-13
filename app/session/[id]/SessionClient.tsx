@@ -31,9 +31,7 @@ interface Session {
   organiser_name: string | null
   organiser_phone: string | null
   organiser_id?: string | null
-  team_name: string | null
   game_type: string | null
-  matched_session_id: string | null
   is_public: boolean
   slots: {
     id: string
@@ -48,13 +46,6 @@ interface Session {
   players: Player[]
 }
 
-interface MatchedSession {
-  id: string
-  team_name: string | null
-  status: string
-  players: { count: number }[]
-}
-
 interface Props {
   session: Session
   hasRival: boolean
@@ -62,7 +53,6 @@ interface Props {
   justJoined: boolean
   justCreated: boolean
   alreadyIn: boolean
-  matchedSession: MatchedSession | null
 }
 
 function formatDate(dateStr: string): string {
@@ -104,7 +94,6 @@ export default function SessionClient({
   justJoined,
   justCreated,
   alreadyIn,
-  matchedSession,
 }: Props) {
   const supabase = createClient()
   const router = useRouter()
@@ -128,15 +117,7 @@ export default function SessionClient({
   const [leaveError, setLeaveError] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [localAlreadyIn, setLocalAlreadyIn] = useState(alreadyIn)
-  const [isPublicLocal, setIsPublicLocal] = useState(initialSession.is_public ?? false)
-  const [teamNameLocal, setTeamNameLocal] = useState(initialSession.team_name ?? '')
-  const [teamNameSaved, setTeamNameSaved] = useState(false)
-  const teamNameDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [matchedPlayers, setMatchedPlayers] = useState<Player[]>([])
-  const [confirmPublicOff, setConfirmPublicOff] = useState(false)
-  const [convertOpen, setConvertOpen] = useState<'open' | 'lfo' | null>(null)
-  const [lfoStep, setLfoStep] = useState<'confirm' | 'name'>('confirm')
-  const [lfoTeamName, setLfoTeamName] = useState('')
+  const [convertOpen, setConvertOpen] = useState<'open' | null>(null)
   const [converting, setConverting] = useState(false)
   const [convertError, setConvertError] = useState('')
   const [cancelOpen, setCancelOpen] = useState(false)
@@ -161,10 +142,6 @@ export default function SessionClient({
   const joinAutofillDone = useRef(false)
 
   useEffect(() => {
-    return () => { if (teamNameDebounceRef.current) clearTimeout(teamNameDebounceRef.current) }
-  }, [])
-
-  useEffect(() => {
     setShareUrl(`${window.location.origin}/session/${session.id}`)
   }, [session.id])
 
@@ -177,10 +154,8 @@ export default function SessionClient({
   const playerCount = allPlayers.length
   const remaining = 10 - playerCount
   const isFull = isFilling && playerCount >= slot.max_players
-  const isLFOOrMatched = !!(session.matched_session_id || session.game_type === 'looking_for_opposition')
-  const urgencyCap = isLFOOrMatched ? 5 : slot.max_players
-  const urgencySpotsLeft = urgencyCap - playerCount
-  const showJoinUrgency = isFilling && !isFull && urgencySpotsLeft > 0 && urgencySpotsLeft <= (isLFOOrMatched ? 1 : 2)
+  const urgencySpotsLeft = slot.max_players - playerCount
+  const showJoinUrgency = isFilling && !isFull && urgencySpotsLeft > 0 && urgencySpotsLeft <= 2
   const returningPlayerIndex = returningPlayer ? allPlayers.findIndex(p => p.id === returningPlayer.id) : -1
   const returningPlayerJerseyNumber = returningPlayerIndex >= 0 ? returningPlayerIndex + 1 : null
 
@@ -199,7 +174,7 @@ export default function SessionClient({
         supabase
           .from('sessions')
           .select(`
-            id, status, created_at, organiser_name, organiser_id, matched_session_id, team_name, game_type, is_public,
+            id, status, created_at, organiser_name, organiser_id, game_type, is_public,
             slots(id, date, start_time, end_time, type, price, max_players,
               venues(id, name, address)
             )
@@ -326,54 +301,12 @@ export default function SessionClient({
   }, [])
 
   useEffect(() => {
-    if (!matchedSession) return
-    supabase
-      .from('players')
-      .select('id, name, joined_at, session_id, user_id')
-      .eq('session_id', matchedSession.id)
-      .order('joined_at', { ascending: true })
-      .then(({ data }) => { if (data) setMatchedPlayers(data as Player[]) })
-  }, [matchedSession?.id])
-
-  useEffect(() => {
     if (!justJoined || isLoggedIn !== false) return
     if (session.game_type === 'open') return
     if (sessionStorage.getItem('bmp_join_popup_dismissed')) return
     setShowRegisterPopup(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn])
-
-  async function handlePublicToggle() {
-    if (isPublicLocal) {
-      setConfirmPublicOff(true)
-    } else {
-      setIsPublicLocal(true)
-      await supabase.from('sessions').update({ is_public: true }).eq('id', session.id)
-    }
-  }
-
-  async function handleConfirmPublicOff() {
-    setConfirmPublicOff(false)
-    setIsPublicLocal(false)
-    const matchedId = session.matched_session_id
-    await supabase.from('sessions').update({ is_public: false, matched_session_id: null }).eq('id', session.id)
-    if (matchedId) {
-      await supabase.from('sessions').update({ matched_session_id: null }).eq('id', matchedId)
-    }
-    setSession(prev => ({ ...prev, matched_session_id: null }))
-  }
-
-  function handleTeamNameChange(val: string) {
-    const cleaned = val.replace(/[^a-zA-Z0-9\s]/g, '').slice(0, 30)
-    setTeamNameLocal(cleaned)
-  }
-
-  async function handleTeamNameSave() {
-    await supabase.from('sessions').update({ team_name: teamNameLocal || null }).eq('id', session.id)
-    setSession(prev => ({ ...prev, team_name: teamNameLocal || null }))
-    setTeamNameSaved(true)
-    setTimeout(() => setTeamNameSaved(false), 2000)
-  }
 
   async function handleConvertToOpen() {
     setConverting(true)
@@ -388,29 +321,7 @@ export default function SessionClient({
       return
     }
     setSession(prev => ({ ...prev, game_type: 'open', is_public: true }))
-    setIsPublicLocal(true)
     setConvertOpen(null)
-    setConverting(false)
-  }
-
-  async function handleConvertToLfo() {
-    setConverting(true)
-    setConvertError('')
-    const trimmedName = lfoTeamName.trim()
-    const { error } = await supabase
-      .from('sessions')
-      .update({ game_type: 'looking_for_opposition', is_public: true, team_name: trimmedName || null })
-      .eq('id', session.id)
-    if (error) {
-      setConvertError('Failed to update. Please try again.')
-      setConverting(false)
-      return
-    }
-    setSession(prev => ({ ...prev, game_type: 'looking_for_opposition', is_public: true, team_name: trimmedName || null }))
-    setIsPublicLocal(true)
-    setTeamNameLocal(trimmedName)
-    setConvertOpen(null)
-    setLfoTeamName('')
     setConverting(false)
   }
 
@@ -663,7 +574,7 @@ export default function SessionClient({
   }
 
   function shareWhatsApp() {
-    const venueName = slot.venues?.name ?? 'Globe Pitch'
+    const venueName = slot.venues?.name ?? 'your local pitch'
     const text = `Join my 5-a-side at ${venueName} — ${sliceTime(slot.start_time)}–${sliceTime(slot.end_time)} on ${formatDate(slot.date)}!\n${shareUrl}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
@@ -805,48 +716,6 @@ export default function SessionClient({
     )
   }
 
-  function renderOppositionToken(i: number) {
-    const player = matchedPlayers[i] ?? null
-    const parts = player ? player.name.trim().split(/\s+/) : []
-    const firstInitial = parts[0]?.[0]?.toUpperCase() ?? ''
-    const lastInitial = parts.length > 1 ? parts[parts.length - 1][0].toUpperCase() : ''
-    const initials = (firstInitial + lastInitial) || '?'
-    const firstName = parts[0] ?? ''
-    return (
-      <div
-        key={i}
-        title={player ? player.name : `Spot ${i + 1}`}
-        className={`player-token ${player ? 'filled' : ''}`}
-        style={{
-          position: 'relative',
-          flex: 1,
-          height: '60px',
-          borderRadius: 'var(--radius-lg)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '4px',
-          background: player ? 'rgba(198,241,53,0.09)' : 'rgba(255,255,255,0.02)',
-          border: player ? '1px solid rgba(198,241,53,0.28)' : '1px dashed rgba(255,255,255,0.07)',
-          boxShadow: player ? '0 0 20px rgba(198,241,53,0.08)' : 'none',
-          transition: 'background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
-        }}
-      >
-        <div style={{ position: 'absolute', top: '4px', right: '5px', fontSize: '7px', fontWeight: 700, fontFamily: 'var(--font-display)', color: player ? 'rgba(198,241,53,0.4)' : 'rgba(255,255,255,0.06)', lineHeight: 1 }}>
-          {i + 1}
-        </div>
-        <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: player ? 'var(--green)' : 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: player ? 'var(--black)' : 'transparent', flexShrink: 0, fontFamily: 'var(--font-display)' }}>
-          {player ? initials : ''}
-        </div>
-        {player && (
-          <div style={{ fontSize: '7px', fontWeight: 700, color: 'var(--text)', textAlign: 'center', lineHeight: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%', padding: '0 4px', opacity: 0.85 }}>
-            {firstName}
-          </div>
-        )}
-      </div>
-    )
-  }
 
   if (isCancelled) {
     return (
@@ -951,7 +820,7 @@ export default function SessionClient({
               marginBottom: '5px',
             }}
           >
-            ✓ Game Confirmed — {formatDate(slot.date)} · {sliceTime(slot.start_time)} · Globe Football Pitch
+            ✓ Game Confirmed — {formatDate(slot.date)} · {sliceTime(slot.start_time)} · {slot.venues?.name ?? 'your local pitch'}
           </div>
           <div style={{ fontSize: '13px', color: 'rgba(0,0,0,0.6)', fontWeight: 600 }}>
             £{perPlayerPounds} was charged to your card
@@ -1159,7 +1028,7 @@ export default function SessionClient({
           }}
         >
           <div style={{ fontSize: '15px', color: 'var(--black)', fontWeight: 700, fontFamily: 'var(--font-display)', letterSpacing: '-0.025em', lineHeight: 1.4 }}>
-            Game confirmed ✓ · £{perPlayerPounds} was taken from your card · {formatDate(slot.date)} · {sliceTime(slot.start_time)}–{sliceTime(slot.end_time)} · {slot.venues?.name ?? 'Globe Football Pitch'}
+            Game confirmed ✓ · £{perPlayerPounds} was taken from your card · {formatDate(slot.date)} · {sliceTime(slot.start_time)}–{sliceTime(slot.end_time)} · {slot.venues?.name ?? 'your local pitch'}
           </div>
         </div>
       )}
@@ -1190,7 +1059,7 @@ export default function SessionClient({
             fontFamily: 'var(--font-sans)',
           }}
         >
-          {slot.venues?.name ?? 'Globe Football Pitch'} · Bethnal Green
+          {slot.venues?.name ?? 'your local pitch'}
         </div>
         <div
           style={{
@@ -1207,7 +1076,7 @@ export default function SessionClient({
           {formatDate(slot.date)} · {slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'} · 5-a-side
         </div>
         <a
-          href="https://www.google.com/maps/search/?api=1&query=110+Globe+Rd+Bethnal+Green+London+E1+4DZ"
+          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(slot.venues?.address ?? slot.venues?.name ?? 'football pitch London')}`}
           target="_blank"
           rel="noopener noreferrer"
           style={{ display: 'inline-block', fontSize: '12px', color: 'rgba(198,241,53,0.65)', fontWeight: 600, textDecoration: 'underline', marginBottom: '1.5rem', textUnderlineOffset: '2px' }}
@@ -1217,96 +1086,32 @@ export default function SessionClient({
 
         {/* TEAM LINEUP */}
         <div style={{ marginBottom: '1.2rem' }}>
-          {(session.matched_session_id || matchedSession || session.game_type === 'looking_for_opposition') ? (
-            <>
-              {/* Team A */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', flexShrink: 0 }} />
-                <span style={{ fontSize: '11px', color: 'var(--text)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', opacity: 0.65 }}>
-                  {session.team_name || 'Team A'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '5px', marginBottom: '0' }}>
-                {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i))}
-              </div>
+          <div style={{ display: 'flex', gap: '5px', marginBottom: '0' }}>
+            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+            <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(255,255,255,0.12)', letterSpacing: '0.14em', textTransform: 'uppercase', flexShrink: 0 }}>
+              5-a-side
+            </div>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '5px' }}>
+            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i + 5))}
+          </div>
 
-              {/* VS divider */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '14px 0' }}>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-                <div style={{
-                  padding: '4px 16px',
-                  borderRadius: '20px',
-                  border: '1px solid rgba(198,241,53,0.28)',
-                  background: 'rgba(198,241,53,0.05)',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  color: 'var(--green)',
-                  letterSpacing: '0.08em',
-                  fontFamily: 'var(--font-display)',
-                  flexShrink: 0,
-                }}>
-                  VS
-                </div>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-              </div>
+          <SegBar count={playerCount} isConfirmed={isConfirmed} />
 
-              {/* Team B */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-                <span style={{ fontSize: '11px', color: 'var(--text)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', opacity: 0.65 }}>
-                  {matchedSession?.team_name || 'Team B'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '5px', marginBottom: '0' }}>
-                {Array.from({ length: 5 }, (_, i) => renderOppositionToken(i))}
-              </div>
-
-              {/* Per-team count */}
-              <div style={{ marginTop: '14px' }}>
-                {isConfirmed ? (
-                  <div style={{ textAlign: 'center', fontSize: '13px', fontWeight: 800, color: 'var(--green)' }}>Confirmed — both teams ✓</div>
-                ) : (
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    <div style={{ padding: '4px 12px', borderRadius: '20px', background: 'rgba(198,241,53,0.07)', border: '1px solid rgba(198,241,53,0.2)', fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>
-                      {session.team_name || 'Team A'}: {Math.min(allPlayers.length, 5)}/5
-                    </div>
-                    <div style={{ padding: '4px 12px', borderRadius: '20px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', fontSize: '12px', fontWeight: 700, color: 'var(--text)' }}>
-                      {matchedSession?.team_name || 'Team B'}: {matchedPlayers.length}/5
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ display: 'flex', gap: '5px', marginBottom: '0' }}>
-                {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i))}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
-                <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(255,255,255,0.12)', letterSpacing: '0.14em', textTransform: 'uppercase', flexShrink: 0 }}>
-                  5-a-side
-                </div>
-                <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
-              </div>
-              <div style={{ display: 'flex', gap: '5px' }}>
-                {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i + 5))}
-              </div>
-
-              <SegBar count={playerCount} isConfirmed={isConfirmed} />
-
-              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 600 }}>
-                {isConfirmed ? (
-                  <strong style={{ color: 'var(--green)', fontWeight: 800 }}>Confirmed — all 10 players ✓</strong>
-                ) : (
-                  <>
-                    <strong style={{ color: 'var(--text)', fontWeight: 800 }}>{playerCount}/10 players</strong>
-                    {' '}— {remaining} more needed
-                  </>
-                )}
-              </div>
-            </>
-          )}
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 600 }}>
+            {isConfirmed ? (
+              <strong style={{ color: 'var(--green)', fontWeight: 800 }}>Confirmed — all 10 players ✓</strong>
+            ) : (
+              <>
+                <strong style={{ color: 'var(--text)', fontWeight: 800 }}>{playerCount}/10 players</strong>
+                {' '}— {remaining} more needed
+              </>
+            )}
+          </div>
         </div>
 
         {session.organiser_name && (
@@ -1316,28 +1121,8 @@ export default function SessionClient({
         )}
       </div>
 
-      {/* Match status — matched game only */}
-      {matchedSession && isConfirmed && matchedSession.status === 'confirmed' && (
-        <div
-          className="anim-fade-up d-150"
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid rgba(198,241,53,0.2)',
-            borderRadius: 'var(--radius-xl)',
-            padding: '1rem 1.5rem',
-            marginBottom: '1.25rem',
-            fontSize: '13px',
-            color: 'var(--text-secondary)',
-            textAlign: 'center',
-            fontWeight: 600,
-          }}
-        >
-          Match confirmed — good luck! ⚡
-        </div>
-      )}
-
       {/* Rival alert */}
-      {hasRival && isFilling && session.game_type !== 'looking_for_opposition' && (
+      {hasRival && isFilling && (
         <div
           style={{
             background: 'rgba(255,184,0,0.06)',
@@ -1384,8 +1169,8 @@ export default function SessionClient({
             Booking details
           </div>
           {[
-            { label: 'Pitch', val: slot.venues?.name ?? 'Globe Football Pitch' },
-            { label: 'Address', val: slot.venues?.address ?? '110 Globe Rd, Bethnal Green E1 4DZ' },
+            { label: 'Pitch', val: slot.venues?.name ?? 'your local pitch' },
+            { label: 'Address', val: slot.venues?.address ?? '' },
             { label: 'Date', val: formatDate(slot.date) },
             { label: 'Time', val: `${sliceTime(slot.start_time)} – ${sliceTime(slot.end_time)}` },
             { label: 'Your cost', val: `£${perPlayerPounds}` },
@@ -1464,10 +1249,7 @@ export default function SessionClient({
           ============================================================ */}
       {isFilling && (
         <>
-          {(() => {
-            const shareCap = (session.matched_session_id || session.game_type === 'looking_for_opposition') ? 5 : slot.max_players
-            return playerCount < shareCap
-          })() && (
+          {playerCount < slot.max_players && (
           <div
             className="anim-fade-up d-200"
             style={{
@@ -1570,7 +1352,7 @@ export default function SessionClient({
           {/* ============================================================
               GAME SETTINGS — private session, organiser only
               ============================================================ */}
-          {isOrganiserUser && session.game_type === 'private' && !session.matched_session_id && (
+          {isOrganiserUser && session.game_type === 'private' && (
             <div style={{ marginBottom: '1rem' }}>
               <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.16em', fontFamily: 'var(--font-sans)', marginBottom: '8px' }}>
                 Game settings
@@ -1642,132 +1424,6 @@ export default function SessionClient({
                   >
                     Make this public
                   </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ============================================================
-              LFO SETTINGS — looking_for_opposition, organiser only
-              ============================================================ */}
-          {isOrganiserUser && session.game_type === 'looking_for_opposition' && !session.matched_session_id && (
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.16em', fontFamily: 'var(--font-sans)', marginBottom: '8px' }}>
-                Your listing
-              </div>
-
-              {/* Team name editor */}
-              <div
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border-strong)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '1rem 1.1rem',
-                  marginBottom: '8px',
-                }}
-              >
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '6px' }}>
-                  Team name
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    value={teamNameLocal}
-                    onChange={e => handleTeamNameChange(e.target.value)}
-                    placeholder="e.g. The Lads"
-                    style={{
-                      flex: 1,
-                      background: 'var(--surface2)',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
-                      padding: '0.6rem 0.8rem',
-                      color: 'var(--text)',
-                      fontFamily: 'var(--font-sans)',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      outline: 'none',
-                    }}
-                  />
-                  <button
-                    onClick={handleTeamNameSave}
-                    style={{
-                      padding: '0.6rem 1rem',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'var(--green)',
-                      color: 'var(--black)',
-                      fontFamily: 'var(--font-display)',
-                      fontWeight: 700,
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      lineHeight: 1,
-                      whiteSpace: 'nowrap',
-                      transition: 'background 0.15s ease',
-                    }}
-                  >
-                    {teamNameSaved ? '✓ Saved' : 'Save'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Stop looking for opposition */}
-              {!confirmPublicOff ? (
-                <button
-                  className="settings-btn"
-                  onClick={handlePublicToggle}
-                  style={{
-                    width: '100%', padding: '0.8rem 1rem', borderRadius: 'var(--radius-lg)',
-                    border: '1px solid rgba(255,255,255,0.1)', background: 'var(--surface2)',
-                    color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)',
-                    fontWeight: 600, fontSize: '13px', cursor: 'pointer',
-                    textAlign: 'left', lineHeight: 1,
-                  }}
-                >
-                  Stop looking for opposition
-                </button>
-              ) : (
-                <div
-                  style={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border-strong)',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: '1.25rem',
-                  }}
-                >
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
-                    Stop looking for opposition?
-                  </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
-                    Your listing will be removed. Any pending challenge will be cancelled.
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      onClick={() => setConfirmPublicOff(false)}
-                      style={{
-                        flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
-                        border: '1px solid var(--border)', background: 'transparent',
-                        color: 'var(--text-secondary)', fontFamily: 'var(--font-display)',
-                        fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
-                      }}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleConfirmPublicOff}
-                      style={{
-                        flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
-                        border: 'none',
-                        background: 'rgba(255,255,255,0.1)',
-                        color: 'var(--text)',
-                        fontFamily: 'var(--font-display)',
-                        fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
-                        cursor: 'pointer', lineHeight: 1,
-                        transition: 'background 0.15s ease',
-                      }}
-                    >
-                      Confirm
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
@@ -2135,7 +1791,7 @@ export default function SessionClient({
       {/* ============================================================
           LEAVE + CANCEL — side by side, organiser controls
           ============================================================ */}
-      {(showLeaveButton || (isOrganiserUser && isFilling && (session.game_type === 'private' || session.game_type === 'looking_for_opposition'))) && !leaveOpen && !cancelOpen && (
+      {(showLeaveButton || (isOrganiserUser && isFilling && session.game_type === 'private')) && !leaveOpen && !cancelOpen && (
         <div className="anim-fade-up d-400" style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem' }}>
           {showLeaveButton && (
             <button
@@ -2160,7 +1816,7 @@ export default function SessionClient({
               Leave game
             </button>
           )}
-          {isOrganiserUser && isFilling && (session.game_type === 'private' || session.game_type === 'looking_for_opposition') && (
+          {isOrganiserUser && isFilling && session.game_type === 'private' && (
             <button
               className="cancel-btn"
               onClick={() => setCancelOpen(true)}
@@ -2180,7 +1836,7 @@ export default function SessionClient({
                 lineHeight: 1,
               }}
             >
-              {session.matched_session_id ? 'Withdraw challenge' : 'Cancel game'}
+              Cancel game
             </button>
           )}
         </div>
@@ -2267,7 +1923,7 @@ export default function SessionClient({
       {/* ============================================================
           CANCEL GAME — organiser only, filling sessions
           ============================================================ */}
-      {isOrganiserUser && isFilling && (session.game_type === 'private' || session.game_type === 'looking_for_opposition') && cancelOpen && (
+      {isOrganiserUser && isFilling && session.game_type === 'private' && cancelOpen && (
         <div className="anim-fade-up d-450" style={{ marginBottom: '1.25rem' }}>
           <div
             style={{
@@ -2278,12 +1934,10 @@ export default function SessionClient({
             }}
           >
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
-              {session.matched_session_id ? 'Withdraw your challenge?' : 'Are you sure you want to cancel this game?'}
+              Are you sure you want to cancel this game?
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
-              {session.matched_session_id
-                ? "Your team's spot will be removed and the original game will be freed up for other challengers. No one will be charged."
-                : 'All players will lose their spot and the game time will open back up. No one will be charged.'}
+              All players will lose their spot and the game time will open back up. No one will be charged.
             </div>
             {cancelError && (
               <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
@@ -2317,9 +1971,7 @@ export default function SessionClient({
                   transition: 'background 0.15s ease',
                 }}
               >
-                {cancelLoading
-                  ? (session.matched_session_id ? 'Withdrawing…' : 'Cancelling…')
-                  : (session.matched_session_id ? 'Yes, withdraw' : 'Yes, cancel')}
+                {cancelLoading ? 'Cancelling…' : 'Yes, cancel'}
               </button>
             </div>
           </div>
@@ -2372,11 +2024,9 @@ export default function SessionClient({
               </div>
             ) : (() => {
               const playerNameMap = new Map<string, string>()
-              ;[...allPlayers, ...matchedPlayers].forEach(p => {
+              allPlayers.forEach(p => {
                 if (p.user_id) playerNameMap.set(p.user_id, p.name)
               })
-              console.log('[Chat debug] messages:', messages.map(m => ({ id: m.id, user_id: m.user_id, sender_name: (m as unknown as Record<string,unknown>).sender_name })))
-              console.log('[Chat debug] players:', [...allPlayers, ...matchedPlayers].map(p => ({ name: p.name, user_id: p.user_id })))
               return messages.map(msg => {
                 const isOwn = !!currentUserId && msg.user_id === currentUserId
                 const senderName = msg.sender_name

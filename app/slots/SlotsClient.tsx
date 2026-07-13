@@ -17,10 +17,8 @@ export interface SessionData {
   organiser_id: string | null
   status: string
   organiser_name: string | null
-  team_name: string | null
   is_public: boolean
   game_type: string | null
-  matched_session_id: string | null
   slot_ids: string[] | null
   slots: {
     id: string
@@ -45,6 +43,8 @@ interface Props {
   initialSessions: SessionData[]
   dbSlots: DbSlot[]
   venueId: string
+  venueName: string
+  venueAddress: string
   userSlotSessionMap: Record<string, string>
   userSessionIds: string[]
   userId: string | null
@@ -109,7 +109,7 @@ function PeopleIcon() {
   )
 }
 
-export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlotSessionMap, userSessionIds, userId }: Props) {
+export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, userSlotSessionMap, userSessionIds, userId }: Props) {
   const userSessionSet = new Set(userSessionIds)
   const router = useRouter()
   const supabase = createClient()
@@ -146,7 +146,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
       const endStr = formatDate(addDays(startOfDay(new Date()), 14))
       supabase
         .from('sessions')
-        .select('id, slot_id, organiser_id, status, organiser_name, team_name, is_public, game_type, matched_session_id, slot_ids, slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id), players(count)')
+        .select('id, slot_id, organiser_id, status, organiser_name, is_public, game_type, slot_ids, slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id), players(count)')
         .eq('slots.venue_id', venueId)
         .gte('slots.date', nowStr)
         .lte('slots.date', endStr)
@@ -179,7 +179,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
   })
 
   // ── Open games for the selected day ─────────────────────────────────────
-  // Source: same `sessions` state (game_type === 'open', filling, no challenge link).
+  // Source: same `sessions` state (game_type === 'open', filling).
   // No new data fetching — purely derived from existing sessions array.
   type NormalisedSession = Omit<SessionData, 'slots'> & { slots: SessionData['slots'] }
   const dayOpenGames: NormalisedSession[] = sessions
@@ -188,7 +188,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
       return (
         slot?.date === dayStr &&
         s.status === 'filling' &&
-        !s.matched_session_id &&
         s.game_type === 'open' &&
         !userSessionSet.has(s.id)
       )
@@ -270,11 +269,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                 margin: '0 0 0.6rem',
               }}
             >
-              Globe Football Pitch
+              {venueName}
             </h2>
             <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
               <span style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 400 }}>
-                110 Globe Rd, Bethnal Green E1 4DZ
+                {venueAddress}
               </span>
               <Badge variant="neutral">4G</Badge>
               <Badge variant="neutral">5-a-side</Badge>
@@ -577,12 +576,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
           {selectedTemplate && selectedInfo && (() => {
             const slotSessionsForTime = daySessionMap.get(selectedTemplate.startTime) ?? []
             const userSlotSessions = slotSessionsForTime.filter(s => userSessionSet.has(s.id))
-            const oppositionSessions = slotSessionsForTime.filter(
-              s => s.is_public && s.status === 'filling' && !s.matched_session_id &&
-                   (s.game_type === 'looking_for_opposition' || s.game_type === null) && !userSessionSet.has(s.id)
-            )
             const openSessions = slotSessionsForTime.filter(
-              s => s.status === 'filling' && !s.matched_session_id && s.game_type === 'open' && !userSessionSet.has(s.id)
+              s => s.status === 'filling' && s.game_type === 'open' && !userSessionSet.has(s.id)
             )
             const allPublicSessions = [...openSessions]
               .sort((a, b) => totalCount(b) - totalCount(a))
@@ -710,7 +705,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                             {typeLabel}
                           </Badge>
                           <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 400 }}>
-                            Globe Football Pitch
+                            {venueName}
                           </span>
                         </div>
                       </div>
@@ -736,17 +731,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   {/* User's own sessions */}
                   {userSlotSessions.map((s, i) => {
                     const isOrganiser = !!userId && s.organiser_id === userId
-                    const isLFO = s.game_type === 'looking_for_opposition' || s.game_type === null
                     const isOpen = s.game_type === 'open'
-                    const cap = isLFO ? 5 : 10
+                    const cap = 10
                     const count = Math.min(totalCount(s), cap)
-                    const icon = isLFO ? '⚡' : isOpen ? '🟢' : '🔒'
-                    const nameLabel = s.team_name || s.organiser_name || (isOrganiser ? 'Your team' : 'Game')
-                    const subtext = isLFO
+                    const icon = isOpen ? '🟢' : '🔒'
+                    const nameLabel = s.organiser_name || (isOrganiser ? 'Your team' : 'Game')
+                    const subtext = isOpen
                       ? `Public · ${count}/${cap} players`
-                      : isOpen
-                        ? `Public · ${count}/${cap} players`
-                        : `Private game · ${count}/${cap} players`
+                      : `Private game · ${count}/${cap} players`
                     const showDivider = i < userSlotSessions.length - 1 || allPublicSessions.length > 0 || !!href
                     return (
                       <div
@@ -842,7 +834,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                   const playerCount = totalCount(s as SessionData)
                   const maxPlayers = slot.max_players
                   const perPlayer = (slot.price / maxPlayers).toFixed(2)
-                  const title = s.team_name || (s.organiser_name ? `${s.organiser_name}'s game` : 'Public game')
+                  const title = s.organiser_name ? `${s.organiser_name}'s game` : 'Public game'
                   const typeVariant = slot.type === 'peak' ? 'peak' : slot.type === 'weekend' ? 'weekend' : 'offpeak'
                   const typeLabel = slot.type === 'peak' ? 'Peak' : slot.type === 'weekend' ? 'Weekend' : 'Off-peak'
 
@@ -909,7 +901,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, userSlo
                             fontFamily: 'var(--font-sans)', fontSize: '12px',
                             color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
                           }}>
-                            <PinIcon /> Globe Football Pitch · Bethnal Green
+                            <PinIcon /> {venueName}{venueAddress ? ` · ${venueAddress}` : ''}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                             <Badge variant={typeVariant}>{typeLabel}</Badge>

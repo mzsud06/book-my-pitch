@@ -6,7 +6,7 @@ import { combineSlots } from '@/lib/slots'
 
 interface Props {
   params: Promise<{ slotId: string }>
-  searchParams: Promise<{ challenge?: string; slotIds?: string }>
+  searchParams: Promise<{ slotIds?: string }>
 }
 
 interface SlotRow {
@@ -22,7 +22,7 @@ interface SlotRow {
 
 export default async function CreatePaymentPage({ params, searchParams }: Props) {
   const { slotId } = await params
-  const { challenge, slotIds: slotIdsParam } = await searchParams
+  const { slotIds: slotIdsParam } = await searchParams
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -54,30 +54,12 @@ export default async function CreatePaymentPage({ params, searchParams }: Props)
     venue: venue as { name: string; address: string } | null,
   }
 
-  let challengedTeamName: string | null = null
-  let challengedPlayerCount: number | null = null
-  if (challenge) {
-    const { data: challengeSession } = await supabase
-      .from('sessions')
-      .select('team_name, players(count)')
-      .eq('id', challenge)
-      .single()
-    if (challengeSession) {
-      challengedTeamName = (challengeSession as unknown as { team_name: string | null }).team_name
-      const players = (challengeSession as unknown as { players: { count: number }[] }).players
-      challengedPlayerCount = players?.[0]?.count ?? 0
-    }
-  }
-
   return (
     <>
       <Nav />
       <OrganiserPaymentForm
         slot={slot}
         slotIds={combined.ids}
-        challengeSessionId={challenge ?? null}
-        challengedTeamName={challengedTeamName}
-        challengedPlayerCount={challengedPlayerCount}
       />
     </>
   )

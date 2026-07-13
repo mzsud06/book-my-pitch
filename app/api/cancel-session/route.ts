@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     const { data: session } = await svc
       .from('sessions')
-      .select('id, status, organiser_id, game_type, matched_session_id')
+      .select('id, status, organiser_id, game_type')
       .eq('id', sessionId)
       .single()
 
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 })
     }
 
-    const s = session as unknown as { id: string; status: string; organiser_id: string | null; game_type: string | null; matched_session_id: string | null }
+    const s = session as unknown as { id: string; status: string; organiser_id: string | null; game_type: string | null }
 
     if (!s.organiser_id || s.organiser_id !== user.id) {
       return NextResponse.json({ error: 'Only the organiser can cancel this session' }, { status: 403 })
@@ -49,9 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Session is not in a cancellable state' }, { status: 400 })
     }
 
-    // Challenger sessions (matched_session_id set) may be any game_type.
-    // Non-challenger sessions must be private or open to cancel here.
-    if (!s.matched_session_id && s.game_type !== 'private' && s.game_type !== 'open') {
+    if (s.game_type !== 'private' && s.game_type !== 'open') {
       return NextResponse.json({ error: 'This session type cannot be cancelled here' }, { status: 400 })
     }
 
@@ -85,17 +83,6 @@ export async function POST(req: NextRequest) {
           message: 'A game you joined was cancelled. No charge was made.',
         }))
       )
-    }
-
-    // If this was a challenger, free the LFO session's back-reference so new
-    // challengers can claim it. Only clear it if it still points at this session
-    // (another challenger may have already won the race and set it to their id).
-    if (s.matched_session_id) {
-      await svc
-        .from('sessions')
-        .update({ matched_session_id: null })
-        .eq('id', s.matched_session_id)
-        .eq('matched_session_id', sessionId)
     }
 
     return NextResponse.json({ ok: true })

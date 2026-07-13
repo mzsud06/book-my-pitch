@@ -11,6 +11,7 @@ vi.mock('@/lib/supabase/service', () => ({ createServiceClient: vi.fn() }))
 vi.mock('@/lib/stripe', () => ({
   stripe: {
     paymentIntents: { create: vi.fn() },
+    refunds: { create: vi.fn() },
   },
   PLATFORM_FEE_PENCE: 50,
   STRIPE_PROCESSING_PENCE: 30,
@@ -69,8 +70,9 @@ describe('trigger-payments: fires exactly once (idempotency guard)', () => {
   it('charges all players on first call, then refuses to re-charge on second call', async () => {
     const players = Array.from({ length: 10 }, (_, i) => makePlayer(i + 1))
     const db = createMockDb({
-      sessions: [{ id: SESSION_ID, status: 'filling', matched_session_id: null, slots: mockSlotData }],
+      sessions: [{ id: SESSION_ID, status: 'filling', slots: mockSlotData }],
       venues: [{ id: VENUE_ID, stripe_account_id: 'acct_test' }],
+      slots: [mockSlotData],
       players,
       bookings: [],
     })
@@ -114,8 +116,9 @@ describe('trigger-payments: fires exactly once (idempotency guard)', () => {
     // Only 5 players but max_players is 10 → expectedTotal = 10 → guard fires
     const players = Array.from({ length: 5 }, (_, i) => makePlayer(i + 1))
     const db = createMockDb({
-      sessions: [{ id: SESSION_ID, status: 'filling', matched_session_id: null, slots: mockSlotData }],
+      sessions: [{ id: SESSION_ID, status: 'filling', slots: mockSlotData }],
       venues: [{ id: VENUE_ID, stripe_account_id: 'acct_test' }],
+      slots: [mockSlotData],
       players,
       bookings: [],
     })

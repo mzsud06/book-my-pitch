@@ -12,6 +12,7 @@ vi.mock('@/lib/stripe', () => ({
   stripe: {
     paymentMethods: { retrieve: vi.fn(), detach: vi.fn() },
     paymentIntents: { create: vi.fn() },
+    refunds: { create: vi.fn() },
   },
   PLATFORM_FEE_PENCE: 50,
   STRIPE_PROCESSING_PENCE: 30,
@@ -71,8 +72,9 @@ describe('trigger-payments: payment → session confirmed', () => {
   it('confirms session and creates booking when all 10 payments succeed', async () => {
     const players = Array.from({ length: 10 }, (_, i) => makePlayer(i + 1))
     const db = createMockDb({
-      sessions: [{ id: SESSION_ID, status: 'filling', matched_session_id: null, slots: mockSlotData }],
+      sessions: [{ id: SESSION_ID, status: 'filling', slots: mockSlotData }],
       venues: [{ id: VENUE_ID, stripe_account_id: 'acct_test' }],
+      slots: [mockSlotData],
       players,
       bookings: [],
     })
@@ -96,8 +98,9 @@ describe('trigger-payments: payment → session confirmed', () => {
   it('does NOT confirm session when any payment fails — session stays filling', async () => {
     const players = Array.from({ length: 10 }, (_, i) => makePlayer(i + 1))
     const db = createMockDb({
-      sessions: [{ id: SESSION_ID, status: 'filling', matched_session_id: null, slots: mockSlotData }],
+      sessions: [{ id: SESSION_ID, status: 'filling', slots: mockSlotData }],
       venues: [{ id: VENUE_ID, stripe_account_id: 'acct_test' }],
+      slots: [mockSlotData],
       players,
       bookings: [],
     })
@@ -137,7 +140,6 @@ describe('join: Stripe PM verification gates player insertion', () => {
         id: SESSION_ID,
         status: 'filling',
         organiser_id: 'organiser-xyz',
-        matched_session_id: null,
         game_type: 'private',
       }],
       players: [],
@@ -175,7 +177,6 @@ describe('join: Stripe PM verification gates player insertion', () => {
         id: SESSION_ID,
         status: 'filling',
         organiser_id: 'organiser-xyz',
-        matched_session_id: null,
         game_type: 'private',
       }],
       players: [],

@@ -27,7 +27,7 @@ export async function DELETE(req: NextRequest) {
     // Verify the requesting user is the organiser
     const { data: session } = await svc
       .from('sessions')
-      .select('id, organiser_id, status, matched_session_id')
+      .select('id, organiser_id, status')
       .eq('id', sessionId)
       .maybeSingle()
 
@@ -53,11 +53,6 @@ export async function DELETE(req: NextRequest) {
 
     await svc.from('sessions').delete().eq('id', sessionId)
 
-    // In the multi-challenger race model the LFO's matched_session_id is only set when a
-    // challenger wins the race at 5 players — never at session creation. A freshly-deleted
-    // (0-player) challenger therefore never touched the LFO's matched_session_id, so
-    // there is no back-link to clear.
-
     return NextResponse.json({ ok: true })
   } catch (err) {
     Sentry.captureException(err, {
@@ -79,7 +74,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { slotId, slotIds, name, phone, teamName, gameType, matchedSessionId } = body
+    const { slotId, slotIds, name, phone, gameType } = body
 
     if (!isValidUUID(slotId)) {
       return NextResponse.json({ error: 'Invalid slot ID' }, { status: 400 })
@@ -109,20 +104,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
     }
 
-    const trimmedTeamName = typeof teamName === 'string' ? teamName.trim() : null
-    if (trimmedTeamName && (trimmedTeamName.length > 30 || !/^[a-zA-Z0-9\s]+$/.test(trimmedTeamName))) {
-      return NextResponse.json({ error: 'Invalid team name' }, { status: 400 })
-    }
-
-    const validGameTypes = ['private', 'looking_for_opposition', 'open']
+    const validGameTypes = ['private', 'open']
     if (!validGameTypes.includes(gameType as string)) {
       return NextResponse.json({ error: 'Invalid game type' }, { status: 400 })
     }
-    const sessionIsPublic = gameType === 'looking_for_opposition' || gameType === 'open'
-
-    if (matchedSessionId !== undefined && !isValidUUID(matchedSessionId)) {
-      return NextResponse.json({ error: 'Invalid matched session ID' }, { status: 400 })
-    }
+    const sessionIsPublic = gameType === 'open'
 
     const supabase = await createClient()
 
@@ -152,62 +138,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'One or more of the selected time slots is no longer available' }, { status: 409 })
     }
 
-    // A challenger may only link to a real, still-open, unclaimed LFO session —
-    // otherwise a client could point matched_session_id at an arbitrary session
-    // (wrong game_type, already confirmed/cancelled, or already claimed by another
-    // challenger) and corrupt that session's matching state or payment flow.
-    if (matchedSessionId) {
-      const svcCheck = createServiceClient()
-      const { data: targetSession } = await svcCheck
-        .from('sessions')
-        .select('id, game_type, status, matched_session_id')
-        .eq('id', matchedSessionId)
-        .maybeSingle()
+    // One session per slot per user: block if already organising an active session
+    // — checked via primary slot_id and via slot_ids overlap (multi-hour bookings).
+    const [{ data: asOrganiserPrimary }, { data: asOrganiserArray }] = await Promise.all([
+      supabase.from('sessions').select('id').in('slot_id', finalSlotIds).eq('organiser_id', user.id).in('status', ['filling', 'confirmed']),
+      supabase.from('sessions').select('id').overlaps('slot_ids', finalSlotIds).eq('organiser_id', user.id).in('status', ['filling', 'confirmed']),
+    ])
 
-      const t = targetSession as unknown as { id: string; game_type: string | null; status: string; matched_session_id: string | null } | null
-
-      if (
-        !t ||
-        t.game_type !== 'looking_for_opposition' ||
-        t.status !== 'filling' ||
-        t.matched_session_id !== null
-      ) {
-        return NextResponse.json({ error: 'That opposition session is no longer available to challenge' }, { status: 400 })
-      }
+    if ((asOrganiserPrimary?.length ?? 0) > 0 || (asOrganiserArray?.length ?? 0) > 0) {
+      return NextResponse.json({ error: 'You already have a session for this slot.' }, { status: 400 })
     }
 
-    // Challenge flows (matchedSessionId provided) are exempt from both guards below:
-    // the challenger is intentionally creating a new session on a slot where they
-    // may already be organising or playing in another session.
-    if (!matchedSessionId) {
-      // One session per slot per user: block if already organising an active session
-      // — checked via primary slot_id and via slot_ids overlap (multi-hour bookings).
-      const [{ data: asOrganiserPrimary }, { data: asOrganiserArray }] = await Promise.all([
-        supabase.from('sessions').select('id').in('slot_id', finalSlotIds).eq('organiser_id', user.id).in('status', ['filling', 'confirmed']),
-        supabase.from('sessions').select('id').overlaps('slot_ids', finalSlotIds).eq('organiser_id', user.id).in('status', ['filling', 'confirmed']),
-      ])
+    // Double-submit guard: return the existing filling session idempotently so the
+    // organiser's join step targets the right session rather than creating a duplicate.
+    // Must filter by organiser_id — returning another user's session would let the
+    // caller insert themselves as a player in someone else's session.
+    const { data: existing } = await supabase
+      .from('sessions')
+      .select('id')
+      .eq('slot_id', finalSlotIds[0])
+      .eq('organiser_id', user.id)
+      .eq('status', 'filling')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
 
-      if ((asOrganiserPrimary?.length ?? 0) > 0 || (asOrganiserArray?.length ?? 0) > 0) {
-        return NextResponse.json({ error: 'You already have a session for this slot.' }, { status: 400 })
-      }
-
-      // Double-submit guard: return the existing filling session idempotently so the
-      // organiser's join step targets the right session rather than creating a duplicate.
-      // Must filter by organiser_id — returning another user's session would let the
-      // caller insert themselves as a player in someone else's session.
-      const { data: existing } = await supabase
-        .from('sessions')
-        .select('id')
-        .eq('slot_id', finalSlotIds[0])
-        .eq('organiser_id', user.id)
-        .eq('status', 'filling')
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle()
-
-      if (existing) {
-        return NextResponse.json({ sessionId: existing.id, existed: true })
-      }
+    if (existing) {
+      return NextResponse.json({ sessionId: existing.id, existed: true })
     }
 
     const { data: session, error } = await supabase
@@ -219,7 +176,6 @@ export async function POST(req: NextRequest) {
         organiser_name: trimmedName,
         organiser_phone: trimmedPhone ?? null,
         organiser_id: user.id,
-        team_name: trimmedTeamName || null,
         is_public: sessionIsPublic,
         game_type: gameType as string,
       })
@@ -233,14 +189,6 @@ export async function POST(req: NextRequest) {
       })
       console.error('create session error:', error?.message)
       return NextResponse.json({ error: 'Failed to create session' }, { status: 500 })
-    }
-
-    if (matchedSessionId) {
-      const svc = createServiceClient()
-      // Only set the challenger's own matched_session_id pointing at the LFO session.
-      // The LFO session's matched_session_id stays null until a challenger wins the race
-      // (fills to 5 players), so multiple challengers can compete simultaneously.
-      await svc.from('sessions').update({ matched_session_id: matchedSessionId }).eq('id', session.id)
     }
 
     return NextResponse.json({ sessionId: session.id })

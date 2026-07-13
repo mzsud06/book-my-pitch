@@ -49,7 +49,7 @@ export default async function PublicGamesPage() {
       return {
         id: s.id,
         organiserName: s.organiser_name,
-        venueName: venue?.name ?? 'Globe Football Pitch',
+        venueName: venue?.name ?? 'your local pitch',
         time: `${slot.start_time.slice(0, 5)} – ${slot.end_time.slice(0, 5)}`,
         date: fmtSlotDate(slot.date),
         price: `£${(slot.price / 10).toFixed(2)}`,

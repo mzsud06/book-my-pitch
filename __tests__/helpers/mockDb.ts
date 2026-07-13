@@ -70,7 +70,12 @@ export function createMockDb(
       eq: (c: string, v: unknown) => { preds.push(r => r[c] === v); return b },
       neq: (c: string, v: unknown) => { preds.push(r => r[c] !== v); return b },
       is: (c: string, v: unknown) => { preds.push(r => v === null ? r[c] == null : r[c] === v); return b },
-      // .update().eq().is().select('id') — used for the atomic LFO claim
+      in: (c: string, vs: unknown[]) => { preds.push(r => vs.includes(r[c])); return b },
+      overlaps: (c: string, vs: unknown[]) => {
+        preds.push(r => Array.isArray(r[c]) && (r[c] as unknown[]).some(v => vs.includes(v)))
+        return b
+      },
+      // .update().eq().select('id') — used to read back rows affected by an update
       select: (_cols?: string) => {
         const matching = get(table).filter(r => preds.every(p => p(r)))
         matching.forEach(r => Object.assign(r, data))
@@ -89,6 +94,7 @@ export function createMockDb(
     const preds: Array<(r: Row) => boolean> = []
     const b: any = {
       eq: (c: string, v: unknown) => { preds.push(r => r[c] === v); return b },
+      in: (c: string, vs: unknown[]) => { preds.push(r => vs.includes(r[c])); return b },
       then: (resolve: any, reject?: any) => {
         tables[table] = get(table).filter(r => !preds.every(p => p(r)))
         return Promise.resolve({ error: null }).then(resolve, reject)

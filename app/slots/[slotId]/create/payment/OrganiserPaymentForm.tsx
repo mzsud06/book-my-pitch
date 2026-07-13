@@ -25,16 +25,12 @@ interface SlotData {
 interface CreateDetails {
   name: string
   phone: string
-  gameType: 'private' | 'looking_for_opposition' | 'open'
-  teamName: string
+  gameType: 'private' | 'open'
 }
 
 interface Props {
   slot: SlotData
   slotIds: string[]
-  challengeSessionId: string | null
-  challengedTeamName: string | null
-  challengedPlayerCount: number | null
 }
 
 function formatDate(dateStr: string): string {
@@ -52,7 +48,6 @@ function CardStep({
   slotIds,
   details,
   customerId,
-  challengeSessionId,
   onConfirmError,
   parentDisabled,
 }: {
@@ -60,7 +55,6 @@ function CardStep({
   slotIds: string[]
   details: CreateDetails
   customerId: string
-  challengeSessionId: string | null
   // Called when stripe.confirmSetup fails — parent will fetch a fresh SetupIntent.
   onConfirmError: (message: string) => void
   // True while the parent is refreshing the SetupIntent; prevents double-submission.
@@ -77,9 +71,7 @@ function CardStep({
   const total = (slot.price / slot.max_players + 0.50 + 0.30).toFixed(2)
   const isDisabled = loading || parentDisabled || !stripe
 
-  const returnUrlParams = new URLSearchParams({ slotIds: slotIds.join(',') })
-  if (challengeSessionId) returnUrlParams.set('challenge', challengeSessionId)
-  const returnUrlQuery = returnUrlParams.toString()
+  const returnUrlQuery = new URLSearchParams({ slotIds: slotIds.join(',') }).toString()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -126,7 +118,6 @@ function CardStep({
           },
           extra: {
             slot_id: slot.id,
-            challenge_session_id: challengeSessionId,
           },
         })
         onConfirmError(confirmError.message ?? 'Card setup failed. Please try again.')
@@ -152,9 +143,7 @@ function CardStep({
           slotIds,
           name: details.name,
           phone: details.phone,
-          teamName: details.gameType === 'looking_for_opposition' ? details.teamName : '',
           gameType: details.gameType,
-          ...(challengeSessionId ? { matchedSessionId: challengeSessionId } : {}),
         }),
       })
       const sessionData = await sessionRes.json()
@@ -326,7 +315,7 @@ function CardStep({
   )
 }
 
-export default function OrganiserPaymentForm({ slot, slotIds, challengeSessionId, challengedTeamName, challengedPlayerCount }: Props) {
+export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
   const router = useRouter()
   const [details, setDetails] = useState<CreateDetails | null>(null)
   const [clientSecret, setClientSecret] = useState('')
@@ -567,40 +556,8 @@ export default function OrganiserPaymentForm({ slot, slotIds, challengeSessionId
         className="anim-fade-up d-150"
         style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '1.75rem', fontWeight: 500, fontFamily: 'var(--font-sans)' }}
       >
-        {startTime} – {endTime} · {formatDate(slot.date)} · {typeLabel} · {slot.venue?.name ?? 'Globe Football Pitch'}
+        {startTime} – {endTime} · {formatDate(slot.date)} · {typeLabel} · {slot.venue?.name ?? 'your local pitch'}
       </div>
-
-      {challengeSessionId && (
-        <div
-          className="anim-fade-up d-180"
-          style={{
-            background: 'rgba(22,48,31,0.6)',
-            border: '1px solid rgba(198,241,53,0.3)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '1rem 1.1rem',
-            color: 'var(--green)',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <div
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '15px',
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              lineHeight: 1.3,
-              marginBottom: challengedPlayerCount !== null ? '5px' : 0,
-            }}
-          >
-            ⚡ You&apos;re challenging {challengedTeamName || 'Team A'} — fill your team of 5 to lock in the match.
-          </div>
-          {challengedPlayerCount !== null && (
-            <div style={{ fontSize: '12px', fontWeight: 600, opacity: 0.65 }}>
-              They currently have {challengedPlayerCount}/5 players.
-            </div>
-          )}
-        </div>
-      )}
 
       {formError && (
         <div
@@ -627,7 +584,6 @@ export default function OrganiserPaymentForm({ slot, slotIds, challengeSessionId
             slotIds={slotIds}
             details={details}
             customerId={customerId}
-            challengeSessionId={challengeSessionId}
             onConfirmError={handleConfirmError}
             parentDisabled={refreshing}
           />

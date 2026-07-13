@@ -97,7 +97,7 @@ export default async function HomePage() {
   const today = new Date().toISOString().slice(0, 10)
   const { data: rawGames } = await createServiceClient()
     .from('sessions')
-    .select('id, organiser_name, slots!inner(date, start_time, end_time, type, price), players(count)')
+    .select('id, organiser_name, slots!inner(date, start_time, end_time, type, price, venues(name, address)), players(count)')
     .eq('game_type', 'open')
     .eq('status', 'filling')
     .eq('is_public', true)
@@ -106,18 +106,25 @@ export default async function HomePage() {
   type LiveGameRow = {
     id: string
     organiser_name: string | null
-    slots: { date: string; start_time: string; end_time: string; type: string; price: number }
+    slots: {
+      date: string; start_time: string; end_time: string; type: string; price: number
+      venues: { name: string; address: string } | { name: string; address: string }[] | null
+    }
     players: { count: number }[]
   }
 
   const allPublicGames = ((rawGames as unknown as LiveGameRow[]) ?? [])
     .map(s => {
       const slot = Array.isArray(s.slots) ? s.slots[0] : s.slots
+      const rawVenue = slot.venues
+      const venue = Array.isArray(rawVenue) ? rawVenue[0] : rawVenue
       const playerCount = (Array.isArray(s.players) ? s.players[0]?.count : 0) ?? 0
       const type = slot.type as 'peak' | 'offpeak' | 'weekend'
       return {
         id: s.id,
         organiserName: s.organiser_name,
+        venueName: venue?.name ?? 'your local pitch',
+        venueAddress: venue?.address ?? '',
         time: `${slot.start_time.slice(0, 5)} – ${slot.end_time.slice(0, 5)}`,
         date: fmtSlotDate(slot.date),
         price: `£${(slot.price / 10).toFixed(2)}`,
@@ -203,7 +210,7 @@ export default async function HomePage() {
                       flexShrink: 0,
                       boxShadow: '0 0 6px rgba(198,241,53,0.65)',
                     }} />
-                    Globe Pitch · Bethnal Green
+                    Live in East London
                   </span>
                 </div>
 
@@ -236,7 +243,7 @@ export default async function HomePage() {
                     fontWeight: 400,
                   }}
                 >
-                  Find games near you or start one in under a minute.
+                  Find a game near you or start one in under a minute.
                 </p>
 
                 {/* Primary CTA */}
@@ -456,7 +463,7 @@ export default async function HomePage() {
                       fontFamily: 'var(--font-sans)', fontSize: '12px',
                       color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
                     }}>
-                      <PinIcon /> Globe Football Pitch · Bethnal Green
+                      <PinIcon /> {game.venueName}{game.venueAddress ? ` · ${game.venueAddress}` : ''}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                       <Badge variant={game.badgeVariant}>{typeLabelFromVariant(game.badgeVariant)}</Badge>
@@ -541,7 +548,7 @@ export default async function HomePage() {
                         fontFamily: 'var(--font-sans)', fontSize: '12px',
                         color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
                       }}>
-                        <PinIcon /> Globe Football Pitch · Bethnal Green
+                        <PinIcon /> your local pitch
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                         <Badge variant={card.badge}>{typeLabelFromVariant(card.badge)}</Badge>
@@ -596,7 +603,7 @@ export default async function HomePage() {
             {/* Step cards */}
             <div className="steps-grid-new">
               {[
-                { n: '01', t: 'Find an open game time', d: 'Browse available times at Globe Pitch and pick one that works for you.' },
+                { n: '01', t: 'Find an open game time', d: 'Browse available times at your local pitch and pick one that works for you.' },
                 { n: '02', t: 'Share the link', d: 'You get a unique link for your game. Drop it in the group chat in seconds.' },
                 { n: '03', t: 'Mates join', d: "Friends click the link and add their card. Nobody is charged yet. Zero commitment." },
                 { n: '04', t: '10 players = booked', d: 'The moment the 10th player joins, everyone pays their share. Pitch confirmed.' },

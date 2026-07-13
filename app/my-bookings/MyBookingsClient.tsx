@@ -27,7 +27,6 @@ interface BookingCard {
   venueName: string
   gameType: string
   organiserName: string | null
-  matchedSessionId: string | null
   slotTakenByRival: boolean
 }
 
@@ -46,7 +45,6 @@ interface RawSession {
   status: string
   game_type: string
   organiser_name: string | null
-  matched_session_id?: string | null
   slots: RawSlot | RawSlot[] | null
   players: { count: number }[]
 }
@@ -147,7 +145,6 @@ function gameTypeInfo(gameType: string): { label: string; variant: 'public' | 'n
 
 function cancelReasonText(c: BookingCard): string | null {
   if (c.status !== 'cancelled') return null
-  if (c.matchedSessionId) return 'Cancelled — another team got there first'
   if (c.slotTakenByRival) return 'Cancelled — slot taken by another group'
   return 'Cancelled by organiser'
 }
@@ -240,7 +237,7 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
           <ClockIcon /> {formatDate(c.date)} · {c.startTime}–{c.endTime}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: reason ? '4px' : '0.9rem' }}>
-          <PinIcon /> Globe Football Pitch · Bethnal Green
+          <PinIcon /> {c.venueName}
         </div>
         {reason && (
           <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: '0.9rem' }}>
@@ -274,10 +271,9 @@ function toCard(s: RawSession): BookingCard | null {
     type: slot.type,
     price: slot.price,
     playerCount: s.players?.[0]?.count ?? 0,
-    venueName: slot.venues?.name ?? 'Globe Football Pitch',
+    venueName: slot.venues?.name ?? 'your local pitch',
     gameType: s.game_type ?? 'private',
     organiserName: s.organiser_name ?? null,
-    matchedSessionId: s.matched_session_id ?? null,
     slotTakenByRival: (slot.sessions ?? []).some(sib => sib.status === 'confirmed'),
   }
 }
@@ -298,7 +294,7 @@ export default function MyBookingsClient() {
           .select(`
             joined_at,
             sessions(
-              id, status, game_type, organiser_name, matched_session_id,
+              id, status, game_type, organiser_name,
               slots(date, start_time, end_time, type, price, venues(name), sessions(status)),
               players(count)
             )
@@ -324,7 +320,7 @@ export default function MyBookingsClient() {
           const { data } = await supabase
             .from('sessions')
             .select(`
-              id, status, game_type, organiser_name, matched_session_id,
+              id, status, game_type, organiser_name,
               slots!inner(date, start_time, end_time, type, price, venues(name), sessions(status)),
               players(count)
             `)

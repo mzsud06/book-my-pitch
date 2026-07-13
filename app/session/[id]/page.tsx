@@ -16,9 +16,7 @@ interface SessionData {
   organiser_name: string | null
   organiser_phone: string | null
   organiser_id: string | null
-  team_name: string | null
   game_type: string | null
-  matched_session_id: string | null
   is_public: boolean
   slot_ids: string[] | null
   slots: {
@@ -53,7 +51,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
     supabase
       .from('sessions')
       .select(`
-        id, status, created_at, organiser_name, organiser_phone, organiser_id, team_name, game_type, matched_session_id, is_public, slot_ids,
+        id, status, created_at, organiser_name, organiser_phone, organiser_id, game_type, is_public, slot_ids,
         slots(id, date, start_time, end_time, type, price, max_players,
           venues(id, name, address, stripe_account_id)
         )
@@ -108,9 +106,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
     organiser_name: (rawSession as unknown as { organiser_name: string | null }).organiser_name ?? null,
     organiser_phone: (rawSession as unknown as { organiser_phone: string | null }).organiser_phone ?? null,
     organiser_id: (rawSession as unknown as { organiser_id: string | null }).organiser_id ?? null,
-    team_name: (rawSession as unknown as { team_name: string | null }).team_name ?? null,
     game_type: (rawSession as unknown as { game_type: string | null }).game_type ?? null,
-    matched_session_id: (rawSession as unknown as { matched_session_id: string | null }).matched_session_id ?? null,
     is_public: (rawSession as unknown as { is_public: boolean }).is_public ?? false,
     slot_ids: sessionSlotIds ?? null,
     slots: {
@@ -141,32 +137,6 @@ export default async function SessionPage({ params, searchParams }: Props) {
     .order('created_at', { ascending: true })
     .limit(100)
 
-  let matchedSession: { id: string; team_name: string | null; status: string; players: { count: number }[] } | null = null
-  if (normalizedSession.matched_session_id) {
-    const { data: matchedData } = await supabase
-      .from('sessions')
-      .select('id, team_name, status, players(count)')
-      .eq('id', normalizedSession.matched_session_id)
-      .single()
-    if (matchedData) {
-      matchedSession = matchedData as unknown as typeof matchedSession
-    }
-  } else if (normalizedSession.game_type === 'looking_for_opposition') {
-    // Unclaimed LFO: find the earliest active challenger so the LFO organiser
-    // can see the opposing team forming before the race-claim fires.
-    const { data: challengerData } = await supabase
-      .from('sessions')
-      .select('id, team_name, status, players(count)')
-      .eq('matched_session_id', id)
-      .eq('status', 'filling')
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-    if (challengerData) {
-      matchedSession = challengerData as unknown as typeof matchedSession
-    }
-  }
-
   return (
     <>
       <Nav />
@@ -177,7 +147,6 @@ export default async function SessionPage({ params, searchParams }: Props) {
         justJoined={joined === '1'}
         justCreated={created === '1'}
         alreadyIn={(already === '1' || !!memberRow) && user?.id !== normalizedSession.organiser_id}
-        matchedSession={matchedSession}
       />
     </>
   )
