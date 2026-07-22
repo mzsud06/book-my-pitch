@@ -30,10 +30,9 @@ const ORGANISER_ID = 'organiser-001'
 
 const mockSlot = {
   id: SLOT_ID,
-  type: 'offpeak',
   price: 30,
   venue_id: VENUE_ID,
-  max_players: 10,
+  pitches: { id: 'pitch-1', name: 'Main Pitch', format: '5-a-side', surface: '4G', max_players: 10, peak_price: 50, offpeak_price: 30, weekend_price: 40 },
 }
 
 function makePlayer(i: number, sessionId = SESSION_ID, userId?: string) {

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Badge } from '@/components/ui/Badge'
 import PhoneInput, { parsePhone } from '@/components/PhoneInput'
+import { Pitch } from '@/lib/slots'
 
 interface Slot {
   id: string
@@ -15,6 +16,7 @@ interface Slot {
   type: string
   price: number
   max_players: number
+  pitches: Pitch
   venue: { name: string; address: string } | null
 }
 
@@ -119,7 +121,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
     init()
   }, [slot.id])
 
-  const perPlayer = (slot.price / 10).toFixed(2)
+  const perPlayer = (slot.price / slot.pitches.max_players).toFixed(2)
   const typeLabel = slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'
   const startTime = slot.start_time.slice(0, 5)
   const endTime = slot.end_time.slice(0, 5)
@@ -301,10 +303,10 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
           </div>
         </div>
 
-        {/* Team lineup — 2 rows of 5 */}
+        {/* Team lineup — split into two rows */}
         <div style={{ marginBottom: '1.1rem' }}>
           <div style={{ display: 'flex', gap: '5px' }}>
-            {Array.from({ length: 5 }, (_, i) => (
+            {Array.from({ length: Math.ceil(slot.pitches.max_players / 2) }, (_, i) => (
               <div
                 key={i}
                 style={{
@@ -369,15 +371,15 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
                 flexShrink: 0,
               }}
             >
-              5-a-side
+              {slot.pitches.format}
             </div>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
           </div>
 
           <div style={{ display: 'flex', gap: '5px' }}>
-            {Array.from({ length: 5 }, (_, i) => (
+            {Array.from({ length: Math.floor(slot.pitches.max_players / 2) }, (_, i) => (
               <div
-                key={i + 5}
+                key={i + Math.ceil(slot.pitches.max_players / 2)}
                 style={{
                   position: 'relative',
                   flex: 1,
@@ -404,7 +406,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
                     lineHeight: 1,
                   }}
                 >
-                  {i + 6}
+                  {i + Math.ceil(slot.pitches.max_players / 2) + 1}
                 </div>
                 <div
                   style={{
@@ -424,7 +426,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
 
         {/* Segmented bar */}
         <div className="seg-bar" style={{ marginBottom: '10px' }}>
-          {Array.from({ length: 10 }, (_, i) => (
+          {Array.from({ length: slot.pitches.max_players }, (_, i) => (
             <div
               key={i}
               className={`seg-bar-seg ${i === 0 ? 'lit-green' : 'unlit'}`}
@@ -433,8 +435,8 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
           ))}
         </div>
         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 500 }}>
-          <strong style={{ color: 'var(--text)', fontWeight: 800 }}>1/10 players</strong>
-          {' '}— 9 more needed to confirm
+          <strong style={{ color: 'var(--text)', fontWeight: 800 }}>1/{slot.pitches.max_players} players</strong>
+          {' '}— {slot.pitches.max_players - 1} more needed to confirm
         </div>
       </div>
 

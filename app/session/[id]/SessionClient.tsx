@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import PhoneInput, { parsePhone } from '@/components/PhoneInput'
 import { readPlayerDetails, readMySessions, readSessionPlayer, removeSessionPlayer, removeMySession } from '@/lib/clientStorage'
 import { Footer } from '@/components/Footer'
+import { getSlotType, formatSlotType, Pitch } from '@/lib/slots'
 
 interface Player {
   id: string
@@ -38,9 +39,9 @@ interface Session {
     date: string
     start_time: string
     end_time: string
-    type: string
     price: number
     max_players: number
+    pitches: Pitch
     venues: { id: string; name: string; address: string }
   }
   players: Player[]
@@ -152,9 +153,10 @@ export default function SessionClient({
 
   const allPlayers: Player[] = session.players.filter(p => p.session_id === session.id)
   const playerCount = allPlayers.length
-  const remaining = 10 - playerCount
-  const isFull = isFilling && playerCount >= slot.max_players
-  const urgencySpotsLeft = slot.max_players - playerCount
+  const maxPlayers = slot.pitches.max_players
+  const remaining = maxPlayers - playerCount
+  const isFull = isFilling && playerCount >= maxPlayers
+  const urgencySpotsLeft = maxPlayers - playerCount
   const showJoinUrgency = isFilling && !isFull && urgencySpotsLeft > 0 && urgencySpotsLeft <= 2
   const returningPlayerIndex = returningPlayer ? allPlayers.findIndex(p => p.id === returningPlayer.id) : -1
   const returningPlayerJerseyNumber = returningPlayerIndex >= 0 ? returningPlayerIndex + 1 : null
@@ -175,7 +177,7 @@ export default function SessionClient({
           .from('sessions')
           .select(`
             id, status, created_at, organiser_name, organiser_id, game_type, is_public,
-            slots(id, date, start_time, end_time, type, price, max_players,
+            slots(id, date, start_time, end_time, price, max_players, pitches(id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price),
               venues(id, name, address)
             )
           `)
@@ -575,7 +577,7 @@ export default function SessionClient({
 
   function shareWhatsApp() {
     const venueName = slot.venues?.name ?? 'your local pitch'
-    const text = `Join my 5-a-side at ${venueName} — ${sliceTime(slot.start_time)}–${sliceTime(slot.end_time)} on ${formatDate(slot.date)}!\n${shareUrl}`
+    const text = `Join my ${slot.pitches.format} at ${venueName} — ${sliceTime(slot.start_time)}–${sliceTime(slot.end_time)} on ${formatDate(slot.date)}!\n${shareUrl}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
@@ -602,7 +604,7 @@ export default function SessionClient({
     }
   }
 
-  const perPlayerPounds = (slot.price / 10 + 0.50 + 0.30).toFixed(2)
+  const perPlayerPounds = (slot.price / slot.pitches.max_players + 0.50 + 0.30).toFixed(2)
   const isOrganiserUser = !!(currentUserId && session.organiser_id && currentUserId === session.organiser_id)
   const isMyPlayerOrganiser = isOrganiserUser || !!(myPlayer && session.organiser_name && myPlayer.name.toLowerCase() === session.organiser_name.toLowerCase())
   // Organiser may leave private/open sessions — they need a real player row (id !== 'organiser')
@@ -888,7 +890,7 @@ export default function SessionClient({
             Game created!
           </div>
           <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, fontWeight: 500 }}>
-            Share the link below with your mates. When 10 players join, everyone pays automatically.
+            Share the link below with your mates. When {maxPlayers} players join, everyone pays automatically.
           </div>
         </div>
       )}
@@ -1073,7 +1075,7 @@ export default function SessionClient({
           {sliceTime(slot.start_time)} – {sliceTime(slot.end_time)}
         </div>
         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
-          {formatDate(slot.date)} · {slot.type === 'peak' ? 'Peak' : slot.type === 'offpeak' ? 'Off-peak' : 'Weekend'} · 5-a-side
+          {formatDate(slot.date)} · {formatSlotType(getSlotType(slot.date, slot.start_time))} · {slot.pitches.format}
         </div>
         <a
           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(slot.venues?.address ?? slot.venues?.name ?? 'football pitch London')}`}
@@ -1087,27 +1089,27 @@ export default function SessionClient({
         {/* TEAM LINEUP */}
         <div style={{ marginBottom: '1.2rem' }}>
           <div style={{ display: 'flex', gap: '5px', marginBottom: '0' }}>
-            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i))}
+            {Array.from({ length: Math.ceil(maxPlayers / 2) }, (_, i) => renderPlayerToken(i))}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
             <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(255,255,255,0.12)', letterSpacing: '0.14em', textTransform: 'uppercase', flexShrink: 0 }}>
-              5-a-side
+              {slot.pitches.format}
             </div>
             <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
           </div>
           <div style={{ display: 'flex', gap: '5px' }}>
-            {Array.from({ length: 5 }, (_, i) => renderPlayerToken(i + 5))}
+            {Array.from({ length: Math.floor(maxPlayers / 2) }, (_, i) => renderPlayerToken(i + Math.ceil(maxPlayers / 2)))}
           </div>
 
-          <SegBar count={playerCount} isConfirmed={isConfirmed} />
+          <SegBar count={playerCount} isConfirmed={isConfirmed} max={maxPlayers} />
 
           <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 600 }}>
             {isConfirmed ? (
-              <strong style={{ color: 'var(--green)', fontWeight: 800 }}>Confirmed — all 10 players ✓</strong>
+              <strong style={{ color: 'var(--green)', fontWeight: 800 }}>Confirmed — all {maxPlayers} players ✓</strong>
             ) : (
               <>
-                <strong style={{ color: 'var(--text)', fontWeight: 800 }}>{playerCount}/10 players</strong>
+                <strong style={{ color: 'var(--text)', fontWeight: 800 }}>{playerCount}/{maxPlayers} players</strong>
                 {' '}— {remaining} more needed
               </>
             )}
@@ -1249,7 +1251,7 @@ export default function SessionClient({
           ============================================================ */}
       {isFilling && (
         <>
-          {playerCount < slot.max_players && (
+          {playerCount < maxPlayers && (
           <div
             className="anim-fade-up d-200"
             style={{
@@ -1526,7 +1528,7 @@ export default function SessionClient({
                     Join this game
                   </div>
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.1rem' }}>
-                    Nothing is charged now — your card is only saved once all 10 players join.
+                    Nothing is charged now — your card is only saved once all {maxPlayers} players join.
                   </div>
                   <form onSubmit={handleJoinFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div>
@@ -1569,7 +1571,7 @@ export default function SessionClient({
                     </div>
 
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.55 }}>
-                      🔒 <strong style={{ color: 'var(--text)' }}>Nothing is charged now</strong> — your card is only taken when all 10 players join.
+                      🔒 <strong style={{ color: 'var(--text)' }}>Nothing is charged now</strong> — your card is only taken when all {maxPlayers} players join.
                     </div>
 
                     <button
@@ -2191,7 +2193,7 @@ export default function SessionClient({
                     marginBottom: '1.5rem',
                   }}
                 >
-                  We&apos;ll let you know the moment all 10 spots fill. Check your email to verify your account.
+                  We&apos;ll let you know the moment all {maxPlayers} spots fill. Check your email to verify your account.
                 </div>
                 <button
                   onClick={() => setShowRegisterPopup(false)}
@@ -2236,7 +2238,7 @@ export default function SessionClient({
                     marginBottom: '1.5rem',
                   }}
                 >
-                  Create a free account and we&apos;ll notify you the moment all 10 spots fill.
+                  Create a free account and we&apos;ll notify you the moment all {maxPlayers} spots fill.
                 </div>
                 <form onSubmit={handleRegisterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div>

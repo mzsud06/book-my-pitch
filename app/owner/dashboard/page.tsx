@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import OwnerDashboardClient from './OwnerDashboardClient'
+import { getSlotType } from '@/lib/slots'
 
 interface RawSession {
   id: string
@@ -16,9 +17,9 @@ interface SlotField {
   date: string
   start_time: string
   end_time: string
-  type: string
   price: number
   venue_id: string
+  pitches: { max_players: number }
 }
 
 function getSlot(slots: unknown): SlotField | null {
@@ -51,7 +52,7 @@ export default async function OwnerDashboardPage() {
     .from('sessions')
     .select(`
       id, status, created_at, organiser_name,
-      slots!inner(id, date, start_time, end_time, type, price, venue_id),
+      slots!inner(id, date, start_time, end_time, price, venue_id, pitches(max_players)),
       players(id, name, joined_at),
       bookings(id, confirmed_at)
     `)
@@ -63,7 +64,7 @@ export default async function OwnerDashboardPage() {
     .from('sessions')
     .select(`
       id, status,
-      slots!inner(id, date, start_time, end_time, type, price, venue_id),
+      slots!inner(id, date, start_time, end_time, price, venue_id, pitches(max_players)),
       players(count)
     `)
     .eq('slots.venue_id', venue.id)
@@ -90,7 +91,7 @@ export default async function OwnerDashboardPage() {
     const slot = getSlot(s.slots)
     if (!slot) return
     const key = slot.start_time
-    if (!slotOccupancy.has(key)) slotOccupancy.set(key, { confirmed: 0, total: 0, type: slot.type })
+    if (!slotOccupancy.has(key)) slotOccupancy.set(key, { confirmed: 0, total: 0, type: getSlotType(slot.date, slot.start_time) })
     const entry = slotOccupancy.get(key)!
     entry.total++
     if (s.status === 'confirmed') entry.confirmed++
@@ -110,7 +111,9 @@ export default async function OwnerDashboardPage() {
       status: s.status,
       created_at: s.created_at,
       organiser_name: (s as unknown as { organiser_name?: string | null }).organiser_name ?? null,
-      slots: slot ?? { date: '', start_time: '', end_time: '', type: '', price: 0 },
+      slots: slot
+        ? { ...slot, type: getSlotType(slot.date, slot.start_time), max_players: slot.pitches.max_players }
+        : { date: '', start_time: '', end_time: '', type: '', price: 0, max_players: 10 },
       players,
       bookings,
     }

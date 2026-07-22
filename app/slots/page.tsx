@@ -2,7 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import Nav from '@/components/Nav'
 import SlotsClient, { SessionData, DbSlot } from './SlotsClient'
-import { getSlotsForDay } from '@/lib/slots'
+import { getSlotsForDay, priceForSlotType, Pitch } from '@/lib/slots'
+
+const PITCH_COLS = 'id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date)
@@ -39,15 +41,28 @@ export default async function SlotsPage() {
   const venueName = venue?.name ?? 'your local pitch'
   const venueAddress = venue?.address ?? ''
 
-  if (venueId) {
+  // Look up the pitch for this venue — slot price/max_players/format are
+  // seeded from here, not hardcoded.
+  const { data: pitch } = venueId
+    ? await supabase
+        .from('pitches')
+        .select(PITCH_COLS)
+        .eq('venue_id', venueId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single()
+    : { data: null as Pitch | null }
+
+  if (venueId && pitch) {
     // Ensure every slot template for the next 14 days exists in the DB.
     // INSERT ... ON CONFLICT DO NOTHING — fast no-ops after first run.
     const slotInserts: {
       venue_id: string
+      pitch_id: string
       date: string
       start_time: string
       end_time: string
-      type: string
+      format: string
       price: number
       max_players: number
     }[] = []
@@ -61,12 +76,13 @@ export default async function SlotsPage() {
       getSlotsForDay(ukNoon).forEach(t => {
         slotInserts.push({
           venue_id: venueId,
+          pitch_id: pitch.id,
           date: dateStr,
           start_time: t.startTime,
           end_time: t.endTime,
-          type: t.type,
-          price: t.priceGBP,
-          max_players: t.maxPlayers,
+          format: pitch.format,
+          price: priceForSlotType(pitch, t.type),
+          max_players: pitch.max_players,
         })
       })
     }
@@ -106,7 +122,7 @@ export default async function SlotsPage() {
         is_public,
         game_type,
         slot_ids,
-        slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id),
+        slots!inner(id, date, start_time, end_time, price, max_players, venue_id, pitches(${PITCH_COLS})),
         players(count)
       `)
       .eq('slots.venue_id', venueId)
@@ -115,7 +131,7 @@ export default async function SlotsPage() {
       .in('status', ['filling', 'confirmed']),
     supabase
       .from('slots')
-      .select('id, date, start_time')
+      .select(`id, date, start_time, price, pitches(${PITCH_COLS})`)
       .eq('venue_id', venueId)
       .gte('date', todayStr)
       .lte('date', endStr),
@@ -150,10 +166,12 @@ export default async function SlotsPage() {
       <Nav />
       <SlotsClient
         initialSessions={(sessions ?? []) as unknown as SessionData[]}
-        dbSlots={(dbSlots ?? []) as DbSlot[]}
+        dbSlots={(dbSlots ?? []) as unknown as DbSlot[]}
         venueId={venueId}
         venueName={venueName}
         venueAddress={venueAddress}
+        pitchFormat={pitch?.format ?? '5-a-side'}
+        pitchSurface={pitch?.surface ?? '4G'}
         userSlotSessionMap={userSlotSessionMap}
         userSessionIds={userSessionIds}
         userId={user?.id ?? null}

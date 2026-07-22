@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { getSlotType } from '@/lib/slots'
 
 interface Venue {
   id: string
@@ -23,6 +24,7 @@ interface SessionData {
     end_time: string
     type: string
     price: number
+    max_players: number
   }
   players: { id: string; name: string; joined_at: string }[]
   bookings: { id: string; confirmed_at: string }[]
@@ -85,14 +87,24 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
         .from('sessions')
         .select(`
           id, status, created_at, organiser_name,
-          slots!inner(date, start_time, end_time, type, price, venue_id),
+          slots!inner(date, start_time, end_time, price, venue_id, pitches(max_players)),
           players(id, name, joined_at),
           bookings(id, confirmed_at)
         `)
         .eq('slots.venue_id', venue.id)
         .order('created_at', { ascending: false })
         .limit(50)
-        .then(({ data }) => { if (data) setSessions(data as unknown as SessionData[]) })
+        .then(({ data }) => {
+          if (!data) return
+          const withType = (data as unknown as { slots: { date: string; start_time: string; pitches: { max_players: number } } | { date: string; start_time: string; pitches: { max_players: number } }[] }[]).map(s => {
+            const raw = Array.isArray(s.slots) ? s.slots[0] : s.slots
+            return {
+              ...s,
+              slots: { ...raw, type: getSlotType(raw.date, raw.start_time), max_players: raw.pitches.max_players },
+            }
+          })
+          setSessions(withType as unknown as SessionData[])
+        })
     }
 
     const channel = supabase
@@ -524,7 +536,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {filling.map(s => {
                 const count = totalPlayers(s)
-                const pct = (count / 10) * 100
+                const pct = (count / s.slots.max_players) * 100
                 return (
                   <Link key={s.id} href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
                     <div
@@ -583,7 +595,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
                         <div style={{ fontSize: '17px', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--amber)', letterSpacing: '-0.03em' }}>
-                          {count}/10
+                          {count}/{s.slots.max_players}
                         </div>
                         <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 500 }}>players</div>
                       </div>

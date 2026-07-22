@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     // Get slot info — use anon client so RLS applies (slot must be publicly readable)
     const { data: slot, error: slotError } = await supabase
       .from('slots')
-      .select('*')
+      .select('*, pitches(*)')
       .eq('id', slotId)
       .single()
 
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('session_id', sessionId)
 
-    const capacity: number = (slot as unknown as { max_players?: number }).max_players ?? 10
+    const capacity: number = (slot as unknown as { pitches: { max_players: number } }).pitches.max_players
     const sessionGameType = (existingSession as unknown as { game_type: string | null }).game_type
     const organiserId = (existingSession as unknown as { organiser_id: string | null }).organiser_id
 
@@ -275,10 +275,9 @@ export async function POST(req: NextRequest) {
 
 interface SlotForPayment {
   id: string
-  type: string
   price: number
   venue_id: string
-  max_players?: number
+  pitches: { max_players: number }
 }
 
 async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds: string[]): Promise<{ ok: boolean }> {
@@ -307,11 +306,11 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
   // them for the true total price charged.
   const { data: allSlotRows } = await serviceSupabase
     .from('slots')
-    .select('*')
+    .select('*, pitches(*)')
     .in('id', slotIds)
-  const combined = combineSlots((allSlotRows ?? [slot]) as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; max_players: number }[])
+  const combined = combineSlots((allSlotRows ?? [slot]) as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; pitches: { id: string; name: string; format: string; surface: string; max_players: number; peak_price: number; offpeak_price: number; weekend_price: number } }[])
 
-  const perPlayerPitch = Math.round((combined.price * 100) / 10)
+  const perPlayerPitch = Math.round((combined.price * 100) / combined.pitches.max_players)
   const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
 
   const { data: players } = await serviceSupabase
@@ -320,7 +319,7 @@ async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds:
     .eq('session_id', sessionId)
     .not('stripe_payment_method_id', 'is', null)
     .not('stripe_customer_id', 'is', null)
-    .limit(slot.max_players ?? 10)
+    .limit(slot.pitches.max_players)
 
   const allPlayers = players ?? []
   if (allPlayers.length === 0) {

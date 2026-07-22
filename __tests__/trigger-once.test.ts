@@ -29,10 +29,9 @@ const VENUE_ID = '33333333-3333-3333-3333-333333333333'
 
 const mockSlotData = {
   id: SLOT_ID,
-  type: 'offpeak' as const,
   price: 30,
   venue_id: VENUE_ID,
-  max_players: 10,
+  pitches: { id: 'pitch-1', name: 'Main Pitch', format: '5-a-side', surface: '4G', max_players: 10, peak_price: 50, offpeak_price: 30, weekend_price: 40 },
   start_time: '19:00',
   end_time: '20:00',
   date: '2026-07-15',

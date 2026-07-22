@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
+import { Pitch } from '@/lib/slots'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
   betas: [],
@@ -19,6 +20,7 @@ interface SlotData {
   type: string
   price: number
   max_players: number
+  pitches: Pitch
   venue: { name: string; address: string } | null
 }
 

@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Nav from '@/components/Nav'
 import PageReveal from '@/components/PageReveal'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getSlotType } from '@/lib/slots'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -97,7 +98,7 @@ export default async function HomePage() {
   const today = new Date().toISOString().slice(0, 10)
   const { data: rawGames } = await createServiceClient()
     .from('sessions')
-    .select('id, organiser_name, slots!inner(date, start_time, end_time, type, price, venues(name, address)), players(count)')
+    .select('id, organiser_name, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, address)), players(count)')
     .eq('game_type', 'open')
     .eq('status', 'filling')
     .eq('is_public', true)
@@ -107,7 +108,8 @@ export default async function HomePage() {
     id: string
     organiser_name: string | null
     slots: {
-      date: string; start_time: string; end_time: string; type: string; price: number
+      date: string; start_time: string; end_time: string; price: number
+      pitches: { max_players: number }
       venues: { name: string; address: string } | { name: string; address: string }[] | null
     }
     players: { count: number }[]
@@ -119,7 +121,8 @@ export default async function HomePage() {
       const rawVenue = slot.venues
       const venue = Array.isArray(rawVenue) ? rawVenue[0] : rawVenue
       const playerCount = (Array.isArray(s.players) ? s.players[0]?.count : 0) ?? 0
-      const type = slot.type as 'peak' | 'offpeak' | 'weekend'
+      const maxPlayers = slot.pitches.max_players
+      const type = getSlotType(slot.date, slot.start_time)
       return {
         id: s.id,
         organiserName: s.organiser_name,
@@ -127,8 +130,9 @@ export default async function HomePage() {
         venueAddress: venue?.address ?? '',
         time: `${slot.start_time.slice(0, 5)} – ${slot.end_time.slice(0, 5)}`,
         date: fmtSlotDate(slot.date),
-        price: `£${(slot.price / 10).toFixed(2)}`,
+        price: `£${(slot.price / maxPlayers).toFixed(2)}`,
         playerCount,
+        maxPlayers,
         type,
         badgeVariant: (type === 'peak' ? 'peak' : type === 'weekend' ? 'weekend' : 'offpeak') as 'peak' | 'offpeak' | 'weekend',
         badgeLabel: type === 'peak' ? 'Peak · Every day' : type === 'offpeak' ? 'Off-peak · Mon–Fri' : 'Weekend',
@@ -439,7 +443,7 @@ export default async function HomePage() {
                         letterSpacing: '0.02em',
                       }}
                     >
-                      <PeopleIcon /> {game.playerCount}/10 players
+                      <PeopleIcon /> {game.playerCount}/{game.maxPlayers} players
                     </div>
                   </div>
 

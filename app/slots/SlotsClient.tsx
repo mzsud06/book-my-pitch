@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getSlotsForDay, SlotTemplate } from '@/lib/slots'
+import { getSlotsForDay, getSlotType, SlotTemplate, Pitch } from '@/lib/slots'
 import { Container } from '@/components/ui/Container'
 import { Badge } from '@/components/ui/Badge'
 import { Eyebrow } from '@/components/ui/Eyebrow'
@@ -25,10 +25,10 @@ export interface SessionData {
     date: string
     start_time: string
     end_time: string
-    type: string
     price: number
     max_players: number
     venue_id: string
+    pitches: Pitch
   }
   players: { count: number }[]
 }
@@ -37,6 +37,8 @@ export interface DbSlot {
   id: string
   date: string
   start_time: string
+  price: number
+  pitches: Pitch
 }
 
 interface Props {
@@ -45,6 +47,8 @@ interface Props {
   venueId: string
   venueName: string
   venueAddress: string
+  pitchFormat: string
+  pitchSurface: string
   userSlotSessionMap: Record<string, string>
   userSessionIds: string[]
   userId: string | null
@@ -109,7 +113,7 @@ function PeopleIcon() {
   )
 }
 
-export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, userSlotSessionMap, userSessionIds, userId }: Props) {
+export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, pitchFormat, pitchSurface, userSlotSessionMap, userSessionIds, userId }: Props) {
   const userSessionSet = new Set(userSessionIds)
   const router = useRouter()
   const supabase = createClient()
@@ -119,8 +123,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
   const [selectedDuration, setSelectedDuration] = useState(60)
   const [availableOnly, setAvailableOnly] = useState(false)
 
-  const [slotIdMap, setSlotIdMap] = useState<Map<string, string>>(
-    () => new Map(dbSlots.map(s => [`${s.date}_${s.start_time.slice(0, 5)}`, s.id]))
+  const [slotDataMap, setSlotDataMap] = useState<Map<string, DbSlot>>(
+    () => new Map(dbSlots.map(s => [`${s.date}_${s.start_time.slice(0, 5)}`, s]))
   )
 
   const today = startOfDay(new Date())
@@ -146,7 +150,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
       const endStr = formatDate(addDays(startOfDay(new Date()), 14))
       supabase
         .from('sessions')
-        .select('id, slot_id, organiser_id, status, organiser_name, is_public, game_type, slot_ids, slots!inner(id, date, start_time, end_time, type, price, max_players, venue_id), players(count)')
+        .select('id, slot_id, organiser_id, status, organiser_name, is_public, game_type, slot_ids, slots!inner(id, date, start_time, end_time, price, max_players, venue_id, pitches(id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price)), players(count)')
         .eq('slots.venue_id', venueId)
         .gte('slots.date', nowStr)
         .lte('slots.date', endStr)
@@ -210,10 +214,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
   })
 
   function getSlotStatus(template: SlotTemplate) {
-    const slotId = slotIdMap.get(`${dayStr}_${template.startTime}`) ?? null
+    const dbSlot = slotDataMap.get(`${dayStr}_${template.startTime}`) ?? null
+    const slotId = dbSlot?.id ?? null
 
     if (slotId && confirmedSlotIdSet.has(slotId)) {
-      return { status: 'booked' as const, hasRival: false, playerCount: template.maxPlayers, sessionId: null, slotId }
+      return { status: 'booked' as const, hasRival: false, playerCount: dbSlot?.pitches.max_players ?? 0, sessionId: null, slotId }
     }
 
     const slotSessions = daySessionMap.get(template.startTime) ?? []
@@ -275,8 +280,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
               <span style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 400 }}>
                 {venueAddress}
               </span>
-              <Badge variant="neutral">4G</Badge>
-              <Badge variant="neutral">5-a-side</Badge>
+              <Badge variant="neutral">{pitchSurface}</Badge>
+              <Badge variant="neutral">{pitchFormat}</Badge>
             </div>
           </div>
 
@@ -611,13 +616,15 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
             }
 
             const requiredTemplates = requiredTemplatesFor(selectedDuration) ?? [selectedTemplate]
-            const requiredSlotIds = requiredTemplates
-              .map(t => slotIdMap.get(`${dayStr}_${t.startTime}`))
-              .filter((id): id is string => !!id)
+            const requiredDbSlots = requiredTemplates
+              .map(t => slotDataMap.get(`${dayStr}_${t.startTime}`))
+              .filter((s): s is DbSlot => !!s)
+            const requiredSlotIds = requiredDbSlots.map(s => s.id)
             const durationFullyAvailable = requiredSlotIds.length === requiredTemplates.length
               && requiredTemplates.every(t => getSlotStatus(t).status !== 'booked')
             const rangeEndTime = requiredTemplates[requiredTemplates.length - 1]?.endTime ?? selectedTemplate.endTime
-            const totalPriceGBP = requiredTemplates.reduce((sum, t) => sum + t.priceGBP, 0)
+            const totalPriceGBP = requiredDbSlots.reduce((sum, s) => sum + s.price, 0)
+            const bookingMaxPlayers = requiredDbSlots[0]?.pitches.max_players ?? selectedInfo.playerCount
 
             const href = !booked && !userSessionId && durationFullyAvailable && requiredSlotIds.length > 0
               ? `/slots/${requiredSlotIds[0]}/create?slotIds=${requiredSlotIds.join(',')}`
@@ -625,7 +632,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
             const fillingFast = !booked && !userSessionId && allPublicSessions.some(s => totalCount(s) >= 7)
             const hasSessions = userSlotSessions.length > 0 || allPublicSessions.length > 0
             const typeLabel = selectedTemplate.type === 'peak' ? 'Peak' : selectedTemplate.type === 'offpeak' ? 'Off-peak' : 'Weekend'
-            const perPlayerPrice = (totalPriceGBP / 10).toFixed(2)
+            const perPlayerPrice = (totalPriceGBP / bookingMaxPlayers).toFixed(2)
 
             return (
               <div className="slot-detail-panel" style={{ marginBottom: '2.5rem' }}>
@@ -732,7 +739,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   {userSlotSessions.map((s, i) => {
                     const isOrganiser = !!userId && s.organiser_id === userId
                     const isOpen = s.game_type === 'open'
-                    const cap = 10
+                    const cap = s.slots.pitches.max_players
                     const count = Math.min(totalCount(s), cap)
                     const icon = isOpen ? '🟢' : '🔒'
                     const nameLabel = s.organiser_name || (isOrganiser ? 'Your team' : 'Game')
@@ -832,11 +839,12 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 {dayOpenGames.map((s, idx) => {
                   const slot = s.slots
                   const playerCount = totalCount(s as SessionData)
-                  const maxPlayers = slot.max_players
+                  const maxPlayers = slot.pitches.max_players
                   const perPlayer = (slot.price / maxPlayers).toFixed(2)
                   const title = s.organiser_name ? `${s.organiser_name}'s game` : 'Public game'
-                  const typeVariant = slot.type === 'peak' ? 'peak' : slot.type === 'weekend' ? 'weekend' : 'offpeak'
-                  const typeLabel = slot.type === 'peak' ? 'Peak' : slot.type === 'weekend' ? 'Weekend' : 'Off-peak'
+                  const slotType = getSlotType(slot.date, slot.start_time)
+                  const typeVariant = slotType === 'peak' ? 'peak' : slotType === 'weekend' ? 'weekend' : 'offpeak'
+                  const typeLabel = slotType === 'peak' ? 'Peak' : slotType === 'weekend' ? 'Weekend' : 'Off-peak'
 
                   return (
                     <Link

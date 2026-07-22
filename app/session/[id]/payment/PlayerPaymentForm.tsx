@@ -6,6 +6,7 @@ import { loadStripe } from '@stripe/stripe-js'
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { createClient } from '@/lib/supabase/client'
 import { writePlayerDetails, writeSessionPlayer, upsertMySession } from '@/lib/clientStorage'
+import { Pitch } from '@/lib/slots'
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
   betas: [],
@@ -16,6 +17,7 @@ interface SlotData {
   id: string
   price: number
   max_players: number
+  pitches: Pitch
 }
 
 interface Props {
@@ -54,7 +56,7 @@ function CardForm({
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
-  const pitchPerPlayer = slot.price / 10
+  const pitchPerPlayer = slot.price / slot.pitches.max_players
   const totalPerPlayer = (pitchPerPlayer + 0.50 + 0.30).toFixed(2)
   const isDisabled = loading || parentDisabled || !stripe
 
@@ -145,7 +147,7 @@ function CardForm({
           }}
         >
           <span style={{ flexShrink: 0 }}>⚡</span>
-          Another group is also trying to fill this slot. First to 10 gets it.
+          Another group is also trying to fill this slot. First to {slot.pitches.max_players} gets it.
         </div>
       )}
 
@@ -167,7 +169,7 @@ function CardForm({
         <span style={{ flexShrink: 0, marginTop: '1px' }}>🔒</span>
         <span>
           <strong style={{ color: 'var(--green)' }}>Nothing is charged now.</strong>{' '}
-          Your card is only charged when the 10th player joins. If the game doesn&apos;t fill, you pay nothing.
+          Your card is only charged when all {slot.pitches.max_players} players join. If the game doesn&apos;t fill, you pay nothing.
         </span>
       </div>
 
@@ -181,7 +183,7 @@ function CardForm({
         }}
       >
         {[
-          { label: `Pitch hire split (£${slot.price} / 10)`, amount: `£${pitchPerPlayer.toFixed(2)}` },
+          { label: `Pitch hire split (£${slot.price} / ${slot.pitches.max_players})`, amount: `£${pitchPerPlayer.toFixed(2)}` },
           { label: 'Booking fee', amount: '50p' },
           { label: 'Payment handling', amount: '30p' },
         ].map(row => (

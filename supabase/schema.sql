@@ -14,14 +14,33 @@ create table if not exists venues (
   created_at timestamptz default now()
 );
 
+-- Pitches (a bookable playing surface at a venue — a venue may have several)
+create table if not exists pitches (
+  id uuid primary key default gen_random_uuid(),
+  venue_id uuid references venues(id) on delete cascade not null,
+  name text not null,
+  format text not null, -- e.g. '5-a-side', '7-a-side'
+  surface text default '4G',
+  max_players integer not null,
+  peak_price integer not null,    -- in GBP, whole pounds
+  offpeak_price integer not null,
+  weekend_price integer not null,
+  created_at timestamptz default now()
+);
+
 -- Slots (each bookable time period)
+-- Pricing tier (offpeak/peak/weekend) is derived from date+start_time at the
+-- application layer (see lib/slots.ts:getSlotType) rather than stored here —
+-- price/max_players/format below are seeded from the linked pitch at slot
+-- creation time and denormalized for fast reads.
 create table if not exists slots (
   id uuid primary key default uuid_generate_v4(),
   venue_id uuid references venues(id) on delete cascade not null,
+  pitch_id uuid references pitches(id),
   date date not null,
   start_time time not null,
   end_time time not null,
-  type text not null check (type in ('offpeak', 'peak', 'weekend')),
+  format text default '5-a-side',
   price integer not null, -- in GBP (whole pounds, e.g. 45 = £45)
   max_players integer not null default 10,
   created_at timestamptz default now(),
@@ -70,6 +89,7 @@ create table if not exists messages (
 
 -- Enable Row Level Security
 alter table venues enable row level security;
+alter table pitches enable row level security;
 alter table slots enable row level security;
 alter table sessions enable row level security;
 alter table players enable row level security;
@@ -85,6 +105,14 @@ create policy "Anyone can view venues" on venues
   for select using (true);
 create policy "Owners can manage their venue" on venues
   for all using (auth.uid() = owner_id);
+
+-- PITCHES: anyone can read, only venue owners can write
+create policy "Anyone can view pitches" on pitches
+  for select using (true);
+create policy "Owners can manage their pitches" on pitches
+  for all using (
+    exists (select 1 from venues where id = venue_id and owner_id = auth.uid())
+  );
 
 -- SLOTS: anyone can read, owners manage via API (service role for seeding)
 create policy "Anyone can view slots" on slots
@@ -138,6 +166,14 @@ grant select (id, name, joined_at, session_id, user_id) on players to anon, auth
 -- Insert Globe Football Pitch venue (update owner_id after creating owner account)
 insert into venues (name, address)
 values ('Globe Football Pitch', '110 Globe Rd, Bethnal Green, London E1 4DZ')
+on conflict do nothing;
+
+-- Insert the pitch for that venue — slot seeding (app/slots/page.tsx) reads
+-- pricing/max_players/format from here rather than hardcoding them.
+insert into pitches (venue_id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price)
+select id, 'Main Pitch', '5-a-side', '4G', 10, 50, 30, 40
+from venues
+where name = 'Globe Football Pitch'
 on conflict do nothing;
 
 -- Enable realtime for relevant tables

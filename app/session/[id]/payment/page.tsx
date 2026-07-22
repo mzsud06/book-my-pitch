@@ -2,7 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import PlayerPaymentForm from './PlayerPaymentForm'
-import { combineSlots } from '@/lib/slots'
+import { combineSlots, Pitch } from '@/lib/slots'
+
+const PITCH_COLS = 'id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -18,7 +20,7 @@ export default async function PlayerPaymentPage({ params }: Props) {
     .from('sessions')
     .select(`
       id, status, organiser_id, game_type, slot_ids,
-      slots(id, price, max_players),
+      slots(id, price, max_players, pitches(${PITCH_COLS})),
       players(id, user_id)
     `)
     .eq('id', id)
@@ -38,7 +40,7 @@ export default async function PlayerPaymentPage({ params }: Props) {
   }
 
   const slots = session.slots
-  const slot = (Array.isArray(slots) ? slots[0] : slots) as { id: string; price: number; max_players: number } | null
+  const slot = (Array.isArray(slots) ? slots[0] : slots) as unknown as { id: string; price: number; max_players: number; pitches: Pitch } | null
   if (!slot) notFound()
 
   // Multi-hour (60/120/180 min) bookings span several slot rows — combine
@@ -47,15 +49,15 @@ export default async function PlayerPaymentPage({ params }: Props) {
   if (sessionSlotIds && sessionSlotIds.length > 1) {
     const { data: allSlotRows } = await supabase
       .from('slots')
-      .select('id, date, start_time, end_time, price, max_players')
+      .select(`id, date, start_time, end_time, price, max_players, pitches(${PITCH_COLS})`)
       .in('id', sessionSlotIds)
     if (allSlotRows && allSlotRows.length > 0) {
-      const combined = combineSlots(allSlotRows as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; max_players: number }[])
+      const combined = combineSlots(allSlotRows as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; pitches: Pitch }[])
       slot.price = combined.price
     }
   }
 
-  const maxPlayers = slot.max_players ?? 10
+  const maxPlayers = slot.pitches.max_players
   const sessionOrganiserId = (session as unknown as { organiser_id: string | null }).organiser_id
   const sessionPlayers = Array.isArray(session.players)
     ? (session.players as { id: string; user_id: string | null }[])

@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     const { data: session } = await supabase
       .from('sessions')
-      .select('*, slots(*)')
+      .select('*, slots(*, pitches(*))')
       .eq('id', sessionId)
       .single()
 
@@ -62,9 +62,9 @@ export async function POST(req: NextRequest) {
     // them for the true total price and time range charged/locked.
     const { data: allSlotRows } = await supabase
       .from('slots')
-      .select('*')
+      .select('*, pitches(*)')
       .in('id', sessionSlotIds)
-    const combined = combineSlots((allSlotRows ?? [slot]) as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; max_players: number }[])
+    const combined = combineSlots((allSlotRows ?? [slot]) as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; pitches: { id: string; name: string; format: string; surface: string; max_players: number; peak_price: number; offpeak_price: number; weekend_price: number } }[])
 
     const { data: venue } = await supabase
       .from('venues')
@@ -77,10 +77,10 @@ export async function POST(req: NextRequest) {
       console.warn('Venue has no stripe_account_id — charging directly to platform account (test mode fallback)')
     }
 
-    const perPlayerPitch = Math.round((combined.price * 100) / 10)
+    const perPlayerPitch = Math.round((combined.price * 100) / combined.pitches.max_players)
     const totalPerPlayer = perPlayerPitch + PLATFORM_FEE_PENCE + STRIPE_PROCESSING_PENCE
 
-    const expectedTotal = slot.max_players ?? 10
+    const expectedTotal = slot.pitches.max_players
 
     const { data: players } = await supabase
       .from('players')

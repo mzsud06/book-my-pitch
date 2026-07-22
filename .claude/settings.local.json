@@ -38,7 +38,9 @@
       "Skill(run)",
       "PowerShell(Get-Process *)",
       "PowerShell(Head *)",
-      "PowerShell(node --version)"
+      "PowerShell(node --version)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__execute_sql"
     ]
   }
 }

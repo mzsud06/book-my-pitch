@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Badge } from '@/components/ui/Badge'
 import { readMySessions } from '@/lib/clientStorage'
+import { getSlotType } from '@/lib/slots'
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
@@ -23,6 +24,7 @@ interface BookingCard {
   endTime: string
   type: string
   price: number
+  maxPlayers: number
   playerCount: number
   venueName: string
   gameType: string
@@ -34,8 +36,8 @@ interface RawSlot {
   date: string
   start_time: string
   end_time: string
-  type: string
   price: number
+  pitches: { max_players: number }
   venues: { name: string } | null
   sessions: { status: string }[] | null
 }
@@ -189,7 +191,7 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
   const status = statusPillInfo(c.status)
   const typeInfo = slotTypeInfo(c.type)
   const gameTypeBadge = gameTypeInfo(c.gameType)
-  const perPlayer = (c.price / 10 + 0.50 + 0.30).toFixed(2)
+  const perPlayer = (c.price / c.maxPlayers + 0.50 + 0.30).toFixed(2)
   const reason = cancelReasonText(c)
 
   return (
@@ -219,7 +221,7 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
               letterSpacing: '0.02em',
             }}
           >
-            <PeopleIcon /> {c.playerCount}/10 players
+            <PeopleIcon /> {c.playerCount}/{c.maxPlayers} players
           </span>
         </div>
 
@@ -268,8 +270,9 @@ function toCard(s: RawSession): BookingCard | null {
     date: slot.date,
     startTime: slot.start_time.slice(0, 5),
     endTime: slot.end_time.slice(0, 5),
-    type: slot.type,
+    type: getSlotType(slot.date, slot.start_time),
     price: slot.price,
+    maxPlayers: slot.pitches.max_players,
     playerCount: s.players?.[0]?.count ?? 0,
     venueName: slot.venues?.name ?? 'your local pitch',
     gameType: s.game_type ?? 'private',
@@ -295,7 +298,7 @@ export default function MyBookingsClient() {
             joined_at,
             sessions(
               id, status, game_type, organiser_name,
-              slots(date, start_time, end_time, type, price, venues(name), sessions(status)),
+              slots(date, start_time, end_time, price, pitches(max_players), venues(name), sessions(status)),
               players(count)
             )
           `)
@@ -321,7 +324,7 @@ export default function MyBookingsClient() {
             .from('sessions')
             .select(`
               id, status, game_type, organiser_name,
-              slots!inner(date, start_time, end_time, type, price, venues(name), sessions(status)),
+              slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name), sessions(status)),
               players(count)
             `)
             .in('id', ids)

@@ -2,7 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import CreateSessionForm from './CreateSessionForm'
-import { combineSlots } from '@/lib/slots'
+import { combineSlots, getSlotType, Pitch } from '@/lib/slots'
+
+const PITCH_COLS = 'id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'
 
 interface Props {
   params: Promise<{ slotId: string }>
@@ -14,9 +16,9 @@ interface SlotRow {
   date: string
   start_time: string
   end_time: string
-  type: string
   price: number
   max_players: number
+  pitches: Pitch
   venues: { name: string; address: string } | { name: string; address: string }[] | null
 }
 
@@ -40,7 +42,7 @@ export default async function CreateSessionPage({ params, searchParams }: Props)
 
   const { data: rawSlots } = await supabase
     .from('slots')
-    .select('id, date, start_time, end_time, type, price, max_players, venues(name, address)')
+    .select(`id, date, start_time, end_time, price, max_players, pitches(${PITCH_COLS}), venues(name, address)`)
     .in('id', idsToFetch)
 
   if (!rawSlots || rawSlots.length !== idsToFetch.length) notFound()
@@ -54,9 +56,10 @@ export default async function CreateSessionPage({ params, searchParams }: Props)
     date: combined.date,
     start_time: combined.start_time,
     end_time: combined.end_time,
-    type: combined.first.type,
+    type: getSlotType(combined.date, combined.start_time),
     price: combined.price,
-    max_players: combined.max_players,
+    max_players: combined.pitches.max_players,
+    pitches: combined.pitches,
     venue: venue as { name: string; address: string } | null,
   }
 

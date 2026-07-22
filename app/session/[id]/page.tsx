@@ -2,7 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Nav from '@/components/Nav'
 import SessionClient from './SessionClient'
-import { combineSlots } from '@/lib/slots'
+import { combineSlots, Pitch } from '@/lib/slots'
+
+const PITCH_COLS = 'id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -24,9 +26,9 @@ interface SessionData {
     date: string
     start_time: string
     end_time: string
-    type: string
     price: number
     max_players: number
+    pitches: Pitch
     venues: { id: string; name: string; address: string }
   }
   players: { id: string; name: string; joined_at: string; session_id: string; user_id: string | null }[]
@@ -52,7 +54,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
       .from('sessions')
       .select(`
         id, status, created_at, organiser_name, organiser_phone, organiser_id, game_type, is_public, slot_ids,
-        slots(id, date, start_time, end_time, type, price, max_players,
+        slots(id, date, start_time, end_time, price, max_players, pitches(${PITCH_COLS}),
           venues(id, name, address, stripe_account_id)
         )
       `)
@@ -91,10 +93,10 @@ export default async function SessionPage({ params, searchParams }: Props) {
   if (multiHourIds) {
     const { data: allSlotRows } = await supabase
       .from('slots')
-      .select('id, date, start_time, end_time, price, max_players')
+      .select(`id, date, start_time, end_time, price, max_players, pitches(${PITCH_COLS})`)
       .in('id', multiHourIds)
     if (allSlotRows && allSlotRows.length > 0) {
-      const combined = combineSlots(allSlotRows as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; max_players: number }[])
+      const combined = combineSlots(allSlotRows as unknown as { id: string; date: string; start_time: string; end_time: string; price: number; pitches: Pitch }[])
       combinedRange = { start_time: combined.start_time, end_time: combined.end_time, price: combined.price }
     }
   }

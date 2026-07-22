@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { createServiceClient } from '@/lib/supabase/service'
+import { getSlotType } from '@/lib/slots'
 
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -22,8 +23,8 @@ interface PublicGameRow {
     date: string
     start_time: string
     end_time: string
-    type: string
     price: number
+    pitches: { max_players: number }
     venues: { name: string } | { name: string }[] | null
   }
   players: { count: number }[]
@@ -33,7 +34,7 @@ export default async function PublicGamesPage() {
   const today = new Date().toISOString().slice(0, 10)
   const { data: rawGames } = await createServiceClient()
     .from('sessions')
-    .select('id, organiser_name, slots!inner(date, start_time, end_time, type, price, venues(name)), players(count)')
+    .select('id, organiser_name, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name)), players(count)')
     .eq('game_type', 'open')
     .eq('status', 'filling')
     .eq('is_public', true)
@@ -45,15 +46,17 @@ export default async function PublicGamesPage() {
       const rawVenue = slot.venues
       const venue = Array.isArray(rawVenue) ? rawVenue[0] : rawVenue
       const playerCount = (Array.isArray(s.players) ? s.players[0]?.count : 0) ?? 0
-      const type = slot.type as 'peak' | 'offpeak' | 'weekend'
+      const maxPlayers = slot.pitches.max_players
+      const type = getSlotType(slot.date, slot.start_time)
       return {
         id: s.id,
         organiserName: s.organiser_name,
         venueName: venue?.name ?? 'your local pitch',
         time: `${slot.start_time.slice(0, 5)} – ${slot.end_time.slice(0, 5)}`,
         date: fmtSlotDate(slot.date),
-        price: `£${(slot.price / 10).toFixed(2)}`,
+        price: `£${(slot.price / maxPlayers).toFixed(2)}`,
         playerCount,
+        maxPlayers,
         type,
         badgeVariant: (type === 'peak' ? 'peak' : type === 'weekend' ? 'weekend' : 'offpeak') as 'peak' | 'offpeak' | 'weekend',
         typeLabel: type === 'peak' ? 'Peak' : type === 'offpeak' ? 'Off-peak' : 'Weekend',
@@ -128,7 +131,7 @@ export default async function PublicGamesPage() {
               /* Game cards */
               <div className="public-games-grid">
                 {games.map((game, idx) => {
-                  const spotsLeft = 10 - game.playerCount
+                  const spotsLeft = game.maxPlayers - game.playerCount
                   return (
                     <Card
                       key={game.id}
@@ -173,7 +176,7 @@ export default async function PublicGamesPage() {
                       }}>
                         <div style={{
                           height: '100%',
-                          width: `${(game.playerCount / 10) * 100}%`,
+                          width: `${(game.playerCount / game.maxPlayers) * 100}%`,
                           borderRadius: '99px',
                           background: 'var(--green)',
                           boxShadow: '0 0 6px rgba(198,241,53,0.35)',
@@ -182,9 +185,9 @@ export default async function PublicGamesPage() {
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                         <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                          {game.playerCount}/10 players
+                          {game.playerCount}/{game.maxPlayers} players
                         </div>
-                        {game.playerCount >= 8 && (
+                        {game.playerCount >= game.maxPlayers - 2 && (
                           <div style={{ fontSize: '12px', color: 'var(--amber)', fontWeight: 700 }}>
                             {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left
                           </div>
