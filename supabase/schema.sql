@@ -44,7 +44,10 @@ create table if not exists slots (
   price integer not null, -- in GBP (whole pounds, e.g. 45 = £45)
   max_players integer not null default 10,
   created_at timestamptz default now(),
-  unique (venue_id, date, start_time)
+  -- pitch_id is part of the uniqueness so a venue with multiple pitches (e.g.
+  -- a 5-a-side and a 7-a-side sharing the same time schedule) can each have
+  -- their own slot row at the same date/time.
+  unique (venue_id, pitch_id, date, start_time)
 );
 
 -- Sessions (a group's attempt to fill a slot)

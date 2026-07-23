@@ -151,7 +151,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
     // Persist phone to user metadata for future autofill (fire-and-forget)
     supabase.auth.updateUser({ data: { phone: trimmedPhone } }).catch(() => {})
     const query = new URLSearchParams({ slotIds: slotIds.join(',') })
-    router.push(`/slots/${slot.id}/create/payment?${query.toString()}`)
+    router.push(`/slots/create/${slot.id}/payment?${query.toString()}`)
   }
 
   const isReady = name.trim() && parsePhone(phone).localNumber.trim()

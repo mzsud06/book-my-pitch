@@ -104,7 +104,7 @@ function CardStep({
         elements,
         redirect: 'if_required',
         confirmParams: {
-          return_url: `${window.location.origin}/slots/${slot.id}/create/payment?${returnUrlQuery}`,
+          return_url: `${window.location.origin}/slots/create/${slot.id}/payment?${returnUrlQuery}`,
         },
       })
       console.log(`[CardStep] stripe.confirmSetup() returned at ${new Date().toISOString()} | error=${confirmError?.code ?? 'none'}`)
@@ -374,14 +374,14 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
     console.log(`[OrganiserPaymentForm] useEffect fired at ${new Date().toISOString()}`)
     const raw = sessionStorage.getItem('bmp_create_details')
     if (!raw) {
-      router.replace(`/slots/${slot.id}/create`)
+      router.replace(`/slots/create/${slot.id}`)
       return
     }
     let parsed: CreateDetails
     try {
       parsed = JSON.parse(raw)
     } catch {
-      router.replace(`/slots/${slot.id}/create`)
+      router.replace(`/slots/create/${slot.id}`)
       return
     }
     setDetails(parsed)
@@ -445,7 +445,7 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
           {initError}
         </div>
         <button
-          onClick={() => router.replace(`/slots/${slot.id}/create`)}
+          onClick={() => router.replace(`/slots/create/${slot.id}`)}
           style={{
             background: 'none',
             border: 'none',

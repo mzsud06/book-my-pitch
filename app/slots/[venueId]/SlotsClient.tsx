@@ -47,8 +47,7 @@ interface Props {
   venueId: string
   venueName: string
   venueAddress: string
-  pitchFormat: string
-  pitchSurface: string
+  pitches: Pitch[]
   userSlotSessionMap: Record<string, string>
   userSessionIds: string[]
   userId: string | null
@@ -113,7 +112,7 @@ function PeopleIcon() {
   )
 }
 
-export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, pitchFormat, pitchSurface, userSlotSessionMap, userSessionIds, userId }: Props) {
+export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, pitches, userSlotSessionMap, userSessionIds, userId }: Props) {
   const userSessionSet = new Set(userSessionIds)
   const router = useRouter()
   const supabase = createClient()
@@ -122,10 +121,21 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [selectedDuration, setSelectedDuration] = useState(60)
   const [availableOnly, setAvailableOnly] = useState(false)
+  const [selectedPitchId, setSelectedPitchId] = useState(() => pitches[0]?.id ?? '')
 
+  const selectedPitch = pitches.find(p => p.id === selectedPitchId) ?? pitches[0]
+
+  // Slots are keyed by pitch+date+time — a venue with multiple pitches (e.g.
+  // a 5-a-side and a 7-a-side) can have a slot at the same date/time per pitch.
   const [slotDataMap, setSlotDataMap] = useState<Map<string, DbSlot>>(
-    () => new Map(dbSlots.map(s => [`${s.date}_${s.start_time.slice(0, 5)}`, s]))
+    () => new Map(dbSlots.map(s => [`${s.pitches.id}_${s.date}_${s.start_time.slice(0, 5)}`, s]))
   )
+
+  // Sessions belonging to the pitch currently selected in the tab bar.
+  const pitchSessions = sessions.filter(s => {
+    const slot = Array.isArray(s.slots) ? (s.slots as unknown[])[0] as SessionData['slots'] : s.slots
+    return slot?.pitches.id === selectedPitchId
+  })
 
   const today = startOfDay(new Date())
   const weekDays = Array.from({ length: 14 }, (_, i) => addDays(today, i))
@@ -173,7 +183,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
 
   // ── Per-slot session maps ────────────────────────────────────────────────
   const daySessionMap = new Map<string, SessionData[]>()
-  sessions.forEach(s => {
+  pitchSessions.forEach(s => {
     const slot = Array.isArray(s.slots) ? (s.slots as unknown[])[0] as SessionData['slots'] : s.slots
     if (slot?.date === dayStr) {
       const key = slot.start_time.slice(0, 5)
@@ -186,7 +196,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
   // Source: same `sessions` state (game_type === 'open', filling).
   // No new data fetching — purely derived from existing sessions array.
   type NormalisedSession = Omit<SessionData, 'slots'> & { slots: SessionData['slots'] }
-  const dayOpenGames: NormalisedSession[] = sessions
+  const dayOpenGames: NormalisedSession[] = pitchSessions
     .filter(s => {
       const slot = Array.isArray(s.slots) ? (s.slots as unknown[])[0] as SessionData['slots'] : s.slots
       return (
@@ -207,14 +217,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
   // slot_ids array. A slot in here is booked and non-clickable everywhere,
   // even if it isn't the primary slot of the session that confirmed it.
   const confirmedSlotIdSet = new Set<string>()
-  sessions.forEach(s => {
+  pitchSessions.forEach(s => {
     if (s.status !== 'confirmed') return
     const ids = s.slot_ids && s.slot_ids.length > 0 ? s.slot_ids : [s.slot_id]
     ids.forEach(id => confirmedSlotIdSet.add(id))
   })
 
   function getSlotStatus(template: SlotTemplate) {
-    const dbSlot = slotDataMap.get(`${dayStr}_${template.startTime}`) ?? null
+    const dbSlot = slotDataMap.get(`${selectedPitchId}_${dayStr}_${template.startTime}`) ?? null
     const slotId = dbSlot?.id ?? null
 
     if (slotId && confirmedSlotIdSet.has(slotId)) {
@@ -280,10 +290,48 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
               <span style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 400 }}>
                 {venueAddress}
               </span>
-              <Badge variant="neutral">{pitchSurface}</Badge>
-              <Badge variant="neutral">{pitchFormat}</Badge>
+              {selectedPitch && <Badge variant="neutral">{selectedPitch.surface}</Badge>}
+              {selectedPitch && <Badge variant="neutral">{selectedPitch.format}</Badge>}
             </div>
           </div>
+
+          {/* ── PITCH SELECTOR — only shown when a venue has more than one pitch ── */}
+          {pitches.length > 1 && (
+            <div className="anim-fade-up d-40" style={{ display: 'flex', gap: '6px', marginBottom: '1.75rem' }}>
+              {pitches.map(pitch => {
+                const active = pitch.id === selectedPitchId
+                return (
+                  <button
+                    key={pitch.id}
+                    type="button"
+                    onClick={() => {
+                      if (!active) {
+                        setSelectedPitchId(pitch.id)
+                        setSelectedTime(null)
+                        setSelectedDuration(60)
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-full)',
+                      border: `1px solid ${active ? 'transparent' : 'var(--border)'}`,
+                      background: active ? 'var(--green)' : 'var(--surface3)',
+                      color: active ? 'var(--black)' : 'var(--text)',
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '14px',
+                      fontWeight: 700,
+                      letterSpacing: '-0.01em',
+                      cursor: active ? 'default' : 'pointer',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {pitch.format}
+                  </button>
+                )
+              })}
+            </div>
+          )}
 
           {/* ── DAY SELECTOR ─────────────────────────────────── */}
           <div className="anim-fade-up d-60" style={{ marginBottom: '2rem' }}>
@@ -617,7 +665,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
 
             const requiredTemplates = requiredTemplatesFor(selectedDuration) ?? [selectedTemplate]
             const requiredDbSlots = requiredTemplates
-              .map(t => slotDataMap.get(`${dayStr}_${t.startTime}`))
+              .map(t => slotDataMap.get(`${selectedPitchId}_${dayStr}_${t.startTime}`))
               .filter((s): s is DbSlot => !!s)
             const requiredSlotIds = requiredDbSlots.map(s => s.id)
             const durationFullyAvailable = requiredSlotIds.length === requiredTemplates.length
@@ -627,7 +675,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
             const bookingMaxPlayers = requiredDbSlots[0]?.pitches.max_players ?? selectedInfo.playerCount
 
             const href = !booked && !userSessionId && durationFullyAvailable && requiredSlotIds.length > 0
-              ? `/slots/${requiredSlotIds[0]}/create?slotIds=${requiredSlotIds.join(',')}`
+              ? `/slots/create/${requiredSlotIds[0]}?slotIds=${requiredSlotIds.join(',')}`
               : undefined
             const fillingFast = !booked && !userSessionId && allPublicSessions.some(s => totalCount(s) >= 7)
             const hasSessions = userSlotSessions.length > 0 || allPublicSessions.length > 0

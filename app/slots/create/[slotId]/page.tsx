@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
-import OrganiserPaymentForm from './OrganiserPaymentForm'
+import CreateSessionForm from './CreateSessionForm'
 import { combineSlots, getSlotType, Pitch } from '@/lib/slots'
 
 const PITCH_COLS = 'id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'
@@ -22,16 +22,22 @@ interface SlotRow {
   venues: { name: string; address: string } | { name: string; address: string }[] | null
 }
 
-export default async function CreatePaymentPage({ params, searchParams }: Props) {
+export default async function CreateSessionPage({ params, searchParams }: Props) {
   const { slotId } = await params
   const { slotIds: slotIdsParam } = await searchParams
   const supabase = await createClient()
 
+  // Auth guard — creating a game requires a logged-in account
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    redirect(`/auth/login?redirect=${encodeURIComponent(`/slots/${slotId}/create`)}&message=Please log in to create a game`)
+    const returnTo = encodeURIComponent(`/slots/create/${slotId}`)
+    const msg = encodeURIComponent('You need an account to create a game')
+    redirect(`/auth/login?redirect=${returnTo}&message=${msg}`)
   }
 
+  // A multi-hour (60/120/180 min) booking spans several consecutive slot rows —
+  // slotIds carries the full list. Falls back to the single route param slot
+  // for a normal 60-minute booking.
   const idsToFetch = slotIdsParam ? slotIdsParam.split(',').filter(Boolean) : [slotId]
 
   const { data: rawSlots } = await supabase
@@ -60,10 +66,7 @@ export default async function CreatePaymentPage({ params, searchParams }: Props)
   return (
     <>
       <Nav />
-      <OrganiserPaymentForm
-        slot={slot}
-        slotIds={combined.ids}
-      />
+      <CreateSessionForm slot={slot} slotIds={combined.ids} />
     </>
   )
 }
