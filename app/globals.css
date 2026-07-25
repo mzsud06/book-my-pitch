@@ -937,6 +937,118 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 }
 
 /* ============================================================
+   VENUE DETAIL PAGE — two-column layout w/ sticky booking panel
+   ============================================================ */
+.venue-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: start;
+}
+@media (min-width: 1024px) {
+  .venue-layout { grid-template-columns: 1fr 380px; gap: 28px; }
+}
+
+.venue-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+@media (max-width: 420px) {
+  .venue-hero-stats { grid-template-columns: 1fr; }
+}
+
+.venue-stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.venue-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.venue-stat-value {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+@media (min-width: 1024px) {
+  .booking-panel-sticky { position: sticky; top: 84px; }
+}
+
+.booking-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  background: var(--surface);
+}
+.booking-panel-header {
+  background: var(--green);
+  padding: 1.5rem 1.5rem 1.35rem;
+}
+.booking-panel-body {
+  padding: 1.5rem;
+}
+/* The sidebar is narrower than the viewport-based breakpoints assume, so pin
+   the time grid to 2 columns regardless of viewport width. */
+.booking-panel .time-pills-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+}
+
+@media (min-width: 768px) {
+  .venue-layout-main .open-games-scroller { grid-template-columns: repeat(2, 1fr); }
+}
+
+.court-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface3);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+.court-option-active {
+  border-color: transparent;
+  background: var(--green-faint);
+  box-shadow: 0 0 0 1.5px rgba(198,241,53,0.4);
+}
+.court-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  flex-shrink: 0;
+  position: relative;
+}
+.court-radio-active {
+  border-color: var(--green);
+}
+.court-radio-active::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+/* ============================================================
    SLOTS PAGE — time slot grid + open games scroller
    ============================================================ */
 .slots-grid {

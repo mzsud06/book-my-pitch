@@ -49,6 +49,13 @@ export function getSlotsForDay(date: Date): SlotTemplate[] {
   return day === 0 || day === 6 ? WEEKEND_SLOTS : WEEKDAY_SLOTS
 }
 
+// Derived from the schedules above so the displayed opening hours can never
+// drift out of sync with the actual bookable window.
+export const OPENING_HOURS = {
+  weekday: { start: WEEKDAY_SLOTS[0].startTime, end: WEEKDAY_SLOTS[WEEKDAY_SLOTS.length - 1].endTime },
+  weekend: { start: WEEKEND_SLOTS[0].startTime, end: WEEKEND_SLOTS[WEEKEND_SLOTS.length - 1].endTime },
+}
+
 // `slots.type` was removed from the DB in the pitches migration — pricing tier
 // is a fixed property of the time-of-day/weekday schedule, so it's recomputed
 // from date+start_time here instead of being stored per row.

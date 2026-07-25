@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getSlotsForDay, getSlotType, SlotTemplate, Pitch } from '@/lib/slots'
+import { getSlotsForDay, getSlotType, formatPerPlayer, OPENING_HOURS, SlotTemplate, Pitch } from '@/lib/slots'
 import { Container } from '@/components/ui/Container'
 import { Badge } from '@/components/ui/Badge'
 import { Eyebrow } from '@/components/ui/Eyebrow'
@@ -78,6 +78,39 @@ const MONTH_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SE
 const CARD_DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const CARD_MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
+const infoCardStyle: React.CSSProperties = {
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-xl)',
+  boxShadow: 'var(--shadow-card)',
+  padding: 'clamp(1.25rem, 3vw, 1.75rem)',
+  marginBottom: '1.25rem',
+}
+
+const infoCardHeading: React.CSSProperties = {
+  fontFamily: 'var(--font-display)',
+  fontSize: '15px',
+  fontWeight: 700,
+  letterSpacing: '0.02em',
+  textTransform: 'uppercase',
+  color: 'var(--text)',
+  margin: 0,
+}
+
+const hoursRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '0.75rem 0.875rem',
+  background: 'var(--surface2)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  fontSize: '13px',
+  fontWeight: 600,
+  color: 'var(--text)',
+  marginBottom: '8px',
+}
+
 function fmtCardDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   return `${CARD_DAY_NAMES[d.getDay()]} ${d.getDate()} ${CARD_MONTH_NAMES[d.getMonth()]}`
@@ -108,6 +141,24 @@ function PeopleIcon() {
       <path d="M2 13c0-2.2 1.8-3.6 4-3.6s4 1.4 4 3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
       <circle cx="11.5" cy="5.5" r="1.7" stroke="currentColor" strokeWidth="1.3" opacity="0.75" />
       <path d="M9.8 9.6c1.8.2 3.2 1.5 3.2 3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.75" />
+    </svg>
+  )
+}
+
+function BallIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M8 4.6l2.4 1.7-0.9 2.8H6.5l-0.9-2.8L8 4.6ZM8 11.4v1.8M3.2 9.6l1.7-1M11.1 8.6l1.7 1M4.9 6.6L3.4 5.4M11.1 6.6l1.5-1.2" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <circle cx="8" cy="8" r="7" fill="var(--green-faint)" stroke="var(--green)" strokeWidth="1" />
+      <path d="M5 8.2l2 2 4-4.4" stroke="var(--green)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -265,79 +316,357 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
     : null
   const selectedInfo = selectedTemplate ? getSlotStatus(selectedTemplate) : null
 
+  // ── Multi-hour duration + booking summary ──────────────────────────────
+  // Hoisted to component level (rather than only computed once a time is
+  // picked) so both the time-pill range highlighting and the always-visible
+  // proceed button below can read it.
+  const slotSessionsForSelected = selectedTemplate ? (daySessionMap.get(selectedTemplate.startTime) ?? []) : []
+  const userSlotSessionsSelected = slotSessionsForSelected.filter(s => userSessionSet.has(s.id))
+  const openSessionsSelected = slotSessionsForSelected.filter(
+    s => s.status === 'filling' && s.game_type === 'open' && !userSessionSet.has(s.id)
+  )
+  const allPublicSessionsSelected = [...openSessionsSelected].sort((a, b) => totalCount(b) - totalCount(a))
+  const userSessionIdSelected = userId
+    ? userSlotSessionsSelected.find(s => s.organiser_id === userId)?.id
+    : undefined
+
+  const bookedSelected = selectedInfo?.status === 'booked'
+
+  // Each duration option requires N consecutive hourly templates starting at
+  // the selected time. slotTemplates is chronologically contiguous (each
+  // slot's endTime === the next slot's startTime), so consecutive array
+  // indices are consecutive hour blocks.
+  const startIdx = selectedTemplate ? slotTemplates.findIndex(t => t.startTime === selectedTemplate.startTime) : -1
+  function requiredTemplatesFor(durationMins: number): SlotTemplate[] | null {
+    const count = durationMins / 60
+    if (startIdx === -1) return null
+    const slice = slotTemplates.slice(startIdx, startIdx + count)
+    return slice.length === count ? slice : null
+  }
+  function durationAvailable(durationMins: number): boolean {
+    const templates = requiredTemplatesFor(durationMins)
+    if (!templates) return false
+    return templates.every(t => getSlotStatus(t).status !== 'booked')
+  }
+
+  const requiredTemplates = selectedTemplate ? (requiredTemplatesFor(selectedDuration) ?? [selectedTemplate]) : []
+  // Every start time covered by the current time+duration selection — used to
+  // highlight all the slots a multi-hour booking fills, not just the one clicked.
+  const requiredStartTimes = new Set(requiredTemplates.map(t => t.startTime))
+  const requiredDbSlots = requiredTemplates
+    .map(t => slotDataMap.get(`${selectedPitchId}_${dayStr}_${t.startTime}`))
+    .filter((s): s is DbSlot => !!s)
+  const requiredSlotIds = requiredDbSlots.map(s => s.id)
+  const durationFullyAvailable = !!selectedTemplate
+    && requiredSlotIds.length === requiredTemplates.length
+    && requiredTemplates.every(t => getSlotStatus(t).status !== 'booked')
+  const rangeEndTime = requiredTemplates[requiredTemplates.length - 1]?.endTime ?? selectedTemplate?.endTime ?? ''
+  const totalPriceGBP = requiredDbSlots.reduce((sum, s) => sum + s.price, 0)
+  const bookingMaxPlayers = requiredDbSlots[0]?.pitches.max_players ?? selectedInfo?.playerCount ?? 0
+
+  const createHref = selectedTemplate && !bookedSelected && !userSessionIdSelected && durationFullyAvailable && requiredSlotIds.length > 0
+    ? `/slots/create/${requiredSlotIds[0]}?slotIds=${requiredSlotIds.join(',')}`
+    : undefined
+  const fillingFastSelected = !!selectedTemplate && !bookedSelected && !userSessionIdSelected && allPublicSessionsSelected.some(s => totalCount(s) >= 7)
+  const typeLabelSelected = selectedTemplate
+    ? (selectedTemplate.type === 'peak' ? 'Peak' : selectedTemplate.type === 'offpeak' ? 'Off-peak' : 'Weekend')
+    : ''
+  const perPlayerPriceSelected = bookingMaxPlayers > 0 ? (totalPriceGBP / bookingMaxPlayers).toFixed(2) : '0.00'
+
   return (
     <>
     <div style={{ paddingBottom: '5rem' }}>
       <Container>
         <div style={{ paddingTop: '2.25rem' }}>
 
-          {/* ── VENUE HEADER ─────────────────────────────────── */}
-          <div className="anim-fade-up" style={{ marginBottom: '2rem' }}>
-            <h2
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 'var(--text-h2)',
-                fontWeight: 700,
-                letterSpacing: '-0.015em',
-                lineHeight: 1.1,
-                color: 'var(--text)',
-                margin: '0 0 0.6rem',
-              }}
-            >
-              {venueName}
-            </h2>
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 400 }}>
-                {venueAddress}
-              </span>
-              {selectedPitch && <Badge variant="neutral">{selectedPitch.surface}</Badge>}
-              {selectedPitch && <Badge variant="neutral">{selectedPitch.format}</Badge>}
-            </div>
-          </div>
+          {/* ── BREADCRUMB ───────────────────────────────────── */}
+          <nav
+            aria-label="Breadcrumb"
+            className="anim-fade-up"
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '1.5rem', fontSize: '13px', fontWeight: 500 }}
+          >
+            <Link href="/" style={{ color: 'var(--text-tertiary)', textDecoration: 'none' }}>Home</Link>
+            <span style={{ color: 'var(--text-tertiary)' }}>/</span>
+            <Link href="/slots" style={{ color: 'var(--text-tertiary)', textDecoration: 'none' }}>Venues</Link>
+            <span style={{ color: 'var(--text-tertiary)' }}>/</span>
+            <span style={{ color: 'var(--text)' }}>{venueName}</span>
+          </nav>
 
-          {/* ── PITCH SELECTOR — only shown when a venue has more than one pitch ── */}
-          {pitches.length > 1 && (
-            <div className="anim-fade-up d-40" style={{ display: 'flex', gap: '6px', marginBottom: '1.75rem' }}>
-              {pitches.map(pitch => {
-                const active = pitch.id === selectedPitchId
-                return (
-                  <button
-                    key={pitch.id}
-                    type="button"
-                    onClick={() => {
-                      if (!active) {
-                        setSelectedPitchId(pitch.id)
-                        setSelectedTime(null)
-                        setSelectedDuration(60)
-                      }
-                    }}
+          <div className="venue-layout">
+
+            {/* ── LEFT COLUMN — venue info ─────────────────────── */}
+            <div className="venue-layout-main">
+
+              {/* Hero card */}
+              <div
+                className="anim-fade-up d-40"
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-xl)',
+                  boxShadow: 'var(--shadow-card)',
+                  padding: 'clamp(1.5rem, 4vw, 2.25rem)',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                <Badge variant="public"><BallIcon /> Football</Badge>
+                <h1
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 'clamp(1.75rem, 5vw, 2.5rem)',
+                    fontWeight: 700,
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1.05,
+                    color: 'var(--text)',
+                    margin: '0.875rem 0 0.6rem',
+                  }}
+                >
+                  {venueName}
+                </h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500, marginBottom: '1.5rem' }}>
+                  <PinIcon />
+                  {venueAddress}
+                </div>
+
+                <div className="venue-hero-stats">
+                  <div className="venue-stat-tile">
+                    <span className="venue-stat-label">Surface</span>
+                    <span className="venue-stat-value">{selectedPitch?.surface ?? '—'}</span>
+                  </div>
+                  <div className="venue-stat-tile">
+                    <span className="venue-stat-label">Format</span>
+                    <span className="venue-stat-value">{selectedPitch?.format ?? '—'}</span>
+                  </div>
+                  <div className="venue-stat-tile">
+                    <span className="venue-stat-label">From</span>
+                    <span className="venue-stat-value" style={{ color: 'var(--green)' }}>
+                      {selectedPitch ? formatPerPlayer(selectedPitch.offpeak_price, selectedPitch.max_players) : '—'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description — composed from real venue/pitch fields, no invented copy */}
+              <div className="anim-fade-up d-80" style={infoCardStyle}>
+                <h3 style={{ ...infoCardHeading, marginBottom: '0.875rem' }}>Description</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
+                  {pitches.length > 1
+                    ? `${venueName} has ${pitches.length} pitches available — ${pitches.map(p => p.format).join(' and ')} — on ${Array.from(new Set(pitches.map(p => p.surface))).join('/')} surface, located at ${venueAddress}.`
+                    : `${venueName} features a ${selectedPitch?.format} football pitch on ${selectedPitch?.surface} surface, located at ${venueAddress}.`}
+                </p>
+              </div>
+
+              {/* Opening Hours — derived from the actual bookable time window in lib/slots.ts */}
+              <div className="anim-fade-up d-100" style={infoCardStyle}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.875rem' }}>
+                  <ClockIcon />
+                  <h3 style={infoCardHeading}>Opening Hours</h3>
+                </div>
+                <div style={hoursRowStyle}>
+                  <span>Weekdays</span>
+                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>{OPENING_HOURS.weekday.start} – {OPENING_HOURS.weekday.end}</span>
+                </div>
+                <div style={{ ...hoursRowStyle, marginBottom: 0 }}>
+                  <span>Weekends</span>
+                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>{OPENING_HOURS.weekend.start} – {OPENING_HOURS.weekend.end}</span>
+                </div>
+              </div>
+
+              {/* Location — real embed built from the venue's actual address, no API key required */}
+              <div className="anim-fade-up d-120" style={infoCardStyle}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.875rem' }}>
+                  <PinIcon />
+                  <h3 style={infoCardHeading}>Location</h3>
+                </div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '0 0 1rem' }}>{venueAddress}</p>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venueName}, ${venueAddress}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    height: '200px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)',
+                    background: 'radial-gradient(circle at 50% 40%, var(--surface3), var(--surface2))',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <svg width="30" height="30" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ color: 'var(--green)' }}>
+                      <path d="M8 14.5s5-4.2 5-8.2A5 5 0 0 0 3 6.3c0 4 5 8.2 5 8.2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+                      <circle cx="8" cy="6.3" r="1.8" stroke="currentColor" strokeWidth="1.2" />
+                    </svg>
+                    <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 600 }}>Tap to view on Google Maps</span>
+                  </span>
+                </a>
+              </div>
+
+              {/* ── OPEN GAMES ───────────────────────────────────── */}
+              {/* Data source: `sessions` state (same fetch as time slots), game_type === 'open',
+                  filtered to the selected day. No new data fetching. */}
+              <div className="anim-fade-up d-150">
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <SectionHeading
+                    eyebrow="Public Games"
+                    heading="Join a game"
+                  />
+                </div>
+
+                {dayOpenGames.length === 0 ? (
+                  <div
                     style={{
-                      flex: 1,
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-full)',
-                      border: `1px solid ${active ? 'transparent' : 'var(--border)'}`,
-                      background: active ? 'var(--green)' : 'var(--surface3)',
-                      color: active ? 'var(--black)' : 'var(--text)',
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '14px',
-                      fontWeight: 700,
-                      letterSpacing: '-0.01em',
-                      cursor: active ? 'default' : 'pointer',
-                      textAlign: 'center',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '1.5rem',
+                      background: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-xl)',
                     }}
                   >
-                    {pitch.format}
-                  </button>
-                )
-              })}
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ opacity: 0.2, flexShrink: 0 }}>
+                      <circle cx="16" cy="16" r="13" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M10 16h12M16 10v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0, fontWeight: 400 }}>
+                      No public games today — create one from the booking panel
+                    </p>
+                  </div>
+                ) : (
+                  <div className="open-games-scroller">
+                    {dayOpenGames.map((s, idx) => {
+                      const slot = s.slots
+                      const playerCount = totalCount(s as SessionData)
+                      const maxPlayers = slot.pitches.max_players
+                      const perPlayer = (slot.price / maxPlayers).toFixed(2)
+                      const title = s.organiser_name ? `${s.organiser_name}'s game` : 'Public game'
+                      const slotType = getSlotType(slot.date, slot.start_time)
+                      const typeVariant = slotType === 'peak' ? 'peak' : slotType === 'weekend' ? 'weekend' : 'offpeak'
+                      const typeLabel = slotType === 'peak' ? 'Peak' : slotType === 'weekend' ? 'Weekend' : 'Off-peak'
+
+                      return (
+                        <Link
+                          key={s.id}
+                          href={`/session/${s.id}`}
+                          className="open-game-card-link"
+                          style={{ animationName: 'fadeUp', animationDuration: '0.45s', animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)', animationFillMode: 'both', animationDelay: `${idx * 60}ms`, cursor: 'pointer' }}
+                        >
+                          <div className="open-game-card" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            {/* Top half — pitch photo */}
+                            <div
+                              style={{
+                                position: 'relative',
+                                height: '180px',
+                                backgroundImage: "url('/slot-card.jpg')",
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  background: 'rgba(8,8,8,0.45)',
+                                  pointerEvents: 'none',
+                                }}
+                              />
+                              <div
+                                style={{
+                                  position: 'absolute', top: '10px', left: '10px',
+                                  display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                  padding: '4px 10px', borderRadius: 'var(--radius-full)',
+                                  background: 'var(--green)', color: 'var(--black)',
+                                  fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
+                                  letterSpacing: '0.02em',
+                                }}
+                              >
+                                <PeopleIcon /> {playerCount}/{maxPlayers} players
+                              </div>
+                            </div>
+
+                            {/* Bottom half — game details */}
+                            <div style={{ background: '#0e0e0e', padding: '1rem 1.2rem' }}>
+                              <div
+                                style={{
+                                  fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
+                                  letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
+                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {title}
+                              </div>
+                              <div style={{
+                                display: 'flex', alignItems: 'center', gap: '6px',
+                                fontFamily: 'var(--font-sans)', fontSize: '12px',
+                                color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
+                              }}>
+                                <ClockIcon /> {fmtCardDate(slot.date)} · {slot.start_time.slice(0, 5)} – {slot.end_time.slice(0, 5)}
+                              </div>
+                              <div style={{
+                                display: 'flex', alignItems: 'center', gap: '6px',
+                                fontFamily: 'var(--font-sans)', fontSize: '12px',
+                                color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
+                              }}>
+                                <PinIcon /> {venueName}{venueAddress ? ` · ${venueAddress}` : ''}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                <Badge variant={typeVariant}>{typeLabel}</Badge>
+                                <div style={{
+                                  display: 'inline-flex', alignItems: 'baseline', gap: '4px',
+                                  padding: '5px 12px', borderRadius: 'var(--radius-full)',
+                                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
+                                }}>
+                                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
+                                    £{perPlayer}
+                                  </span>
+                                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
+                                    per player
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
             </div>
-          )}
+
+            {/* ── RIGHT COLUMN — sticky booking panel ──────────── */}
+            <div className="venue-layout-sidebar">
+              <div className="booking-panel-sticky">
+                <div className="booking-panel anim-fade-up d-60">
+
+                  {/* Panel header */}
+                  <div className="booking-panel-header">
+                    <span
+                      style={{
+                        display: 'block',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        color: 'rgba(8,8,8,0.55)',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      Reserve your spot
+                    </span>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--black)' }}>
+                      Book a slot
+                    </div>
+                  </div>
+
+                  <div className="booking-panel-body">
 
           {/* ── DAY SELECTOR ─────────────────────────────────── */}
-          <div className="anim-fade-up d-60" style={{ marginBottom: '2rem' }}>
+          <div style={{ marginBottom: '1.75rem' }}>
             {/* Row: eyebrow + Available only toggle */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
-              <Eyebrow color="secondary">Select Date</Eyebrow>
+              <Eyebrow color="secondary">Select Day</Eyebrow>
               <button
                 onClick={() => setAvailableOnly(o => !o)}
                 aria-pressed={availableOnly}
@@ -485,7 +814,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
           </div>
 
           {/* ── START TIME ───────────────────────────────────── */}
-          <div className="anim-fade-up d-100" style={{ marginBottom: selectedTemplate ? '1.5rem' : '2.5rem' }}>
+          <div style={{ marginBottom: selectedTemplate ? '1.5rem' : '0.5rem' }}>
             <div style={{ marginBottom: '0.875rem' }}>
               <Eyebrow color="secondary">Start Time</Eyebrow>
             </div>
@@ -514,7 +843,9 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 {visibleTemplates.map((template, idx) => {
                   const info = getSlotStatus(template)
                   const booked = info.status === 'booked'
-                  const isSelected = selectedTime === template.startTime
+                  // Highlight every slot the current duration selection would fill,
+                  // not just the one that was clicked (e.g. both hours of a 120 min booking).
+                  const isSelected = selectedTime === template.startTime || requiredStartTimes.has(template.startTime)
                   const isPeak = template.type === 'peak'
 
                   const slotSessionsForTime = daySessionMap.get(template.startTime) ?? []
@@ -625,362 +956,273 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
             )}
           </div>
 
-          {/* ── DETAIL PANEL — slides in when a time is selected ── */}
-          {selectedTemplate && selectedInfo && (() => {
-            const slotSessionsForTime = daySessionMap.get(selectedTemplate.startTime) ?? []
-            const userSlotSessions = slotSessionsForTime.filter(s => userSessionSet.has(s.id))
-            const openSessions = slotSessionsForTime.filter(
-              s => s.status === 'filling' && s.game_type === 'open' && !userSessionSet.has(s.id)
-            )
-            const allPublicSessions = [...openSessions]
-              .sort((a, b) => totalCount(b) - totalCount(a))
+          {/* ── DURATION — always visible; inert until a start time is picked ── */}
+          <div style={{ marginBottom: '1.25rem' }}>
+            <div style={{ marginBottom: '0.6rem' }}>
+              <Eyebrow color="secondary">Duration</Eyebrow>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {[60, 120].map(mins => {
+                const inactive = !selectedTemplate
+                const available = !inactive && durationAvailable(mins)
+                const isSelectedDuration = !inactive && selectedDuration === mins
+                return (
+                  <button
+                    key={mins}
+                    type="button"
+                    disabled={inactive || !available}
+                    onClick={() => available && setSelectedDuration(mins)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 6px',
+                      borderRadius: 'var(--radius-full)',
+                      border: `1px solid ${isSelectedDuration ? 'transparent' : 'var(--border)'}`,
+                      background: isSelectedDuration ? 'var(--green)' : 'var(--surface3)',
+                      color: inactive || !available ? 'var(--text-tertiary)' : isSelectedDuration ? 'var(--black)' : 'var(--text)',
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      letterSpacing: '-0.01em',
+                      lineHeight: 1.5,
+                      cursor: inactive || !available ? 'not-allowed' : 'pointer',
+                      opacity: inactive || !available ? 0.4 : 1,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {mins} min
+                  </button>
+                )
+              })}
+            </div>
+            {!selectedTemplate && (
+              <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '6px' }}>
+                Select a start time first
+              </div>
+            )}
+          </div>
 
-            const userSessionId = userId
-              ? userSlotSessions.find(s => s.organiser_id === userId)?.id
-              : undefined
-
-            if (userSlotSessions.length > 0) {
-              console.log('[SlotsClient] slot', selectedTemplate.startTime, '| userId:', userId, '| sessions:', userSlotSessions.map(s => ({ id: s.id, organiser_id: s.organiser_id })), '| resolved userSessionId:', userSessionId)
-            }
-
-            const booked = selectedInfo.status === 'booked'
-
-            // ── Multi-hour duration availability ──────────────────────────
-            // Each duration option requires N consecutive hourly templates
-            // starting at the selected time. slotTemplates is chronologically
-            // contiguous (each slot's endTime === the next slot's startTime),
-            // so consecutive array indices are consecutive hour blocks.
-            const startIdx = slotTemplates.findIndex(t => t.startTime === selectedTemplate.startTime)
-            function requiredTemplatesFor(durationMins: number): SlotTemplate[] | null {
-              const count = durationMins / 60
-              if (startIdx === -1) return null
-              const slice = slotTemplates.slice(startIdx, startIdx + count)
-              return slice.length === count ? slice : null
-            }
-            function durationAvailable(durationMins: number): boolean {
-              const templates = requiredTemplatesFor(durationMins)
-              if (!templates) return false
-              return templates.every(t => getSlotStatus(t).status !== 'booked')
-            }
-
-            const requiredTemplates = requiredTemplatesFor(selectedDuration) ?? [selectedTemplate]
-            const requiredDbSlots = requiredTemplates
-              .map(t => slotDataMap.get(`${selectedPitchId}_${dayStr}_${t.startTime}`))
-              .filter((s): s is DbSlot => !!s)
-            const requiredSlotIds = requiredDbSlots.map(s => s.id)
-            const durationFullyAvailable = requiredSlotIds.length === requiredTemplates.length
-              && requiredTemplates.every(t => getSlotStatus(t).status !== 'booked')
-            const rangeEndTime = requiredTemplates[requiredTemplates.length - 1]?.endTime ?? selectedTemplate.endTime
-            const totalPriceGBP = requiredDbSlots.reduce((sum, s) => sum + s.price, 0)
-            const bookingMaxPlayers = requiredDbSlots[0]?.pitches.max_players ?? selectedInfo.playerCount
-
-            const href = !booked && !userSessionId && durationFullyAvailable && requiredSlotIds.length > 0
-              ? `/slots/create/${requiredSlotIds[0]}?slotIds=${requiredSlotIds.join(',')}`
-              : undefined
-            const fillingFast = !booked && !userSessionId && allPublicSessions.some(s => totalCount(s) >= 7)
-            const hasSessions = userSlotSessions.length > 0 || allPublicSessions.length > 0
-            const typeLabel = selectedTemplate.type === 'peak' ? 'Peak' : selectedTemplate.type === 'offpeak' ? 'Off-peak' : 'Weekend'
-            const perPlayerPrice = (totalPriceGBP / bookingMaxPlayers).toFixed(2)
-
-            return (
-              <div className="slot-detail-panel" style={{ marginBottom: '2.5rem' }}>
-
-                {/* Duration row */}
-                <div style={{ marginBottom: '1rem' }}>
-                  <div style={{ marginBottom: '0.6rem' }}>
-                    <Eyebrow color="secondary">Duration</Eyebrow>
-                  </div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {[60, 120].map(mins => {
-                      const available = durationAvailable(mins)
-                      const isSelectedDuration = selectedDuration === mins
-                      return (
-                        <button
-                          key={mins}
-                          type="button"
-                          disabled={!available}
-                          onClick={() => available && setSelectedDuration(mins)}
-                          style={{
-                            flex: 1,
-                            padding: '8px 6px',
-                            borderRadius: 'var(--radius-full)',
-                            border: `1px solid ${isSelectedDuration ? 'transparent' : 'var(--border)'}`,
-                            background: isSelectedDuration ? 'var(--green)' : 'var(--surface3)',
-                            color: !available ? 'var(--text-tertiary)' : isSelectedDuration ? 'var(--black)' : 'var(--text)',
-                            fontFamily: 'var(--font-display)',
-                            fontSize: '13px',
-                            fontWeight: 700,
-                            letterSpacing: '-0.01em',
-                            lineHeight: 1.5,
-                            cursor: available ? 'pointer' : 'not-allowed',
-                            opacity: available ? 1 : 0.4,
-                            textAlign: 'center',
-                          }}
-                        >
-                          {mins} min
-                        </button>
-                      )
-                    })}
+          {/* ── SLOT SUMMARY — appears once a time is selected ── */}
+          {selectedTemplate && (
+            <div className="slot-detail-panel" style={{ marginBottom: '1.25rem' }}>
+              <div
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid',
+                  borderColor: selectedTemplate.type === 'peak' ? 'rgba(255,184,0,0.22)' : 'var(--border)',
+                  borderRadius: 'var(--radius-xl)',
+                  overflow: 'hidden',
+                  boxShadow: 'var(--shadow-card)',
+                }}
+              >
+                {/* Slot header */}
+                <div style={{ padding: '20px 20px 16px', borderBottom: userSlotSessionsSelected.length > 0 ? '1px solid var(--border-subtle)' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                    <div>
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-display)',
+                          fontSize: 'clamp(20px, 5vw, 26px)',
+                          fontWeight: 700,
+                          letterSpacing: '-0.025em',
+                          lineHeight: 1,
+                          color: 'var(--text)',
+                          fontVariantNumeric: 'tabular-nums',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        {selectedTemplate.startTime}
+                        <span style={{ color: 'var(--text-tertiary)', margin: '0 6px', fontWeight: 400, fontSize: '0.72em' }}>to</span>
+                        {rangeEndTime}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <Badge variant={selectedTemplate.type === 'peak' ? 'peak' : selectedTemplate.type === 'weekend' ? 'weekend' : 'offpeak'}>
+                          {typeLabelSelected}
+                        </Badge>
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 400 }}>
+                          {venueName}
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-display)',
+                          fontSize: '28px',
+                          fontWeight: 700,
+                          color: 'var(--green)',
+                          letterSpacing: '-0.03em',
+                          lineHeight: 1,
+                          fontVariantNumeric: 'tabular-nums',
+                        }}
+                      >
+                        £{perPlayerPriceSelected}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 400, marginTop: '4px' }}>per player</div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Slot card */}
-                <div
-                  style={{
-                    background: 'var(--surface)',
-                    border: '1px solid',
-                    borderColor: selectedTemplate.type === 'peak' ? 'rgba(255,184,0,0.22)' : 'var(--border)',
-                    borderRadius: 'var(--radius-xl)',
-                    overflow: 'hidden',
-                    boxShadow: 'var(--shadow-card)',
-                  }}
-                >
-                  {/* Slot header */}
-                  <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                      <div>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: 'clamp(20px, 5vw, 26px)',
-                            fontWeight: 700,
-                            letterSpacing: '-0.025em',
-                            lineHeight: 1,
-                            color: 'var(--text)',
-                            fontVariantNumeric: 'tabular-nums',
-                            marginBottom: '8px',
-                          }}
-                        >
-                          {selectedTemplate.startTime}
-                          <span style={{ color: 'var(--text-tertiary)', margin: '0 6px', fontWeight: 400, fontSize: '0.72em' }}>to</span>
-                          {rangeEndTime}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <Badge variant={selectedTemplate.type === 'peak' ? 'peak' : selectedTemplate.type === 'weekend' ? 'weekend' : 'offpeak'}>
-                            {typeLabel}
-                          </Badge>
-                          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 400 }}>
-                            {venueName}
-                          </span>
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: '28px',
-                            fontWeight: 700,
-                            color: 'var(--green)',
-                            letterSpacing: '-0.03em',
-                            lineHeight: 1,
-                            fontVariantNumeric: 'tabular-nums',
-                          }}
-                        >
-                          £{perPlayerPrice}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 400, marginTop: '4px' }}>per player</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* User's own sessions */}
-                  {userSlotSessions.map((s, i) => {
-                    const isOrganiser = !!userId && s.organiser_id === userId
-                    const isOpen = s.game_type === 'open'
-                    const cap = s.slots.pitches.max_players
-                    const count = Math.min(totalCount(s), cap)
-                    const icon = isOpen ? '🟢' : '🔒'
-                    const nameLabel = s.organiser_name || (isOrganiser ? 'Your team' : 'Game')
-                    const subtext = isOpen
-                      ? `Public · ${count}/${cap} players`
-                      : `Private game · ${count}/${cap} players`
-                    const showDivider = i < userSlotSessions.length - 1 || allPublicSessions.length > 0 || !!href
-                    return (
-                      <div
-                        key={s.id}
-                        className="dropdown-row"
-                        onClick={() => router.push(`/session/${s.id}`)}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1.25rem', borderBottom: showDivider ? '1px solid var(--border-subtle)' : 'none' }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
-                          <span style={{ fontSize: '13px', flexShrink: 0 }}>{icon}</span>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: isOrganiser ? 'var(--green)' : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {nameLabel}
-                            </div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 500 }}>{subtext}</div>
+                {/* User's own sessions */}
+                {userSlotSessionsSelected.map((s, i) => {
+                  const isOrganiser = !!userId && s.organiser_id === userId
+                  const isOpen = s.game_type === 'open'
+                  const cap = s.slots.pitches.max_players
+                  const count = Math.min(totalCount(s), cap)
+                  const icon = isOpen ? '🟢' : '🔒'
+                  const nameLabel = s.organiser_name || (isOrganiser ? 'Your team' : 'Game')
+                  const subtext = isOpen
+                    ? `Public · ${count}/${cap} players`
+                    : `Private game · ${count}/${cap} players`
+                  const showDivider = i < userSlotSessionsSelected.length - 1
+                  return (
+                    <div
+                      key={s.id}
+                      className="dropdown-row"
+                      onClick={() => router.push(`/session/${s.id}`)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1.25rem', borderBottom: showDivider ? '1px solid var(--border-subtle)' : 'none' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                        <span style={{ fontSize: '13px', flexShrink: 0 }}>{icon}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: isOrganiser ? 'var(--green)' : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {nameLabel}
                           </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 500 }}>{subtext}</div>
                         </div>
-                        <span onClick={e => e.stopPropagation()} style={{ flexShrink: 0, marginLeft: '12px' }}>
-                          <Link href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
-                            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--green)', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>View game →</span>
-                          </Link>
-                        </span>
                       </div>
-                    )
-                  })}
+                      <span onClick={e => e.stopPropagation()} style={{ flexShrink: 0, marginLeft: '12px' }}>
+                        <Link href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--green)', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>View game →</span>
+                        </Link>
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
-                  {/* Create game CTA */}
-                  {href ? (
-                    <div style={{ padding: '16px 20px', borderTop: hasSessions ? '1px solid var(--border-subtle)' : 'none' }}>
-                      {fillingFast && (
+                    {/* ── CHOOSE YOUR COURT — only when a venue has more than one pitch ── */}
+                    {pitches.length > 1 && (
+                      <div style={{ marginTop: '0.5rem', marginBottom: '1.25rem' }}>
+                        <div style={{ marginBottom: '0.6rem' }}>
+                          <Eyebrow color="secondary">Choose Your Court</Eyebrow>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {pitches.map(pitch => {
+                            const active = pitch.id === selectedPitchId
+                            return (
+                              <button
+                                key={pitch.id}
+                                type="button"
+                                onClick={() => {
+                                  if (!active) {
+                                    setSelectedPitchId(pitch.id)
+                                    setSelectedTime(null)
+                                    setSelectedDuration(60)
+                                  }
+                                }}
+                                className={`court-option${active ? ' court-option-active' : ''}`}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span className={`court-radio${active ? ' court-radio-active' : ''}`} />
+                                  <div style={{ textAlign: 'left' }}>
+                                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', textTransform: 'uppercase' }}>
+                                      {pitch.format}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '2px' }}>
+                                      {pitch.surface}
+                                    </div>
+                                  </div>
+                                </div>
+                                <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 500, fontStyle: 'italic', whiteSpace: 'nowrap' }}>
+                                  {formatPerPlayer(pitch.offpeak_price, pitch.max_players)}/player
+                                </span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── PROCEED — always visible; greyed out until a valid, available
+                         time + duration (+ court) combination is selected ── */}
+                    <div style={{ marginBottom: '1.25rem' }}>
+                      {fillingFastSelected && !!createHref && (
                         <div style={{ fontSize: '11px', color: 'var(--amber)', fontWeight: 600, marginBottom: '8px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                           Filling fast
                         </div>
                       )}
-                      <Link href={href} style={{ textDecoration: 'none', display: 'block' }}>
-                        <button
-                          className="btn-g"
-                          style={{ width: '100%', padding: '14px 20px', background: 'var(--green)', color: 'var(--black)', border: 'none', borderRadius: 'var(--radius-lg)', fontFamily: 'var(--font-display)', fontSize: '15px', fontWeight: 700, letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1, textAlign: 'center' }}
-                        >
-                          Create game
-                        </button>
-                      </Link>
+                      {(() => {
+                        const disabled = !createHref
+                        let label = 'Create game'
+                        if (!selectedTemplate) label = 'Select a time to continue'
+                        else if (bookedSelected) label = 'Game time taken'
+                        else if (userSessionIdSelected) label = "You're already in this game"
+                        else if (!durationFullyAvailable) label = 'Selected duration unavailable'
+
+                        const button = (
+                          <button
+                            type="button"
+                            disabled={disabled}
+                            className="btn-g"
+                            style={{
+                              width: '100%',
+                              padding: '14px 20px',
+                              background: disabled ? 'var(--surface3)' : 'var(--green)',
+                              color: disabled ? 'var(--text-tertiary)' : 'var(--black)',
+                              border: 'none',
+                              borderRadius: 'var(--radius-lg)',
+                              fontFamily: 'var(--font-display)',
+                              fontSize: '15px',
+                              fontWeight: 700,
+                              letterSpacing: '-0.015em',
+                              cursor: disabled ? 'not-allowed' : 'pointer',
+                              lineHeight: 1,
+                              textAlign: 'center',
+                            }}
+                          >
+                            {label}
+                          </button>
+                        )
+
+                        return createHref ? (
+                          <Link href={createHref} style={{ textDecoration: 'none', display: 'block' }}>
+                            {button}
+                          </Link>
+                        ) : button
+                      })()}
                     </div>
-                  ) : booked ? (
-                    <div style={{ padding: '16px 20px', textAlign: 'center' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--red)' }}>Game time taken</span>
-                    </div>
-                  ) : !userSessionId && !durationFullyAvailable ? (
-                    <div style={{ padding: '16px 20px', textAlign: 'center' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--red)' }}>Selected duration unavailable — choose a shorter one</span>
-                    </div>
-                  ) : null}
+
+                    {/* ── TRUST BULLETS ─────────────────────────────── */}
+                    <ul
+                      style={{
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px',
+                        borderTop: '1px solid var(--border-subtle)',
+                        paddingTop: '1.25rem',
+                      }}
+                    >
+                      <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                        <CheckIcon /> Secure checkout via Stripe
+                      </li>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                        <CheckIcon /> Only charged once your game is full
+                      </li>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                        <CheckIcon /> Refunded automatically if anything goes wrong
+                      </li>
+                    </ul>
+
+                  </div>
                 </div>
               </div>
-            )
-          })()}
-
-          {/* ── OPEN GAMES ───────────────────────────────────── */}
-          {/* Data source: `sessions` state (same fetch as time slots), game_type === 'open',
-              filtered to the selected day. No new data fetching. */}
-          <div className="anim-fade-up d-150">
-            <div style={{ marginBottom: '1.25rem' }}>
-              <SectionHeading
-                eyebrow="Public Games"
-                heading="Join a game"
-              />
             </div>
 
-            {dayOpenGames.length === 0 ? (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '14px',
-                  padding: '1.5rem',
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius-xl)',
-                }}
-              >
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ opacity: 0.2, flexShrink: 0 }}>
-                  <circle cx="16" cy="16" r="13" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="M10 16h12M16 10v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0, fontWeight: 400 }}>
-                  No public games today — create one above
-                </p>
-              </div>
-            ) : (
-              <div className="open-games-scroller">
-                {dayOpenGames.map((s, idx) => {
-                  const slot = s.slots
-                  const playerCount = totalCount(s as SessionData)
-                  const maxPlayers = slot.pitches.max_players
-                  const perPlayer = (slot.price / maxPlayers).toFixed(2)
-                  const title = s.organiser_name ? `${s.organiser_name}'s game` : 'Public game'
-                  const slotType = getSlotType(slot.date, slot.start_time)
-                  const typeVariant = slotType === 'peak' ? 'peak' : slotType === 'weekend' ? 'weekend' : 'offpeak'
-                  const typeLabel = slotType === 'peak' ? 'Peak' : slotType === 'weekend' ? 'Weekend' : 'Off-peak'
-
-                  return (
-                    <Link
-                      key={s.id}
-                      href={`/session/${s.id}`}
-                      className="open-game-card-link"
-                      style={{ animationName: 'fadeUp', animationDuration: '0.45s', animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)', animationFillMode: 'both', animationDelay: `${idx * 60}ms`, cursor: 'pointer' }}
-                    >
-                      <div className="open-game-card" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        {/* Top half — pitch photo */}
-                        <div
-                          style={{
-                            position: 'relative',
-                            height: '180px',
-                            backgroundImage: "url('/slot-card.jpg')",
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                          }}
-                        >
-                          <div
-                            style={{
-                              position: 'absolute',
-                              inset: 0,
-                              background: 'rgba(8,8,8,0.45)',
-                              pointerEvents: 'none',
-                            }}
-                          />
-                          <div
-                            style={{
-                              position: 'absolute', top: '10px', left: '10px',
-                              display: 'inline-flex', alignItems: 'center', gap: '5px',
-                              padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                              background: 'var(--green)', color: 'var(--black)',
-                              fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
-                              letterSpacing: '0.02em',
-                            }}
-                          >
-                            <PeopleIcon /> {playerCount}/{maxPlayers} players
-                          </div>
-                        </div>
-
-                        {/* Bottom half — game details */}
-                        <div style={{ background: '#0e0e0e', padding: '1rem 1.2rem' }}>
-                          <div
-                            style={{
-                              fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                              letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {title}
-                          </div>
-                          <div style={{
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            fontFamily: 'var(--font-sans)', fontSize: '12px',
-                            color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
-                          }}>
-                            <ClockIcon /> {fmtCardDate(slot.date)} · {slot.start_time.slice(0, 5)} – {slot.end_time.slice(0, 5)}
-                          </div>
-                          <div style={{
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            fontFamily: 'var(--font-sans)', fontSize: '12px',
-                            color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
-                          }}>
-                            <PinIcon /> {venueName}{venueAddress ? ` · ${venueAddress}` : ''}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                            <Badge variant={typeVariant}>{typeLabel}</Badge>
-                            <div style={{
-                              display: 'inline-flex', alignItems: 'baseline', gap: '4px',
-                              padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
-                            }}>
-                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
-                                £{perPlayer}
-                              </span>
-                              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
-                                per player
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
           </div>
 
         </div>
