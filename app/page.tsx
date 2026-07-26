@@ -88,7 +88,7 @@ const STATS = [
 const MARQUEE_ITEMS = [
   'No bank transfers',
   "Nobody pays till it's full",
-  'All-weather 4G pitch',
+  'Grass, 4G & indoor pitches',
   'Share one link',
   "£0 until the team's full",
 ]
@@ -347,7 +347,7 @@ export default async function HomePage() {
                     {item}
                   </span>
                   <span aria-hidden="true" style={{
-                    color: 'var(--green)',
+                    color: 'var(--amber)',
                     fontSize: '10px',
                     lineHeight: 1,
                     opacity: 0.75,
@@ -376,7 +376,7 @@ export default async function HomePage() {
                     {item}
                   </span>
                   <span aria-hidden="true" style={{
-                    color: 'var(--green)',
+                    color: 'var(--amber)',
                     fontSize: '10px',
                     lineHeight: 1,
                     opacity: 0.75,
@@ -390,6 +390,119 @@ export default async function HomePage() {
 
           </div>
         </div>
+
+        {/* ============================================================
+            HOW IT WORKS
+            ============================================================ */}
+        <section style={{ paddingTop: 'clamp(4rem, 8vh, 6rem)', paddingBottom: 'clamp(4rem, 8vh, 6rem)' }}>
+          <Container>
+            {/* Section header */}
+            <div className="reveal-scroll" style={{ marginBottom: '3rem' }}>
+              <SectionHeading
+                eyebrow="How it works"
+                heading={
+                  <>
+                    Four steps<br />
+                    <span style={{ color: 'var(--green)' }}>to kickoff.</span>
+                  </>
+                }
+              />
+            </div>
+
+            {/* Step cards */}
+            <div className="steps-grid-new">
+              {[
+                { n: '01', t: 'Find an open game time', d: 'Browse available times at your local pitch and pick one that works for you.' },
+                { n: '02', t: 'Share the link', d: 'You get a unique link for your game. Drop it in the group chat in seconds.' },
+                { n: '03', t: 'Mates join', d: "Friends click the link and add their card. Nobody is charged yet. Zero commitment." },
+                { n: '04', t: '10 players = booked', d: 'The moment the 10th player joins, everyone pays their share. Pitch confirmed.' },
+              ].map((step, idx) => {
+                const isPayoff = step.n === '04'
+                return (
+                  <Card
+                    key={step.n}
+                    hover
+                    className={`reveal-scroll${step.n !== '04' ? ' step-connector-arrow' : ''}${isPayoff ? ' step-card-payoff' : ''}`}
+                    style={{
+                      padding: '1.75rem 1.5rem 1.6rem',
+                      position: 'relative',
+                      animationDelay: `${idx * 60}ms`,
+                      ...(isPayoff ? {
+                        background: 'rgba(22,48,31,0.40)',
+                        border: '1px solid rgba(198,241,53,0.28)',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(198,241,53,0.14), 0 0 28px -6px rgba(198,241,53,0.20)',
+                      } : {}),
+                    }}
+                  >
+                    {/* Outline stroke numeral — intentional graphic element */}
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute',
+                        bottom: '0.5rem',
+                        right: '0.75rem',
+                        fontFamily: 'var(--font-display)',
+                        fontSize: 'clamp(3.5rem, 5.5vw, 5rem)',
+                        fontWeight: 700,
+                        lineHeight: 1,
+                        letterSpacing: '-0.04em',
+                        color: 'transparent',
+                        WebkitTextStroke: '1.5px rgba(198,241,53,0.20)',
+                        userSelect: 'none',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      {step.n}
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.65rem' }}>
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            width: '5px',
+                            height: '5px',
+                            borderRadius: '50%',
+                            background: 'var(--green)',
+                            flexShrink: 0,
+                            opacity: isPayoff ? 1 : 0.7,
+                          }}
+                        />
+                        <h3
+                          style={{
+                            fontFamily: 'var(--font-display)',
+                            fontSize: 'clamp(14px, 1.8vw, 16px)',
+                            fontWeight: 600,
+                            letterSpacing: '-0.01em',
+                            lineHeight: 1.2,
+                            color: 'var(--text)',
+                            margin: 0,
+                          }}
+                        >
+                          {isPayoff ? (
+                            <>10 players = <span style={{ color: 'var(--green)' }}>booked</span></>
+                          ) : step.t}
+                        </h3>
+                      </div>
+                      <p
+                        style={{
+                          fontSize: '13px',
+                          color: 'var(--text-secondary)',
+                          lineHeight: 1.7,
+                          fontWeight: 400,
+                          margin: 0,
+                        }}
+                      >
+                        {step.d}
+                      </p>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          </Container>
+        </section>
 
         {/* ============================================================
             SLOT PREVIEW CARDS
@@ -584,119 +697,6 @@ export default async function HomePage() {
               </div>
             </Container>
           )}
-        </section>
-
-        {/* ============================================================
-            HOW IT WORKS
-            ============================================================ */}
-        <section style={{ paddingTop: 'clamp(4rem, 8vh, 6rem)', paddingBottom: 'clamp(4rem, 8vh, 6rem)' }}>
-          <Container>
-            {/* Section header */}
-            <div className="reveal-scroll" style={{ marginBottom: '3rem' }}>
-              <SectionHeading
-                eyebrow="How it works"
-                heading={
-                  <>
-                    Four steps<br />
-                    <span style={{ color: 'var(--green)' }}>to kickoff.</span>
-                  </>
-                }
-              />
-            </div>
-
-            {/* Step cards */}
-            <div className="steps-grid-new">
-              {[
-                { n: '01', t: 'Find an open game time', d: 'Browse available times at your local pitch and pick one that works for you.' },
-                { n: '02', t: 'Share the link', d: 'You get a unique link for your game. Drop it in the group chat in seconds.' },
-                { n: '03', t: 'Mates join', d: "Friends click the link and add their card. Nobody is charged yet. Zero commitment." },
-                { n: '04', t: '10 players = booked', d: 'The moment the 10th player joins, everyone pays their share. Pitch confirmed.' },
-              ].map((step, idx) => {
-                const isPayoff = step.n === '04'
-                return (
-                  <Card
-                    key={step.n}
-                    hover
-                    className={`reveal-scroll${step.n !== '04' ? ' step-connector-arrow' : ''}${isPayoff ? ' step-card-payoff' : ''}`}
-                    style={{
-                      padding: '1.75rem 1.5rem 1.6rem',
-                      position: 'relative',
-                      animationDelay: `${idx * 60}ms`,
-                      ...(isPayoff ? {
-                        background: 'rgba(22,48,31,0.40)',
-                        border: '1px solid rgba(198,241,53,0.28)',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(198,241,53,0.14), 0 0 28px -6px rgba(198,241,53,0.20)',
-                      } : {}),
-                    }}
-                  >
-                    {/* Outline stroke numeral — intentional graphic element */}
-                    <div
-                      aria-hidden="true"
-                      style={{
-                        position: 'absolute',
-                        bottom: '0.5rem',
-                        right: '0.75rem',
-                        fontFamily: 'var(--font-display)',
-                        fontSize: 'clamp(3.5rem, 5.5vw, 5rem)',
-                        fontWeight: 700,
-                        lineHeight: 1,
-                        letterSpacing: '-0.04em',
-                        color: 'transparent',
-                        WebkitTextStroke: '1.5px rgba(198,241,53,0.20)',
-                        userSelect: 'none',
-                        pointerEvents: 'none',
-                      }}
-                    >
-                      {step.n}
-                    </div>
-
-                    {/* Content */}
-                    <div style={{ position: 'relative', zIndex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.65rem' }}>
-                        <span
-                          aria-hidden="true"
-                          style={{
-                            width: '5px',
-                            height: '5px',
-                            borderRadius: '50%',
-                            background: 'var(--green)',
-                            flexShrink: 0,
-                            opacity: isPayoff ? 1 : 0.7,
-                          }}
-                        />
-                        <h3
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: 'clamp(14px, 1.8vw, 16px)',
-                            fontWeight: 600,
-                            letterSpacing: '-0.01em',
-                            lineHeight: 1.2,
-                            color: 'var(--text)',
-                            margin: 0,
-                          }}
-                        >
-                          {isPayoff ? (
-                            <>10 players = <span style={{ color: 'var(--green)' }}>booked</span></>
-                          ) : step.t}
-                        </h3>
-                      </div>
-                      <p
-                        style={{
-                          fontSize: '13px',
-                          color: 'var(--text-secondary)',
-                          lineHeight: 1.7,
-                          fontWeight: 400,
-                          margin: 0,
-                        }}
-                      >
-                        {step.d}
-                      </p>
-                    </div>
-                  </Card>
-                )
-              })}
-            </div>
-          </Container>
         </section>
 
         {/* ============================================================

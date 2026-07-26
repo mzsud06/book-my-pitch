@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/Button'
 
 interface AuthUser {
   id: string
@@ -30,6 +31,12 @@ function formatNotifTime(iso: string): string {
   if (days < 7) return `${days}d ago`
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
+
+const NAV_LINKS = [
+  { href: '/', label: 'Home' },
+  { href: '/slots', label: 'Book a pitch' },
+  { href: '/public-games', label: 'Public games' },
+]
 
 export default function Nav() {
   const pathname = usePathname()
@@ -212,6 +219,36 @@ export default function Nav() {
             </span>
           </span>
         </Link>
+
+        {/* Nav links */}
+        <div className="nav-links" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          {NAV_LINKS.map(link => {
+            const isActive = link.href === '/' ? pathname === '/' : pathname?.startsWith(link.href)
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="nav-link-ghost"
+                style={{
+                  fontFamily: 'var(--font-sans)',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  color: isActive ? 'var(--text)' : 'var(--text-secondary)',
+                  textDecoration: 'none',
+                  transition: 'color 0.15s ease',
+                  whiteSpace: 'nowrap',
+                  letterSpacing: '-0.01em',
+                  padding: '0.5rem 0.75rem',
+                  minHeight: '44px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
+        </div>
 
         {/* Right side */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -535,13 +572,18 @@ export default function Nav() {
                   transition: 'color 0.15s ease',
                   whiteSpace: 'nowrap',
                   letterSpacing: '-0.01em',
-                  padding: '0.5rem 0.25rem',
+                  padding: '0.5rem 0.75rem',
                   minHeight: '44px',
                   display: 'inline-flex',
                   alignItems: 'center',
                 }}
               >
-                Log in
+                Sign in
+              </Link>
+              <Link href="/auth/signup" style={{ textDecoration: 'none' }}>
+                <Button variant="primary" size="sm" style={{ borderRadius: 'var(--radius-full)' }}>
+                  Sign up
+                </Button>
               </Link>
             </>
           )}

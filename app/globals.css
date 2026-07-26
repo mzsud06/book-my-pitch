@@ -369,6 +369,11 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
   .dropdown-item:hover  { background: var(--surface2) !important; color: var(--text) !important; }
 }
 
+.nav-links { display: none; }
+@media (min-width: 768px) {
+  .nav-links { display: flex; }
+}
+
 .nav-btn-green:active {
   transform: scale(0.95) translateY(0) !important;
   box-shadow: none !important;
@@ -922,18 +927,38 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 }
 
 /* ============================================================
-   SLOTS VENUE PICKER — 1-col mobile / 2-col tablet / 3-col desktop
+   SLOTS VENUE PICKER — search/filter/sort browser
    ============================================================ */
 .venue-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 20px;
 }
-@media (min-width: 640px) {
-  .venue-grid { grid-template-columns: 1fr 1fr; }
+
+/* Sidebar (filters) + main (grid) layout. Sidebar is a toggleable drawer
+   below 1024px and a permanent column above it. */
+.venues-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: start;
 }
 @media (min-width: 1024px) {
-  .venue-grid { grid-template-columns: repeat(3, 1fr); }
+  .venues-body { grid-template-columns: 260px 1fr; gap: 28px; }
+}
+
+.filter-chip {
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .filter-chip:hover { transform: translateY(-1px); }
+}
+.filter-chip:active { transform: scale(0.96) !important; transition-duration: 0.06s !important; }
+
+.sort-select { transition: border-color 140ms ease, background 140ms ease; }
+.sort-select:focus { border-color: rgba(198,241,53,0.4) !important; outline: none; }
+@media (hover: hover) and (pointer: fine) {
+  .sort-select:hover { border-color: var(--border-strong) !important; }
 }
 
 /* ============================================================
