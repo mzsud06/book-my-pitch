@@ -381,6 +381,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 
 @media (max-width: 480px) {
   .profile-name { display: none; }
+  .nav-wordmark-text { display: none; }
 }
 
 .nav-btn-green:active {
