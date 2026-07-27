@@ -8,6 +8,8 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSlotType } from '@/lib/slots'
 
+export const revalidate = 0
+
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
