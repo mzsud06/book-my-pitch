@@ -858,7 +858,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                     : hasUserSession
                       ? 'var(--green)'
                       : booked
-                        ? 'var(--text-tertiary)'
+                        ? 'var(--text-secondary)'
                         : isPeak
                           ? 'var(--amber)'
                           : 'var(--text-tertiary)'
@@ -867,15 +867,19 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                     ? 'transparent'
                     : hasUserSession
                       ? 'rgba(198,241,53,0.4)'
-                      : isPeak
-                        ? 'rgba(255,184,0,0.22)'
-                        : 'var(--border)'
+                      : booked
+                        ? 'var(--border-strong)'
+                        : isPeak
+                          ? 'rgba(255,184,0,0.22)'
+                          : 'var(--border)'
 
                   const pillBg = isSelected
                     ? 'var(--green)'
                     : hasUserSession
                       ? 'rgba(198,241,53,0.06)'
-                      : 'var(--surface)'
+                      : booked
+                        ? 'repeating-linear-gradient(135deg, var(--surface2), var(--surface2) 6px, rgba(255,255,255,0.035) 6px, rgba(255,255,255,0.035) 12px)'
+                        : 'var(--surface)'
 
                   const pillShadow = isSelected
                     ? 'var(--shadow-glow)'
@@ -900,7 +904,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                         border: `1px solid ${pillBorderColor}`,
                         background: pillBg,
                         cursor: booked ? 'not-allowed' : 'pointer',
-                        opacity: booked ? 0.4 : 1,
+                        opacity: booked ? 0.65 : 1,
                         pointerEvents: booked ? 'none' : 'auto',
                         textAlign: 'center',
                         display: 'flex',
