@@ -296,13 +296,13 @@ export default function PhoneInput({ value, onChange, placeholder = '7911 123456
     : COUNTRIES
 
   function selectCountry(code: string) {
-    onChange(code + localNumber)
+    onChange(code + localNumber.replace(/^0/, ''))
     setOpen(false)
   }
 
   function handleLocalNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
     const cleaned = e.target.value.replace(/[^0-9]/g, '')
-    onChange(countryCode + cleaned)
+    onChange(countryCode + cleaned.replace(/^0/, ''))
   }
 
   return (

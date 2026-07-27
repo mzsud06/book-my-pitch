@@ -8,6 +8,7 @@ import PhoneInput, { parsePhone } from '@/components/PhoneInput'
 import { readPlayerDetails, readMySessions, readSessionPlayer, removeSessionPlayer, removeMySession } from '@/lib/clientStorage'
 import { Footer } from '@/components/Footer'
 import { getSlotType, formatSlotType, Pitch } from '@/lib/slots'
+import { Badge } from '@/components/ui/Badge'
 
 interface Player {
   id: string
@@ -305,6 +306,7 @@ export default function SessionClient({
   useEffect(() => {
     if (!justJoined || isLoggedIn !== false) return
     if (session.game_type === 'open') return
+    if (isConfirmed) return
     if (sessionStorage.getItem('bmp_join_popup_dismissed')) return
     setShowRegisterPopup(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1077,6 +1079,11 @@ export default function SessionClient({
         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
           {formatDate(slot.date)} · {formatSlotType(getSlotType(slot.date, slot.start_time))} · {slot.pitches.format}
         </div>
+        {session.game_type === 'private' && (
+          <div style={{ marginBottom: '0.6rem' }}>
+            <Badge variant="neutral">Private</Badge>
+          </div>
+        )}
         <a
           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(slot.venues?.address ?? slot.venues?.name ?? 'football pitch London')}`}
           target="_blank"
@@ -1541,14 +1548,14 @@ export default function SessionClient({
                         autoComplete="name"
                         value={joinName}
                         onChange={(e) => {
-                          const cleaned = e.target.value.replace(/[^a-zA-Z\s]/g, '')
+                          const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, '')
                           setJoinName(cleaned)
                           if (joinNameError) setJoinNameError('')
                         }}
                         onKeyDown={(e) => {
                           if (e.ctrlKey || e.metaKey) return
                           if (['Backspace','Delete','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)) return
-                          if (!/^[a-zA-Z\s]$/.test(e.key)) e.preventDefault()
+                          if (!/^[a-zA-Z0-9\s]$/.test(e.key)) e.preventDefault()
                         }}
                         placeholder="Full name"
                         style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.8rem 1rem', color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 600, outline: 'none', transition: 'border-color 0.15s ease', boxSizing: 'border-box' as const }}
