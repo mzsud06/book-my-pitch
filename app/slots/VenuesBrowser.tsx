@@ -32,6 +32,14 @@ function ChevronIcon() {
   )
 }
 
+function FilterIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2 3.5h12M4.5 8h7M6.75 12.5h2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function cheapestPerPlayer(venue: VenueCardData): number | null {
   if (!venue.pitches.length) return null
   return Math.min(...venue.pitches.map(p => p.offpeak_price / p.max_players))
@@ -81,9 +89,9 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
   const [query, setQuery] = useState('')
   const [selectedFormats, setSelectedFormats] = useState<string[]>([])
   const [selectedSurfaces, setSelectedSurfaces] = useState<string[]>([])
-  const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
   const [sortBy, setSortBy] = useState<SortKey>('recommended')
+  const [filterOpen, setFilterOpen] = useState(false)
 
   const allFormats = useMemo(
     () => Array.from(new Set(venues.flatMap(v => v.pitches.map(p => p.format)))).sort(),
@@ -94,7 +102,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
     [venues]
   )
 
-  const hasActiveFilters = selectedFormats.length > 0 || selectedSurfaces.length > 0 || minPrice !== '' || maxPrice !== ''
+  const hasActiveFilters = selectedFormats.length > 0 || selectedSurfaces.length > 0 || maxPrice !== ''
 
   function toggle(list: string[], value: string, setList: (v: string[]) => void) {
     setList(list.includes(value) ? list.filter(v => v !== value) : [...list, value])
@@ -103,7 +111,6 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
   function clearFilters() {
     setSelectedFormats([])
     setSelectedSurfaces([])
-    setMinPrice('')
     setMaxPrice('')
   }
 
@@ -114,7 +121,6 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const min = minPrice.trim() === '' ? null : Number(minPrice)
     const max = maxPrice.trim() === '' ? null : Number(maxPrice)
 
     const filtered = venues.filter(venue => {
@@ -128,7 +134,6 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
         if (!surfaces.some(s => selectedSurfaces.includes(s))) return false
       }
       const price = cheapestPerPlayer(venue)
-      if (min !== null && !Number.isNaN(min) && (price === null || price < min)) return false
       if (max !== null && !Number.isNaN(max) && (price === null || price > max)) return false
       return true
     })
@@ -144,7 +149,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
       sorted.sort((a, b) => a.name.localeCompare(b.name))
     }
     return sorted
-  }, [venues, query, selectedFormats, selectedSurfaces, minPrice, maxPrice, sortBy])
+  }, [venues, query, selectedFormats, selectedSurfaces, maxPrice, sortBy])
 
   return (
     <div style={{ paddingBottom: '5rem' }}>
@@ -231,6 +236,30 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
               />
             </div>
 
+            <button
+              type="button"
+              onClick={() => setFilterOpen(o => !o)}
+              aria-expanded={filterOpen}
+              className="filter-toggle-btn"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '0.6rem 1rem',
+                borderRadius: 'var(--radius-full)',
+                fontFamily: 'var(--font-sans)',
+                fontWeight: 600,
+                fontSize: '13px',
+                cursor: 'pointer',
+                border: filterOpen || hasActiveFilters ? '1px solid rgba(198,241,53,0.4)' : '1px solid var(--border)',
+                background: filterOpen || hasActiveFilters ? 'rgba(198,241,53,0.1)' : 'var(--surface2)',
+                color: filterOpen || hasActiveFilters ? 'var(--green)' : 'var(--text)',
+              }}
+            >
+              <FilterIcon />
+              Filter
+            </button>
+
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '14px' }}>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, whiteSpace: 'nowrap' }}>
                 <strong style={{ color: 'var(--text)' }}>{results.length}</strong> {results.length === 1 ? 'venue' : 'venues'}
@@ -268,7 +297,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
 
           {/* Sidebar + grid */}
           <div className="venues-body">
-            <aside className="filter-sidebar">
+            <aside className={`filter-sidebar${filterOpen ? ' is-open' : ''}`}>
               <div
                 style={{
                   border: '1px solid var(--border)',
@@ -315,34 +344,17 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                 {/* Price */}
                 <div style={{ marginBottom: '1.5rem' }}>
                   <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: '10px' }}>
-                    Price per player
+                    Max price per player
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '11px', color: 'var(--text-tertiary)', display: 'block', marginBottom: '4px' }}>Min</label>
-                      <input
-                        type="number"
-                        min={0}
-                        inputMode="decimal"
-                        placeholder="£0"
-                        value={minPrice}
-                        onChange={e => setMinPrice(e.target.value)}
-                        style={priceInputStyle}
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: '11px', color: 'var(--text-tertiary)', display: 'block', marginBottom: '4px' }}>Max</label>
-                      <input
-                        type="number"
-                        min={0}
-                        inputMode="decimal"
-                        placeholder="Any"
-                        value={maxPrice}
-                        onChange={e => setMaxPrice(e.target.value)}
-                        style={priceInputStyle}
-                      />
-                    </div>
-                  </div>
+                  <input
+                    type="number"
+                    min={0}
+                    inputMode="decimal"
+                    placeholder="Any"
+                    value={maxPrice}
+                    onChange={e => setMaxPrice(e.target.value)}
+                    style={priceInputStyle}
+                  />
                 </div>
 
                 {/* Format */}

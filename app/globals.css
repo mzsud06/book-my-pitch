@@ -374,6 +374,15 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
   .nav-links { display: flex; }
 }
 
+.nav-hamburger-wrap { display: flex; }
+@media (min-width: 768px) {
+  .nav-hamburger-wrap { display: none; }
+}
+
+@media (max-width: 480px) {
+  .profile-name { display: none; }
+}
+
 .nav-btn-green:active {
   transform: scale(0.95) translateY(0) !important;
   box-shadow: none !important;
@@ -947,6 +956,17 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
   .venues-body { grid-template-columns: 260px 1fr; gap: 28px; }
 }
 
+.filter-sidebar { display: none; }
+.filter-sidebar.is-open { display: block; }
+@media (min-width: 1024px) {
+  .filter-sidebar { display: block; }
+}
+
+.filter-toggle-btn { display: inline-flex; }
+@media (min-width: 1024px) {
+  .filter-toggle-btn { display: none; }
+}
+
 .filter-chip {
   transition: border-color 140ms ease, background 140ms ease, color 140ms ease, transform 140ms ease;
 }
@@ -964,15 +984,41 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 /* ============================================================
    VENUE DETAIL PAGE — two-column layout w/ sticky booking panel
    ============================================================ */
+/* Mobile: hero + description lead, then the booking panel (so slots are
+   reachable without scrolling past hours/location/games), then the rest.
+   Desktop: two columns, sticky panel spans the full right-hand column. */
 .venue-layout {
   display: grid;
   grid-template-columns: 1fr;
+  grid-template-areas:
+    "hero"
+    "description"
+    "panel"
+    "hours"
+    "location"
+    "games";
   gap: 24px;
   align-items: start;
 }
 @media (min-width: 1024px) {
-  .venue-layout { grid-template-columns: 1fr 380px; gap: 28px; }
+  .venue-layout {
+    grid-template-columns: 1fr 380px;
+    grid-template-areas:
+      "hero panel"
+      "description panel"
+      "hours panel"
+      "location panel"
+      "games panel";
+    gap: 28px;
+  }
 }
+
+.venue-area-hero        { grid-area: hero; }
+.venue-area-description { grid-area: description; }
+.venue-area-panel       { grid-area: panel; }
+.venue-area-hours       { grid-area: hours; }
+.venue-area-location    { grid-area: location; }
+.venue-area-games       { grid-area: games; }
 
 .venue-hero-stats {
   display: grid;
@@ -1032,7 +1078,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 }
 
 @media (min-width: 768px) {
-  .venue-layout-main .open-games-scroller { grid-template-columns: repeat(2, 1fr); }
+  .venue-area-games .open-games-scroller { grid-template-columns: repeat(2, 1fr); }
 }
 
 .court-option {

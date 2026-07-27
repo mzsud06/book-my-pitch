@@ -394,12 +394,9 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
 
           <div className="venue-layout">
 
-            {/* ── LEFT COLUMN — venue info ─────────────────────── */}
-            <div className="venue-layout-main">
-
               {/* Hero card */}
               <div
-                className="anim-fade-up d-40"
+                className="anim-fade-up d-40 venue-area-hero"
                 style={{
                   background: 'var(--surface)',
                   border: '1px solid var(--border)',
@@ -447,7 +444,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
               </div>
 
               {/* Description — composed from real venue/pitch fields, no invented copy */}
-              <div className="anim-fade-up d-80" style={infoCardStyle}>
+              <div className="anim-fade-up d-80 venue-area-description" style={infoCardStyle}>
                 <h3 style={{ ...infoCardHeading, marginBottom: '0.875rem' }}>Description</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
                   {pitches.length > 1
@@ -457,7 +454,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
               </div>
 
               {/* Opening Hours — derived from the actual bookable time window in lib/slots.ts */}
-              <div className="anim-fade-up d-100" style={infoCardStyle}>
+              <div className="anim-fade-up d-100 venue-area-hours" style={infoCardStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.875rem' }}>
                   <ClockIcon />
                   <h3 style={infoCardHeading}>Opening Hours</h3>
@@ -473,7 +470,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
               </div>
 
               {/* Location — real embed built from the venue's actual address, no API key required */}
-              <div className="anim-fade-up d-120" style={infoCardStyle}>
+              <div className="anim-fade-up d-120 venue-area-location" style={infoCardStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.875rem' }}>
                   <PinIcon />
                   <h3 style={infoCardHeading}>Location</h3>
@@ -503,7 +500,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
               {/* ── OPEN GAMES ───────────────────────────────────── */}
               {/* Data source: `sessions` state (same fetch as time slots), game_type === 'open',
                   filtered to the selected day. No new data fetching. */}
-              <div className="anim-fade-up d-150">
+              <div className="anim-fade-up d-150 venue-area-games">
                 <div style={{ marginBottom: '1.25rem' }}>
                   <SectionHeading
                     eyebrow="Public Games"
@@ -632,10 +629,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 )}
               </div>
 
-            </div>
-
-            {/* ── RIGHT COLUMN — sticky booking panel ──────────── */}
-            <div className="venue-layout-sidebar">
+            {/* ── STICKY BOOKING PANEL ─────────────────────────── */}
+            <div className="venue-area-panel">
               <div className="booking-panel-sticky">
                 <div className="booking-panel anim-fade-up d-60">
 
