@@ -21,6 +21,7 @@ function fmtSlotDate(dateStr: string): string {
 interface PublicGameRow {
   id: string
   organiser_name: string | null
+  status: string
   slots: {
     date: string
     start_time: string
@@ -36,9 +37,9 @@ export default async function PublicGamesPage() {
   const today = new Date().toISOString().slice(0, 10)
   const { data: rawGames } = await createServiceClient()
     .from('sessions')
-    .select('id, organiser_name, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name)), players(count)')
+    .select('id, organiser_name, status, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name)), players(count)')
     .eq('game_type', 'open')
-    .eq('status', 'filling')
+    .in('status', ['filling', 'confirmed'])
     .eq('is_public', true)
     .gte('slots.date', today)
 
@@ -53,6 +54,7 @@ export default async function PublicGamesPage() {
       return {
         id: s.id,
         organiserName: s.organiser_name,
+        isFull: s.status === 'confirmed' || playerCount >= maxPlayers,
         venueName: venue?.name ?? 'your local pitch',
         time: `${slot.start_time.slice(0, 5)} – ${slot.end_time.slice(0, 5)}`,
         date: fmtSlotDate(slot.date),
@@ -64,7 +66,7 @@ export default async function PublicGamesPage() {
         typeLabel: type === 'peak' ? 'Peak' : type === 'offpeak' ? 'Off-peak' : 'Weekend',
       }
     })
-    .sort((a, b) => b.playerCount - a.playerCount)
+    .sort((a, b) => Number(a.isFull) - Number(b.isFull) || b.playerCount - a.playerCount)
 
   return (
     <>
@@ -138,7 +140,11 @@ export default async function PublicGamesPage() {
                     <Card
                       key={game.id}
                       className="anim-fade-up"
-                      style={{ padding: '1.5rem', animationDelay: `${idx * 60}ms` }}
+                      style={{
+                        padding: '1.5rem',
+                        animationDelay: `${idx * 60}ms`,
+                        opacity: game.isFull ? 0.6 : 1,
+                      }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.1rem', gap: '8px' }}>
                         <Badge variant="public">Public game</Badge>
@@ -186,21 +192,27 @@ export default async function PublicGamesPage() {
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                        <div style={{ fontSize: '12px', fontWeight: game.isFull ? 700 : 500, color: game.isFull ? 'var(--red)' : 'var(--text-secondary)' }}>
                           {game.playerCount}/{game.maxPlayers} players
                         </div>
-                        {game.playerCount >= game.maxPlayers - 2 && (
+                        {!game.isFull && game.playerCount >= game.maxPlayers - 2 && (
                           <div style={{ fontSize: '12px', color: 'var(--amber)', fontWeight: 700 }}>
                             {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} left
                           </div>
                         )}
                       </div>
 
-                      <Link href={`/session/${game.id}`} style={{ textDecoration: 'none', display: 'block' }}>
-                        <Button variant="primary" size="md" arrow style={{ width: '100%' }}>
-                          Join
+                      {game.isFull ? (
+                        <Button variant="primary" size="md" disabled style={{ width: '100%', cursor: 'not-allowed', opacity: 0.5 }}>
+                          Full
                         </Button>
-                      </Link>
+                      ) : (
+                        <Link href={`/session/${game.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                          <Button variant="primary" size="md" arrow style={{ width: '100%' }}>
+                            Join
+                          </Button>
+                        </Link>
+                      )}
                     </Card>
                   )
                 })}
