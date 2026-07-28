@@ -224,7 +224,7 @@ export default function Nav() {
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingLeft: 'clamp(0.75rem, 2vw, 1.25rem)',
-        paddingRight: 'clamp(1.25rem, 4vw, 2rem)',
+        paddingRight: 'max(clamp(1.5rem, 5vw, 2rem), env(safe-area-inset-right, 0px) + 1rem)',
         height: '60px',
         borderTop: '2px solid var(--green)',
         borderBottom: '1px solid var(--border)',
@@ -654,16 +654,16 @@ export default function Nav() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '32px',
-                height: '32px',
-                padding: 0,
-                border: 'none',
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                border: '1px solid var(--border)',
                 background: 'transparent',
                 color: 'var(--text)',
                 cursor: 'pointer',
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 6h18" />
                 <path d="M3 12h18" />
                 <path d="M3 18h18" />
