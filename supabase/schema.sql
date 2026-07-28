@@ -57,7 +57,7 @@ create table if not exists sessions (
   organiser_id uuid references auth.users(id),
   organiser_name text,
   organiser_phone text,
-  status text not null default 'filling' check (status in ('filling', 'confirmed', 'cancelled', 'payment_failed')),
+  status text not null default 'filling' check (status in ('filling', 'confirmed', 'cancelled', 'payment_failed', 'expired')),
   created_at timestamptz default now()
 );
 

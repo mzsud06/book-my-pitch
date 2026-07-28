@@ -151,6 +151,7 @@ export default function SessionClient({
   const isConfirmed = session.status === 'confirmed'
   const isFilling = session.status === 'filling'
   const isCancelled = session.status === 'cancelled'
+  const isExpired = session.status === 'expired'
 
   const allPlayers: Player[] = session.players.filter(p => p.session_id === session.id)
   const playerCount = allPlayers.length
@@ -721,7 +722,7 @@ export default function SessionClient({
   }
 
 
-  if (isCancelled) {
+  if (isCancelled || isExpired) {
     return (
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
         <div
@@ -745,7 +746,7 @@ export default function SessionClient({
               color: 'var(--text)',
             }}
           >
-            This game was cancelled
+            {isExpired ? "This game's time has passed" : 'This game was cancelled'}
           </div>
           <div
             style={{
@@ -756,7 +757,7 @@ export default function SessionClient({
               fontWeight: 500,
             }}
           >
-            No charge was made.
+            {isExpired ? "Not enough players joined in time, so it never confirmed. No one was charged." : 'No charge was made.'}
           </div>
           <Link href="/slots" style={{ textDecoration: 'none' }}>
             <button

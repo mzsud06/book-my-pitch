@@ -10,7 +10,7 @@ vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }))
 vi.mock('@/lib/stripe', () => ({
   stripe: {
     paymentMethods: { retrieve: vi.fn(), detach: vi.fn() },
-    paymentIntents: { create: vi.fn() },
+    paymentIntents: { create: vi.fn(), capture: vi.fn(), cancel: vi.fn() },
     refunds: { create: vi.fn() },
   },
   PLATFORM_FEE_PENCE: 50,
@@ -28,11 +28,16 @@ const SLOT_ID = '22222222-2222-2222-2222-222222222222'
 const VENUE_ID = '33333333-3333-3333-3333-333333333333'
 const ORGANISER_ID = 'organiser-001'
 
+const FUTURE_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
 const mockSlot = {
   id: SLOT_ID,
   price: 30,
   venue_id: VENUE_ID,
   pitches: { id: 'pitch-1', name: 'Main Pitch', format: '5-a-side', surface: '4G', max_players: 10, peak_price: 50, offpeak_price: 30, weekend_price: 40 },
+  date: FUTURE_DATE,
+  start_time: '19:00',
+  end_time: '20:00',
 }
 
 function makePlayer(i: number, sessionId = SESSION_ID, userId?: string) {
@@ -123,9 +128,11 @@ describe('private/open session: hard cap at max_players (10)', () => {
     vi.mocked(createClient).mockResolvedValue(authDb as any)
     vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
     setupStripeOk()
-    // 10th player triggers payments — mock Stripe to return success so the
-    // route doesn't error out, but we only care about the cap logic here
-    vi.mocked(stripe.paymentIntents.create).mockResolvedValue({ status: 'succeeded' } as any)
+    // 10th player triggers payments — mock Stripe to authorize + capture
+    // successfully so the route doesn't error out; we only care about the
+    // cap logic here
+    vi.mocked(stripe.paymentIntents.create).mockResolvedValue({ id: 'pi_test', status: 'requires_capture' } as any)
+    vi.mocked(stripe.paymentIntents.capture).mockResolvedValue({ status: 'succeeded' } as any)
 
     const res = await joinSession(makeRequest(joinBody()))
 

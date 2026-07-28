@@ -11,7 +11,7 @@ vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }))
 vi.mock('@/lib/stripe', () => ({
   stripe: {
     paymentMethods: { retrieve: vi.fn(), detach: vi.fn() },
-    paymentIntents: { create: vi.fn() },
+    paymentIntents: { create: vi.fn(), capture: vi.fn(), cancel: vi.fn() },
     refunds: { create: vi.fn() },
   },
   PLATFORM_FEE_PENCE: 50,
@@ -30,6 +30,8 @@ const SESSION_ID = '11111111-1111-1111-1111-111111111111'
 const SLOT_ID = '22222222-2222-2222-2222-222222222222'
 const VENUE_ID = '33333333-3333-3333-3333-333333333333'
 
+const FUTURE_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
 const mockSlotData = {
   id: SLOT_ID,
   price: 30,
@@ -37,7 +39,7 @@ const mockSlotData = {
   pitches: { id: 'pitch-1', name: 'Main Pitch', format: '5-a-side', surface: '4G', max_players: 10, peak_price: 50, offpeak_price: 30, weekend_price: 40 },
   start_time: '19:00',
   end_time: '20:00',
-  date: '2026-07-15',
+  date: FUTURE_DATE,
 }
 
 function makePlayer(i: number) {
@@ -78,7 +80,8 @@ describe('trigger-payments: payment → session confirmed', () => {
       bookings: [],
     })
     vi.mocked(createServiceClient).mockReturnValue(db as any)
-    vi.mocked(stripe.paymentIntents.create).mockResolvedValue({ status: 'succeeded' } as any)
+    vi.mocked(stripe.paymentIntents.create).mockResolvedValue({ id: 'pi_test', status: 'requires_capture' } as any)
+    vi.mocked(stripe.paymentIntents.capture).mockResolvedValue({ status: 'succeeded' } as any)
 
     const req = makeRequest({ sessionId: SESSION_ID }, { 'x-internal-secret': INTERNAL_SECRET })
     const res = await triggerPayments(req)
@@ -92,6 +95,7 @@ describe('trigger-payments: payment → session confirmed', () => {
 
     expect(db._tables.bookings?.length).toBe(1)
     expect(vi.mocked(stripe.paymentIntents.create)).toHaveBeenCalledTimes(10)
+    expect(vi.mocked(stripe.paymentIntents.capture)).toHaveBeenCalledTimes(10)
   })
 
   it('does NOT confirm session when any payment fails — session stays filling', async () => {
@@ -106,7 +110,8 @@ describe('trigger-payments: payment → session confirmed', () => {
     vi.mocked(createServiceClient).mockReturnValue(db as any)
     vi.mocked(stripe.paymentIntents.create)
       .mockRejectedValueOnce(new Error('Card declined'))
-      .mockResolvedValue({ status: 'succeeded' } as any)
+      .mockResolvedValue({ id: 'pi_test', status: 'requires_capture' } as any)
+    vi.mocked(stripe.paymentIntents.cancel).mockResolvedValue({ status: 'canceled' } as any)
 
     const req = makeRequest({ sessionId: SESSION_ID }, { 'x-internal-secret': INTERNAL_SECRET })
     const res = await triggerPayments(req)
@@ -119,6 +124,11 @@ describe('trigger-payments: payment → session confirmed', () => {
     expect(session?.status).toBe('filling')
 
     expect(db._tables.bookings?.length ?? 0).toBe(0)
+    // The 9 that DID authorize must be cancelled (free), never captured —
+    // this is the whole point of the two-phase charge: a single declined
+    // card no longer costs a Stripe fee on everyone else's successful hold.
+    expect(vi.mocked(stripe.paymentIntents.capture)).not.toHaveBeenCalled()
+    expect(vi.mocked(stripe.paymentIntents.cancel)).toHaveBeenCalledTimes(9)
   })
 })
 

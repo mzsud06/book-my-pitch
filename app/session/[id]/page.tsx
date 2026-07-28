@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Nav from '@/components/Nav'
 import SessionClient from './SessionClient'
 import { combineSlots, Pitch } from '@/lib/slots'
+import { expireIfStale } from '@/lib/expireSessions'
 
 const PITCH_COLS = 'id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'
 
@@ -80,6 +81,17 @@ export default async function SessionPage({ params, searchParams }: Props) {
   const rawVenues = (slot as { venues: unknown }).venues
   const venue = Array.isArray(rawVenues) ? rawVenues[0] : rawVenues
 
+  // A 'filling' session whose slot has already started never gets touched
+  // again once nobody's left to join it — flip it to 'expired' on read so the
+  // page (and everywhere else that cares about status) reflects reality.
+  let sessionStatus = rawSession.status
+  if (sessionStatus === 'filling') {
+    const { date: slotDate, start_time: slotStartTime } = slot as unknown as { date: string; start_time: string }
+    if (await expireIfStale(id, slotDate, slotStartTime)) {
+      sessionStatus = 'expired'
+    }
+  }
+
   // Multi-hour (60/120/180 min) bookings span several slot rows — combine them
   // so the displayed time range and price reflect the whole booking, e.g.
   // "18:30 – 20:30" and the summed pitch price, not just the first hour.
@@ -103,7 +115,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
 
   const normalizedSession: SessionData = {
     id: rawSession.id,
-    status: rawSession.status,
+    status: sessionStatus,
     created_at: rawSession.created_at,
     organiser_name: (rawSession as unknown as { organiser_name: string | null }).organiser_name ?? null,
     organiser_phone: (rawSession as unknown as { organiser_phone: string | null }).organiser_phone ?? null,
