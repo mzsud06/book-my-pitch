@@ -33,6 +33,10 @@ export function createMockDb(
         return b
       },
       in: (c: string, vs: unknown[]) => { preds.push(r => vs.includes(r[c])); return b },
+      overlaps: (c: string, vs: unknown[]) => {
+        preds.push(r => Array.isArray(r[c]) && (r[c] as unknown[]).some(v => vs.includes(v)))
+        return b
+      },
       order: () => b,
       limit: (n: number) => { lim = n; return b },
       maybeSingle: async () => {
@@ -114,7 +118,7 @@ export function createMockDb(
           return makeSelectChain(table, opts?.count === 'exact')
         },
 
-        insert(data: Row) {
+        insert(data: Row | Row[]) {
           if (forcedInsertError) {
             const err = forcedInsertError
             forcedInsertError = null
@@ -123,11 +127,18 @@ export function createMockDb(
               then: (resolve: any, reject?: any) => Promise.resolve({ data: null, error: err }).then(resolve, reject),
             }
           }
-          const row = { id: `mock-${Math.random().toString(36).slice(2, 9)}`, ...data }
-          get(table).push(row)
+          // Supabase accepts either a single object or an array — insert one
+          // row per element so callers that .insert([...]) (e.g. bulk
+          // notifications) actually land N rows, not one malformed row built
+          // from spreading array indices as keys.
+          const inputRows = Array.isArray(data) ? data : [data]
+          const insertedRows = inputRows.map(d => ({ id: `mock-${Math.random().toString(36).slice(2, 9)}`, ...d }))
+          insertedRows.forEach(r => get(table).push(r))
+          const single = insertedRows[0] ?? null
           return {
-            select: (_cols?: string) => ({ single: async () => ({ data: row, error: null }) }),
-            then: (resolve: any, reject?: any) => Promise.resolve({ data: row, error: null }).then(resolve, reject),
+            select: (_cols?: string) => ({ single: async () => ({ data: single, error: null }) }),
+            then: (resolve: any, reject?: any) =>
+              Promise.resolve({ data: Array.isArray(data) ? insertedRows : single, error: null }).then(resolve, reject),
           }
         },
 

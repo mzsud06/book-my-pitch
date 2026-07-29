@@ -53,6 +53,9 @@ export async function POST(req: NextRequest) {
 
     if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
     if (session.status === 'confirmed') return NextResponse.json({ message: 'Already confirmed' })
+    if (session.status === 'cancelled' || session.status === 'expired') {
+      return NextResponse.json({ message: `Session is ${session.status}, nothing to charge` })
+    }
 
     const slot = session.slots
     const sessionSlotIds: string[] = (session.slot_ids && session.slot_ids.length > 0) ? session.slot_ids : [slot.id]

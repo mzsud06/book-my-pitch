@@ -82,6 +82,13 @@ export function priceForSlotType(pitch: Pick<Pitch, 'peak_price' | 'offpeak_pric
   }
 }
 
+// A 'filling' session whose slot start time has passed is stale even before
+// anyone visits it (session page / join route only flip status on read).
+// Pure date math — safe to import from client components too.
+export function isSlotInPast(dateStr: string, startTime: string): boolean {
+  return new Date(`${dateStr}T${startTime}`).getTime() < Date.now()
+}
+
 export function formatPrice(gbp: number): string {
   return `£${gbp.toFixed(2).replace('.00', '')}`
 }

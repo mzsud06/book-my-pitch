@@ -2,7 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import OwnerDashboardClient from './OwnerDashboardClient'
-import { getSlotType } from '@/lib/slots'
+import { getSlotType, isSlotInPast } from '@/lib/slots'
+import { expireIfStale } from '@/lib/expireSessions'
+import { stripe } from '@/lib/stripe'
 
 interface RawSession {
   id: string
@@ -42,6 +44,26 @@ export default async function OwnerDashboardPage() {
 
   if (!venue) redirect('/owner/login')
 
+  // Self-healing onboarding status: the venue can have a stripe_account_id
+  // long before Stripe has actually verified it. Rather than requiring a
+  // webhook, check live on every dashboard load while still incomplete —
+  // cheap (one Stripe API call, only while flag is false) and correctness-
+  // critical, since triggerPayments refuses to transfer to an unverified
+  // account (see lib/triggerPayments.ts).
+  let stripeOnboardingComplete = Boolean((venue as { stripe_onboarding_complete?: boolean }).stripe_onboarding_complete)
+  const stripeAccountId = (venue as { stripe_account_id?: string | null }).stripe_account_id
+  if (stripeAccountId && !stripeOnboardingComplete) {
+    try {
+      const account = await stripe.accounts.retrieve(stripeAccountId)
+      if (account.details_submitted && account.charges_enabled) {
+        await supabase.from('venues').update({ stripe_onboarding_complete: true }).eq('id', venue.id)
+        stripeOnboardingComplete = true
+      }
+    } catch (err) {
+      console.error('owner-dashboard: failed to check Stripe account status:', err)
+    }
+  }
+
   const today = new Date()
   const weekStart = new Date(today)
   weekStart.setDate(today.getDate() - today.getDay() + 1)
@@ -73,6 +95,29 @@ export default async function OwnerDashboardPage() {
 
   const sessions = (rawSessions ?? []) as unknown as RawSession[]
   const weekSessions = (rawWeekSessions ?? []) as unknown as RawSession[]
+
+  // A 'filling' session whose slot has already started is stale — nothing
+  // sweeps it automatically until someone visits its session page, so without
+  // this the "Currently filling / Live" panel would keep showing games whose
+  // time has already passed. Sweep those (flips their DB status) and treat
+  // them as expired for every stat/list derived below.
+  const staleIds = new Set<string>()
+  for (const s of [...sessions, ...weekSessions]) {
+    if (s.status !== 'filling' || staleIds.has(s.id)) continue
+    const slot = getSlot(s.slots)
+    if (slot && isSlotInPast(slot.date, slot.start_time)) staleIds.add(s.id)
+  }
+  if (staleIds.size > 0) {
+    const byId = new Map([...sessions, ...weekSessions].map(s => [s.id, s]))
+    await Promise.all(Array.from(staleIds, id => {
+      const s = byId.get(id)!
+      const slot = getSlot(s.slots)!
+      return expireIfStale(id, slot.date, slot.start_time)
+    }))
+    for (const s of [...sessions, ...weekSessions]) {
+      if (staleIds.has(s.id)) s.status = 'expired'
+    }
+  }
 
   const confirmedThisWeek = weekSessions.filter(s => s.status === 'confirmed')
   const revenueThisWeek = confirmedThisWeek.reduce((sum, s) => {
@@ -123,7 +168,7 @@ export default async function OwnerDashboardPage() {
     <>
       <Nav />
       <OwnerDashboardClient
-        venue={venue}
+        venue={{ ...venue, stripe_onboarding_complete: stripeOnboardingComplete }}
         sessions={typedSessions}
         stats={{
           confirmedThisWeek: confirmedThisWeek.length,

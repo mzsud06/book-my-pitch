@@ -1,7 +1,11 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import Nav from '@/components/Nav'
+import { Container } from '@/components/ui/Container'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
 import SlotsClient, { SessionData, DbSlot } from './SlotsClient'
 import { seedSlotsForVenue, cleanupExpiredSessions, ukDateStr, SLOT_SEED_DAYS } from '@/lib/seedSlots'
 import { Pitch } from '@/lib/slots'
@@ -27,11 +31,46 @@ export default async function VenueSlotsPage({ params }: Props) {
 
   const { data: venue } = await supabase
     .from('venues')
-    .select('id, name, address')
+    .select('id, name, address, stripe_onboarding_complete, admin_approved')
     .eq('id', venueId)
     .single()
 
   if (!venue) notFound()
+
+  // A venue whose Stripe Connect onboarding isn't verified yet, or that
+  // hasn't been manually approved, is filtered out of the /slots browse
+  // list but is still reachable by direct link — block booking here too
+  // rather than letting a group fill a slot that either can't actually
+  // take payment (see lib/triggerPayments.ts) or hasn't been vetted as a
+  // real pitch.
+  if (!venue.stripe_onboarding_complete || !venue.admin_approved) {
+    return (
+      <>
+        <Nav />
+        <main style={{ position: 'relative', zIndex: 1 }}>
+          <Container>
+            <Card
+              style={{
+                textAlign: 'center',
+                padding: '5rem 1.5rem',
+                margin: 'clamp(2.5rem, 6vh, 3.5rem) 0',
+              }}
+            >
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', letterSpacing: '-0.03em', marginBottom: '0.6rem', color: 'var(--text)' }}>
+                {venue.name} isn&apos;t accepting bookings yet
+              </div>
+              <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '2rem', fontWeight: 500, lineHeight: 1.6 }}>
+                This venue is still finishing setup. Check back soon, or browse other pitches.
+              </div>
+              <Link href="/slots" style={{ textDecoration: 'none' }}>
+                <Button variant="primary" size="lg" arrow>Browse other venues</Button>
+              </Link>
+            </Card>
+          </Container>
+        </main>
+      </>
+    )
+  }
 
   const { data: pitches } = await supabase
     .from('pitches')

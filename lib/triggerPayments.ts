@@ -59,24 +59,42 @@ async function notifyOrganiserOfFailure(
 export async function triggerPayments(sessionId: string, slot: SlotForPayment, slotIds: string[]): Promise<TriggerPaymentsResult> {
   const serviceSupabase = createServiceClient()
 
-  // Short-circuit if already confirmed or cancelled to avoid double-charging.
+  // Short-circuit if already confirmed, cancelled, or expired to avoid
+  // double-charging (and to avoid authorizing cards for a game whose time
+  // has already passed, e.g. a retry job firing late).
   const { data: sessionRow } = await serviceSupabase
     .from('sessions')
     .select('id, status, organiser_id')
     .eq('id', sessionId)
     .single()
-  if (!sessionRow || sessionRow.status === 'confirmed' || sessionRow.status === 'cancelled') return { ok: true }
+  if (!sessionRow || sessionRow.status === 'confirmed' || sessionRow.status === 'cancelled' || sessionRow.status === 'expired') return { ok: true }
   const organiserId: string | null = sessionRow.organiser_id
 
   const { data: venue } = await serviceSupabase
     .from('venues')
-    .select('name, stripe_account_id')
+    .select('name, stripe_account_id, stripe_onboarding_complete, admin_approved')
     .eq('id', slot.venue_id)
     .single()
 
-  const venueStripeAccountId: string | null = venue?.stripe_account_id ?? null
+  // A venue can have a stripe_account_id long before Stripe has actually
+  // verified it (identity, bank details) — attempting a transfer_data
+  // charge against an unverified account fails for every player in the
+  // group at once. Only use it once onboarding is confirmed complete
+  // (see app/owner/dashboard/page.tsx, which flips this flag once Stripe
+  // reports charges_enabled); otherwise fall back exactly as if the venue
+  // had no connected account at all.
+  //
+  // admin_approved is a second, independent gate — Stripe verifies the
+  // OWNER's identity, not that the venue itself is real. /api/sessions
+  // already refuses to create a session for an unapproved venue, but this
+  // is the last line of defense: never transfer real money to one even if
+  // a session somehow exists (e.g. approval was revoked after creation).
+  const venueStripeAccountId: string | null =
+    venue?.stripe_account_id && venue?.stripe_onboarding_complete && venue?.admin_approved
+      ? venue.stripe_account_id
+      : null
   if (!venueStripeAccountId) {
-    console.warn('Venue has no stripe_account_id — charging directly to platform account (test mode fallback)')
+    console.warn('Venue has no verified stripe_account_id — charging directly to platform account (test mode fallback)')
   }
 
   // Multi-hour (60/120/180 min) bookings span several slot rows — combine

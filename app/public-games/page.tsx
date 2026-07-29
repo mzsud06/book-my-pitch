@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getSlotType } from '@/lib/slots'
+import { getSlotType, isSlotInPast } from '@/lib/slots'
+import { expireIfStale } from '@/lib/expireSessions'
 
 export const revalidate = 0
 
@@ -43,7 +44,26 @@ export default async function PublicGamesPage() {
     .eq('is_public', true)
     .gte('slots.date', today)
 
-  const games = ((rawGames as unknown as PublicGameRow[]) ?? [])
+  const allGames = (rawGames as unknown as PublicGameRow[]) ?? []
+
+  // A 'filling' game whose slot has already started is stale — nothing sweeps
+  // it automatically until someone happens to visit its session page, so
+  // without this it would keep showing here as "live" for anyone browsing.
+  // Sweep those (flips their DB status) and drop them from the list.
+  const staleFilling = allGames.filter(s => {
+    const slot = Array.isArray(s.slots) ? s.slots[0] : s.slots
+    return s.status === 'filling' && isSlotInPast(slot.date, slot.start_time)
+  })
+  if (staleFilling.length > 0) {
+    await Promise.all(staleFilling.map(s => {
+      const slot = Array.isArray(s.slots) ? s.slots[0] : s.slots
+      return expireIfStale(s.id, slot.date, slot.start_time)
+    }))
+  }
+  const staleIds = new Set(staleFilling.map(s => s.id))
+
+  const games = allGames
+    .filter(s => !staleIds.has(s.id))
     .map(s => {
       const slot = Array.isArray(s.slots) ? s.slots[0] : s.slots
       const rawVenue = slot.venues
@@ -86,16 +106,9 @@ export default async function PublicGamesPage() {
 
             {games.length === 0 ? (
               /* Empty state */
-              <div
+              <Card
                 className="anim-fade-up d-100"
-                style={{
-                  textAlign: 'center',
-                  padding: '4rem 1.5rem',
-                  background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                  border: '1px solid rgba(255,255,255,0.07)',
-                  borderRadius: '20px',
-                  boxShadow: '0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
-                }}
+                style={{ textAlign: 'center', padding: '4rem 1.5rem' }}
               >
                 <div
                   style={{
@@ -130,7 +143,7 @@ export default async function PublicGamesPage() {
                 <Link href="/slots" style={{ textDecoration: 'none' }}>
                   <Button variant="primary" size="lg" arrow>Browse slots</Button>
                 </Link>
-              </div>
+              </Card>
             ) : (
               /* Game cards */
               <div className="public-games-grid">

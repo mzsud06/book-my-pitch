@@ -120,11 +120,26 @@ export async function POST(req: NextRequest) {
 
     const { data: slotsFound } = await supabase
       .from('slots')
-      .select('id')
+      .select('id, venue_id')
       .in('id', finalSlotIds)
 
     if (!slotsFound || slotsFound.length !== finalSlotIds.length) {
       return NextResponse.json({ error: 'One or more slots not found' }, { status: 404 })
+    }
+
+    // A venue only becomes bookable once a human has approved it (on top of
+    // Stripe verifying the owner's identity) — otherwise a self-serve owner
+    // could bypass the /slots listing gate entirely by sharing a direct
+    // session-creation request for their own unvetted venue's slot.
+    const venueId = (slotsFound[0] as { venue_id: string }).venue_id
+    const { data: venue } = await supabase
+      .from('venues')
+      .select('admin_approved, stripe_onboarding_complete')
+      .eq('id', venueId)
+      .single()
+
+    if (!venue || !venue.admin_approved || !venue.stripe_onboarding_complete) {
+      return NextResponse.json({ error: 'This venue is not currently accepting bookings' }, { status: 403 })
     }
 
     // None of the requested slots may already be locked by a confirmed session —
