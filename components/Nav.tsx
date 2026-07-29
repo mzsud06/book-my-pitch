@@ -37,6 +37,7 @@ const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/slots', label: 'Book a pitch' },
   { href: '/public-games', label: 'Public games' },
+  { href: '/list-your-venue', label: 'List your venue' },
 ]
 
 const SOCIALS = [

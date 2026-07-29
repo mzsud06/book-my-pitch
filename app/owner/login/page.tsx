@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { Card } from '@/components/ui/Card'
 
 export default function OwnerLoginPage() {
   const router = useRouter()
@@ -42,7 +43,7 @@ export default function OwnerLoginPage() {
     borderRadius: '10px',
     padding: '0.85rem 1rem',
     color: 'var(--text)',
-    fontFamily: "'Archivo', sans-serif",
+    fontFamily: 'var(--font-sans)',
     fontWeight: 600,
     fontSize: '15px',
     outline: 'none',
@@ -104,7 +105,7 @@ export default function OwnerLoginPage() {
           <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <span
               style={{
-                fontFamily: "'Archivo Black', sans-serif",
+                fontFamily: 'var(--font-display)',
                 fontSize: '20px',
                 letterSpacing: '-0.04em',
                 color: 'var(--text)',
@@ -118,13 +119,11 @@ export default function OwnerLoginPage() {
         </div>
 
         {/* Card */}
-        <div
+        <Card
           className="anim-fade-up d-80"
           style={{
-            background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
             border: '1px solid rgba(255,255,255,0.09)',
             borderTop: '2px solid var(--green)',
-            borderRadius: '20px',
             padding: '2rem',
             boxShadow: '0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
           }}
@@ -166,7 +165,7 @@ export default function OwnerLoginPage() {
             </div>
             <div
               style={{
-                fontFamily: "'Archivo Black', sans-serif",
+                fontFamily: 'var(--font-display)',
                 fontSize: '26px',
                 letterSpacing: '-0.04em',
                 lineHeight: 0.95,
@@ -239,7 +238,7 @@ export default function OwnerLoginPage() {
                 cursor: loading || emailError ? 'not-allowed' : 'pointer',
                 background: loading || emailError ? 'var(--surface2)' : 'var(--green)',
                 color: loading || emailError ? 'var(--muted)' : 'var(--black)',
-                fontFamily: "'Archivo Black', sans-serif",
+                fontFamily: 'var(--font-display)',
                 fontWeight: 900,
                 letterSpacing: '-0.025em',
                 marginTop: '4px',
@@ -250,13 +249,25 @@ export default function OwnerLoginPage() {
               {loading ? 'Accessing…' : 'Access dashboard →'}
             </button>
           </form>
-        </div>
+        </Card>
 
         {/* Back link */}
         <div
           className="anim-fade-up d-100"
-          style={{ textAlign: 'center', marginTop: '1.5rem' }}
+          style={{ textAlign: 'center', marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '18px' }}
         >
+          <Link
+            href="/owner/signup"
+            style={{
+              fontSize: '13px',
+              color: 'var(--muted)',
+              textDecoration: 'none',
+              fontWeight: 500,
+              transition: 'color 0.15s ease',
+            }}
+          >
+            New venue? List it
+          </Link>
           <Link
             href="/"
             style={{

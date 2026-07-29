@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getSlotType } from '@/lib/slots'
+import { getSlotType, isSlotInPast } from '@/lib/slots'
+import { Card } from '@/components/ui/Card'
 
 interface Venue {
   id: string
   name: string
   address: string
   stripe_account_id: string | null
+  stripe_onboarding_complete: boolean
+  admin_approved: boolean
 }
 
 interface SessionData {
@@ -70,16 +73,43 @@ const typeLabels: Record<string, string> = {
   weekend: 'Weekend',
 }
 
+// Matches components/ui/Badge's canonical peak/weekend colors — these were
+// previously invented independently and had drifted from the actual badge
+// colors shown everywhere else in the app.
 const typeColors: Record<string, string> = {
   offpeak: 'var(--green)',
-  peak: '#FF6B6B',
-  weekend: '#00B4FF',
+  peak: 'var(--amber)',
+  weekend: '#5EA8FF',
 }
 
 export default function OwnerDashboardClient({ venue, sessions: initialSessions, stats, occupancyData }: Props) {
   const [sessions, setSessions] = useState(initialSessions)
+  const [onboardingLoading, setOnboardingLoading] = useState(false)
+  const [onboardingError, setOnboardingError] = useState('')
   const supabase = createClient()
   const router = useRouter()
+
+  async function handleFinishOnboarding() {
+    setOnboardingLoading(true)
+    setOnboardingError('')
+    try {
+      const res = await fetch('/api/owner/stripe-onboarding-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ venueId: venue.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setOnboardingError(data.error ?? 'Failed to start Stripe onboarding')
+        setOnboardingLoading(false)
+        return
+      }
+      window.location.href = data.url
+    } catch {
+      setOnboardingError('Failed to start Stripe onboarding')
+      setOnboardingLoading(false)
+    }
+  }
 
   useEffect(() => {
     function fetchSessions() {
@@ -122,7 +152,12 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
   }
 
   const confirmed = sessions.filter(s => s.status === 'confirmed')
-  const filling = sessions.filter(s => s.status === 'filling')
+  // Cosmetic-only filter: a 'filling' session whose slot has already started
+  // is stale even though its DB row hasn't flipped yet (the browser client
+  // can't perform that write — no service-role access). The realtime
+  // subscription refetches often enough that this just hides it from "Currently
+  // filling" until the next full page load actually sweeps it server-side.
+  const filling = sessions.filter(s => s.status === 'filling' && !isSlotInPast(s.slots.date, s.slots.start_time))
 
   return (
     <div
@@ -183,8 +218,10 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {!venue.stripe_account_id && (
-            <div
+          {!venue.stripe_onboarding_complete ? (
+            <button
+              onClick={handleFinishOnboarding}
+              disabled={onboardingLoading}
               style={{
                 background: 'rgba(255,68,68,0.08)',
                 border: '1px solid rgba(255,68,68,0.2)',
@@ -196,11 +233,38 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                cursor: onboardingLoading ? 'not-allowed' : 'pointer',
+                fontFamily: 'var(--font-sans)',
+                opacity: onboardingLoading ? 0.6 : 1,
               }}
             >
-              <span>⚠</span> Stripe Connect not set up
+              <span>⚠</span>
+              {onboardingLoading
+                ? 'Starting…'
+                : venue.stripe_account_id
+                  ? 'Finish payouts setup'
+                  : 'Set up payouts'}
+            </button>
+          ) : !venue.admin_approved ? (
+            // Payouts are verified, but a human hasn't vetted the venue itself
+            // yet — nothing to click here, just set expectations.
+            <div
+              style={{
+                background: 'rgba(255,184,0,0.08)',
+                border: '1px solid rgba(255,184,0,0.2)',
+                borderRadius: '8px',
+                padding: '0.5rem 0.9rem',
+                fontSize: '12px',
+                color: 'var(--amber)',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span>⏳</span> Awaiting approval
             </div>
-          )}
+          ) : null}
           <button
             onClick={handleSignOut}
             style={{
@@ -209,7 +273,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               border: '1px solid var(--border)',
               background: 'transparent',
               color: 'var(--text-secondary)',
-              fontFamily: "'Archivo', sans-serif",
+              fontFamily: 'var(--font-sans)',
               fontWeight: 600,
               fontSize: '13px',
               cursor: 'pointer',
@@ -221,6 +285,22 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           </button>
         </div>
       </div>
+
+      {onboardingError && (
+        <div
+          style={{
+            background: 'rgba(255,68,68,0.08)',
+            borderBottom: '1px solid rgba(255,68,68,0.2)',
+            padding: '0.6rem 2rem',
+            fontSize: '13px',
+            color: 'var(--red)',
+            fontWeight: 600,
+            textAlign: 'center',
+          }}
+        >
+          {onboardingError}
+        </div>
+      )}
 
       <div style={{ maxWidth: '1060px', margin: '0 auto', padding: '2.5rem 2rem 4rem' }}>
 
@@ -254,17 +334,10 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             { n: `£${stats.totalRevenue.toLocaleString()}`, l: 'Total revenue', accent: false },
             { n: `${stats.fillRate}%`, l: 'Fill rate', accent: false },
           ].map((stat, idx) => (
-            <div
+            <Card
               key={stat.l}
               className="dash-stat-card anim-fade-up"
-              style={{
-                background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: '16px',
-                padding: '1.3rem 1.4rem',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
-                animationDelay: `${idx * 55}ms`,
-              }}
+              style={{ padding: '1.3rem 1.4rem', animationDelay: `${idx * 55}ms` }}
             >
               <div
                 style={{
@@ -281,22 +354,14 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.02em' }}>
                 {stat.l}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
 
         <div className="dash-cols" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
 
           {/* Confirmed bookings */}
-          <div
-            style={{
-              background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: '16px',
-              padding: '1.4rem',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
-            }}
-          >
+          <Card style={{ padding: '1.4rem' }}>
             <div
               style={{
                 display: 'flex',
@@ -380,18 +445,10 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                 </div>
               </Link>
             ))}
-          </div>
+          </Card>
 
           {/* Slot occupancy */}
-          <div
-            style={{
-              background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: '16px',
-              padding: '1.4rem',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
-            }}
-          >
+          <Card style={{ padding: '1.4rem' }}>
             <div
               style={{
                 display: 'flex',
@@ -485,20 +542,12 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                 </div>
               )
             })}
-          </div>
+          </Card>
         </div>
 
         {/* Currently filling */}
         {filling.length > 0 && (
-          <div
-            style={{
-              background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-              border: '1px solid rgba(255,184,0,0.16)',
-              borderRadius: '16px',
-              padding: '1.4rem',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
-            }}
-          >
+          <Card style={{ padding: '1.4rem', border: '1px solid rgba(255,184,0,0.16)' }}>
             <div
               style={{
                 display: 'flex',
@@ -604,7 +653,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                 )
               })}
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </div>

@@ -60,13 +60,20 @@ export function Footer() {
           <Link href="/#faq" style={linkStyle}>FAQ</Link>
         </div>
 
+        {/* Venue owners */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+          <div style={columnLabelStyle}>Venue owners</div>
+          <Link href="/list-your-venue" style={linkStyle}>List your venue</Link>
+          <Link href="/owner/login" style={linkStyle}>Owner login</Link>
+        </div>
+
         {/* Right — support links */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
           <div style={columnLabelStyle}>Support</div>
           <a href="mailto:masud.bookmypitch@gmail.com" style={linkStyle}>Get in touch</a>
           <a href="mailto:masud.bookmypitch@gmail.com?subject=Bug Report" style={linkStyle}>Report a bug</a>
-          <a href="#" style={linkStyle}>Terms of service</a>
-          <a href="#" style={linkStyle}>Privacy policy</a>
+          <Link href="/terms" style={linkStyle}>Terms of service</Link>
+          <Link href="/privacy" style={linkStyle}>Privacy policy</Link>
         </div>
       </div>
 

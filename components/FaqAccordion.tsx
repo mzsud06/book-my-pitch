@@ -4,7 +4,12 @@ import { useState } from 'react'
 import { Container } from '@/components/ui/Container'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 
-const FAQS = [
+export interface FaqItemData {
+  q: string
+  a: string
+}
+
+const DEFAULT_FAQS: FaqItemData[] = [
   {
     q: "How does BookMyPitch actually work?",
     a: "Create or join a game in minutes. Players reserve their spot by saving a card, but nobody is charged unless the game fills completely. Once everyone's in, payment happens automatically and the pitch is locked in.",
@@ -60,7 +65,7 @@ function ChevronIcon() {
   )
 }
 
-function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
+function FaqItem({ q, a, index, isLast }: { q: string; a: string; index: number; isLast: boolean }) {
   const [open, setOpen] = useState(false)
   const buttonId = `faq-btn-${index}`
   const panelId = `faq-panel-${index}`
@@ -68,7 +73,7 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
   return (
     <div
       style={{
-        borderBottom: index < FAQS.length - 1 ? '1px solid var(--border)' : 'none',
+        borderBottom: isLast ? 'none' : '1px solid var(--border)',
       }}
     >
       <button
@@ -156,10 +161,27 @@ function FaqItem({ q, a, index }: { q: string; a: string; index: number }) {
   )
 }
 
-export function FaqAccordion() {
+interface FaqAccordionProps {
+  id?: string
+  eyebrow?: string
+  heading?: React.ReactNode
+  items?: FaqItemData[]
+}
+
+export function FaqAccordion({
+  id = 'faq',
+  eyebrow = 'FAQ',
+  heading = (
+    <>
+      Common questions<br />
+      <span style={{ color: 'var(--green)' }}>answered.</span>
+    </>
+  ),
+  items = DEFAULT_FAQS,
+}: FaqAccordionProps = {}) {
   return (
     <section
-      id="faq"
+      id={id}
       style={{
         paddingTop: 'clamp(4rem, 8vh, 6rem)',
         paddingBottom: 'clamp(4rem, 8vh, 6rem)',
@@ -171,15 +193,7 @@ export function FaqAccordion() {
           className="reveal-scroll"
           style={{ marginBottom: '2.75rem' }}
         >
-          <SectionHeading
-            eyebrow="FAQ"
-            heading={
-              <>
-                Common questions<br />
-                <span style={{ color: 'var(--green)' }}>answered.</span>
-              </>
-            }
-          />
+          <SectionHeading eyebrow={eyebrow} heading={heading} />
         </div>
 
         {/* Accordion card */}
@@ -194,8 +208,8 @@ export function FaqAccordion() {
             padding: '0 clamp(1.25rem, 4vw, 2rem)',
           }}
         >
-          {FAQS.map((item, i) => (
-            <FaqItem key={i} q={item.q} a={item.a} index={i} />
+          {items.map((item, i) => (
+            <FaqItem key={i} q={item.q} a={item.a} index={i} isLast={i === items.length - 1} />
           ))}
         </div>
       </Container>
