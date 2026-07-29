@@ -422,7 +422,7 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
       colorBackground: '#161616',
       colorText: '#F7F4EE',
       colorDanger: '#FF4444',
-      fontFamily: "'Archivo', sans-serif",
+      fontFamily: 'var(--font-sans)',
       borderRadius: '10px',
     },
   }

@@ -143,6 +143,27 @@ input:focus { outline: none; }
 .tabular { font-variant-numeric: tabular-nums; }
 h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 
+/* Long-form legal content (terms/privacy) — the rest of the app is
+   component-driven and has no prose system of its own. */
+.legal-prose h2 { font-size: 19px; letter-spacing: -0.02em; color: var(--text); margin: 2.25rem 0 0.85rem; }
+.legal-prose h2:first-child { margin-top: 0; }
+.legal-prose p { font-size: 14.5px; line-height: 1.75; color: var(--text-secondary); font-weight: 500; margin: 0 0 1rem; }
+.legal-prose ul { margin: 0 0 1rem; padding-left: 1.25rem; }
+.legal-prose li { font-size: 14.5px; line-height: 1.75; color: var(--text-secondary); font-weight: 500; margin-bottom: 0.4rem; }
+.legal-prose strong { color: var(--text); font-weight: 700; }
+.legal-prose .legal-placeholder { color: var(--amber); }
+.legal-prose .legal-note {
+  background: rgba(255,184,0,0.06);
+  border: 1px solid rgba(255,184,0,0.18);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 /* Focus ring — 2px green, everywhere */
 :focus-visible {
   outline: 2px solid var(--green);
@@ -586,7 +607,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
   border-radius: 10px;
   padding: 0.75rem 1rem;
   color: var(--text);
-  font-family: 'Archivo', sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   transition: border-color 0.15s;
 }

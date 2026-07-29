@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Badge } from '@/components/ui/Badge'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
 import { readMySessions } from '@/lib/clientStorage'
 import { getSlotType } from '@/lib/slots'
 
@@ -128,7 +130,7 @@ function statusPillInfo(status: string): { label: string; color: string; bg: str
   if (status === 'cancelled') {
     return { label: 'Cancelled', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' }
   }
-  return { label: 'Filling', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.2)' }
+  return { label: 'Filling', color: 'var(--amber)', bg: 'rgba(255,184,0,0.1)', border: 'rgba(255,184,0,0.2)' }
 }
 
 // Slot type badge — Peak / Off-peak / Weekend
@@ -199,7 +201,7 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
       <div
         className="booking-card"
         style={{
-          background: '#0e0e0e',
+          background: 'var(--surface)',
           borderRadius: '16px',
           border: '1px solid rgba(255,255,255,0.06)',
           padding: '1.2rem',
@@ -365,7 +367,7 @@ export default function MyBookingsClient() {
             <div
               key={i}
               style={{
-                background: '#0e0e0e',
+                background: 'var(--surface)',
                 border: '1px solid rgba(255,255,255,0.06)',
                 borderRadius: '16px',
                 padding: '1.2rem',
@@ -425,16 +427,9 @@ export default function MyBookingsClient() {
 
       {/* Empty state */}
       {cards.length === 0 && (
-        <div
+        <Card
           className="anim-fade-up d-100"
-          style={{
-            textAlign: 'center',
-            padding: 'clamp(3rem, 10vw, 4rem) 1.5rem',
-            background: 'linear-gradient(145deg, #131313 0%, #0f0f0f 100%)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: '20px',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
-          }}
+          style={{ textAlign: 'center', padding: 'clamp(3rem, 10vw, 4rem) 1.5rem' }}
         >
           <div
             style={{
@@ -467,27 +462,9 @@ export default function MyBookingsClient() {
             Find a game and join to get started.
           </div>
           <Link href="/slots" style={{ textDecoration: 'none' }}>
-            <button
-              className="btn-g"
-              style={{
-                background: 'var(--green)',
-                color: 'var(--black)',
-                border: 'none',
-                padding: '0.9rem 2rem',
-                borderRadius: '10px',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 700,
-                fontSize: '15px',
-                letterSpacing: '-0.025em',
-                cursor: 'pointer',
-                transition: 'background 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
-                lineHeight: 1,
-              }}
-            >
-              Find a game tonight →
-            </button>
+            <Button variant="primary" size="lg" arrow>Find a game tonight</Button>
           </Link>
-        </div>
+        </Card>
       )}
 
       {/* Confirmed — Upcoming */}
@@ -505,7 +482,7 @@ export default function MyBookingsClient() {
       {/* Filling */}
       {filling.length > 0 && (
         <div style={{ marginBottom: '2.5rem' }}>
-          <SectionLabel label="Filling" color="#f59e0b" lineColor="#f59e0b" />
+          <SectionLabel label="Filling" color="var(--amber)" lineColor="var(--amber)" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {filling.map((c, idx) => (
               <BookingCardTile key={c.sessionId} c={c} animationDelay={`${idx * 60}ms`} />

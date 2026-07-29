@@ -218,7 +218,7 @@ function CardForm({
           <span style={{ fontWeight: 600, color: 'var(--muted)' }}>Total if confirmed</span>
           <span
             style={{
-              fontFamily: "'Archivo Black', sans-serif",
+              fontFamily: 'var(--font-display)',
               fontSize: '28px',
               color: 'var(--green)',
               letterSpacing: '-0.04em',
@@ -284,7 +284,7 @@ function CardForm({
           cursor: isDisabled ? 'not-allowed' : 'pointer',
           background: isDisabled ? 'var(--surface2)' : 'var(--green)',
           color: isDisabled ? 'var(--muted)' : 'var(--black)',
-          fontFamily: "'Archivo Black', sans-serif",
+          fontFamily: 'var(--font-display)',
           fontWeight: 900,
           letterSpacing: '-0.025em',
           transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
@@ -319,7 +319,7 @@ function CardForm({
           cursor: 'pointer',
           background: 'transparent',
           color: 'var(--muted)',
-          fontFamily: "'Archivo', sans-serif",
+          fontFamily: 'var(--font-sans)',
           fontWeight: 600,
           transition: 'border-color 0.15s ease, color 0.15s ease, background 0.15s ease',
           lineHeight: 1,
@@ -434,7 +434,7 @@ export default function PlayerPaymentForm({ sessionId, slot, existingPlayerCount
       colorBackground: '#161616',
       colorText: '#F7F4EE',
       colorDanger: '#FF4444',
-      fontFamily: "'Archivo', sans-serif",
+      fontFamily: 'var(--font-sans)',
       borderRadius: '10px',
     },
   }
@@ -482,7 +482,7 @@ export default function PlayerPaymentForm({ sessionId, slot, existingPlayerCount
             border: '1px solid var(--border)',
             background: 'transparent',
             color: 'var(--muted)',
-            fontFamily: "'Archivo', sans-serif",
+            fontFamily: 'var(--font-sans)',
             fontWeight: 600,
             fontSize: '14px',
             cursor: 'pointer',
@@ -502,7 +502,7 @@ export default function PlayerPaymentForm({ sessionId, slot, existingPlayerCount
       <div
         className="anim-fade-up"
         style={{
-          fontFamily: "'Archivo Black', sans-serif",
+          fontFamily: 'var(--font-display)',
           fontSize: 'clamp(24px, 5vw, 30px)',
           letterSpacing: '-0.04em',
           marginBottom: '0.4rem',

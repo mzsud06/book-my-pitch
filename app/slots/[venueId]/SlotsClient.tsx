@@ -547,7 +547,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                           className="open-game-card-link"
                           style={{ animationName: 'fadeUp', animationDuration: '0.45s', animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)', animationFillMode: 'both', animationDelay: `${idx * 60}ms`, cursor: 'pointer' }}
                         >
-                          <div className="open-game-card" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+                          <div className="open-game-card" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)' }}>
                             {/* Top half — pitch photo */}
                             <div
                               style={{
@@ -581,11 +581,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                             </div>
 
                             {/* Bottom half — game details */}
-                            <div style={{ background: '#0e0e0e', padding: '1rem 1.2rem' }}>
+                            <div style={{ background: 'var(--surface)', padding: '1rem 1.2rem' }}>
                               <div
                                 style={{
                                   fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                                  letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
+                                  letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1.2, marginBottom: '6px',
                                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                                 }}
                               >
