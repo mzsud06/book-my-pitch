@@ -101,16 +101,9 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
       if (metaPhone) {
         setPhone(metaPhone)
       } else {
-        // Fall back to most recent player row for this user
-        const { data: latestPlayer } = await supabase
-          .from('players')
-          .select('phone')
-          .eq('user_id', user.id)
-          .not('phone', 'is', null)
-          .order('joined_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        const storedPhone = (latestPlayer as unknown as { phone: string | null } | null)?.phone
+        // Fall back to most recent player row for this user (phone isn't
+        // selectable by the browser client, so this goes through an API route)
+        const { phone: storedPhone } = await fetch('/api/latest-phone').then(r => r.json())
         if (storedPhone) {
           setPhone(storedPhone)
         }

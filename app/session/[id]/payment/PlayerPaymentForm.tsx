@@ -23,7 +23,6 @@ interface SlotData {
 interface Props {
   sessionId: string
   slot: SlotData
-  existingPlayerCount: number
   hasRival: boolean
   isLoggedIn: boolean
 }
@@ -331,7 +330,7 @@ function CardForm({
   )
 }
 
-export default function PlayerPaymentForm({ sessionId, slot, existingPlayerCount: _existingPlayerCount, hasRival, isLoggedIn }: Props) {
+export default function PlayerPaymentForm({ sessionId, slot, hasRival, isLoggedIn }: Props) {
   const router = useRouter()
   const supabase = createClient()
   const [name, setName] = useState('')

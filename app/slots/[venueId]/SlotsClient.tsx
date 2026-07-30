@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -48,7 +48,6 @@ interface Props {
   venueName: string
   venueAddress: string
   pitches: Pitch[]
-  userSlotSessionMap: Record<string, string>
   userSessionIds: string[]
   userId: string | null
 }
@@ -163,7 +162,7 @@ function CheckIcon() {
   )
 }
 
-export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, pitches, userSlotSessionMap, userSessionIds, userId }: Props) {
+export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, pitches, userSessionIds, userId }: Props) {
   const userSessionSet = new Set(userSessionIds)
   const router = useRouter()
   const supabase = createClient()
@@ -178,8 +177,9 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
 
   // Slots are keyed by pitch+date+time — a venue with multiple pitches (e.g.
   // a 5-a-side and a 7-a-side) can have a slot at the same date/time per pitch.
-  const [slotDataMap, setSlotDataMap] = useState<Map<string, DbSlot>>(
-    () => new Map(dbSlots.map(s => [`${s.pitches.id}_${s.date}_${s.start_time.slice(0, 5)}`, s]))
+  const slotDataMap = useMemo<Map<string, DbSlot>>(
+    () => new Map(dbSlots.map(s => [`${s.pitches.id}_${s.date}_${s.start_time.slice(0, 5)}`, s])),
+    [dbSlots]
   )
 
   // Sessions belonging to the pitch currently selected in the tab bar.

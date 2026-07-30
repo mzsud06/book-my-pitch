@@ -50,7 +50,7 @@ describe('cancel-session: only the organiser can cancel', () => {
     expect(notified).toBeTruthy()
   })
 
-  it('unsets is_public when cancelling an open session', async () => {
+  it('rejects cancelling a public (open) session — organiser must leave instead', async () => {
     const svcDb = createMockDb({
       sessions: [{ id: SESSION_ID, status: 'filling', organiser_id: ORGANISER_ID, game_type: 'open', is_public: true }],
       players: [],
@@ -59,10 +59,11 @@ describe('cancel-session: only the organiser can cancel', () => {
     vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
 
     const res = await cancelSession(makeRequest({ sessionId: SESSION_ID }))
+    const body = await res.json()
 
-    expect(res.status).toBe(200)
-    expect(svcDb._tables.sessions[0].status).toBe('cancelled')
-    expect(svcDb._tables.sessions[0].is_public).toBe(false)
+    expect(res.status).toBe(400)
+    expect(body.error).toBe('Public games cannot be cancelled — leave the game instead')
+    expect(svcDb._tables.sessions[0].status).toBe('filling')
   })
 
   it('rejects a non-organiser trying to cancel', async () => {

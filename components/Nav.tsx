@@ -83,6 +83,11 @@ export default function Nav() {
   const notifRef = useRef<HTMLDivElement>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
+  const [prevPathname, setPrevPathname] = useState(pathname)
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname)
+    setMobileMenuOpen(false)
+  }
 
   useEffect(() => {
     const supabase = createClient()
@@ -177,10 +182,6 @@ export default function Nav() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [mobileMenuOpen])
-
-  useEffect(() => {
-    setMobileMenuOpen(false)
-  }, [pathname])
 
   useEffect(() => {
     if (!mobileMenuOpen) return

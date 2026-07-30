@@ -131,12 +131,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to leave session' }, { status: 500 })
     }
 
-    // If the organiser is leaving, detach them as organiser so the session runs leaderless.
+    // If the organiser is leaving, promote the earliest-joined remaining player to
+    // organiser (by name/phone if they're a guest) instead of leaving the game
+    // leaderless — the game still needs someone to be the point of contact.
+    let newOrganiserName: string | null = null
     if (organiserLeaveAllowed) {
+      const { data: nextOrganiser } = await svc
+        .from('players')
+        .select('user_id, name, phone')
+        .eq('session_id', sessionId)
+        .order('joined_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+
+      newOrganiserName = (nextOrganiser as { name: string | null } | null)?.name ?? null
       await svc.from('sessions').update({
-        organiser_id: null,
-        organiser_name: null,
-        organiser_phone: null,
+        organiser_id: (nextOrganiser as { user_id: string | null } | null)?.user_id ?? null,
+        organiser_name: newOrganiserName,
+        organiser_phone: (nextOrganiser as { phone: string | null } | null)?.phone ?? null,
       }).eq('id', sessionId)
     }
 
@@ -161,7 +173,7 @@ export async function POST(req: NextRequest) {
 
     if (remainingPlayers && remainingPlayers.length > 0) {
       const leaveMessage = organiserLeaveAllowed
-        ? 'The organiser has left the game. The game will continue but needs a new player to fill the spot.'
+        ? `The organiser has left — ${(newOrganiserName ?? 'a player').split(' ')[0]} is now the organiser.`
         : 'A player has dropped out — the game needs one more player to confirm.'
       await svc.from('notifications').insert(
         (remainingPlayers as unknown as { user_id: string }[]).map(p => ({

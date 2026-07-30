@@ -120,12 +120,9 @@ export default async function VenueSlotsPage({ params }: Props) {
       .lte('date', endStr),
   ])
 
-  // userSlotSessionMap: slot_id → session_id only for sessions the user ORGANISES.
-  // Used to show "YOUR GAME" badge and redirect the card click to their own session.
   // userSessionIds: all session ids the user is in (organiser OR player).
-  // Used for the "✓ Joined" pill in dropdown rows.
-  let userSlotSessionMap: Record<string, string> = {}
-  let userSessionIds: string[] = []
+  // Used for the "✓ Joined" pill / "Your game" highlight in dropdown rows.
+  const userSessionIds: string[] = []
   if (user) {
     const [{ data: asOrganiser }, { data: asPlayer }] = await Promise.all([
       supabase
@@ -139,7 +136,7 @@ export default async function VenueSlotsPage({ params }: Props) {
         .eq('players.user_id', user.id)
         .in('status', ['filling', 'confirmed']),
     ])
-    asOrganiser?.forEach(s => { userSlotSessionMap[s.slot_id] = s.id; userSessionIds.push(s.id) })
+    asOrganiser?.forEach(s => { userSessionIds.push(s.id) })
     ;(asPlayer as unknown as { id: string; slot_id: string }[] | null)
       ?.forEach(s => { userSessionIds.push(s.id) })
   }
@@ -154,7 +151,6 @@ export default async function VenueSlotsPage({ params }: Props) {
         venueName={venue.name}
         venueAddress={venue.address}
         pitches={venuePitches}
-        userSlotSessionMap={userSlotSessionMap}
         userSessionIds={userSessionIds}
         userId={user?.id ?? null}
       />

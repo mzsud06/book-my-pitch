@@ -64,11 +64,6 @@ function formatDate(dateStr: string): string {
   return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`
 }
 
-function formatTime(ts: string): string {
-  const d = new Date(ts)
-  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-}
-
 function sliceTime(t: string): string {
   return t ? t.slice(0, 5) : t
 }
@@ -534,15 +529,8 @@ export default function SessionClient({
         if (typeof meta?.phone === 'string') {
           setJoinPhone(meta.phone)
         } else {
-          const { data: lp } = await supabase
-            .from('players')
-            .select('phone')
-            .eq('user_id', user.id)
-            .not('phone', 'is', null)
-            .order('joined_at', { ascending: false })
-            .limit(1)
-            .maybeSingle()
-          const sp = (lp as { phone: string | null } | null)?.phone
+          // phone isn't selectable by the browser client, so this goes through an API route
+          const { phone: sp } = await fetch('/api/latest-phone').then(r => r.json())
           if (sp) setJoinPhone(sp)
         }
         return
@@ -1381,7 +1369,7 @@ export default function SessionClient({
                     Make this public?
                   </div>
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
-                    Anyone will be able to find and join this game publicly.
+                    Anyone will be able to find and join this game publicly. Once public, the game can no longer be cancelled — you can still leave it yourself.
                   </div>
                   {convertError && (
                     <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>

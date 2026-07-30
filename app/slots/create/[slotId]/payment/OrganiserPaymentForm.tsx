@@ -77,7 +77,6 @@ function CardStep({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    console.log(`[CardStep] handleSubmit entered at ${new Date().toISOString()} | isConfirmingGlobal=${isConfirmingGlobal} | isDisabled=${isDisabled}`)
     if (isDisabled || !elements) return
     if (isConfirmingGlobal) {
       console.warn('[CardStep] handleSubmit: confirmSetup already in flight — ignoring duplicate call')
@@ -91,7 +90,6 @@ function CardStep({
       // elements.submit() validates the form and collects wallet data.
       // Required in Stripe.js v5+. A submitError means the intent is still in
       // requires_payment_method — no refresh needed, just show the message inline.
-      console.log(`[CardStep] calling elements.submit() at ${new Date().toISOString()}`)
       const { error: elError } = await elements.submit()
       if (elError) {
         console.error('[CardStep] elements.submit error:', JSON.stringify(elError, Object.getOwnPropertyNames(elError)))
@@ -99,7 +97,6 @@ function CardStep({
         return
       }
 
-      console.log(`[CardStep] calling stripe.confirmSetup() at ${new Date().toISOString()}`)
       const { error: confirmError, setupIntent } = await stripe.confirmSetup({
         elements,
         redirect: 'if_required',
@@ -107,7 +104,6 @@ function CardStep({
           return_url: `${window.location.origin}/slots/create/${slot.id}/payment?${returnUrlQuery}`,
         },
       })
-      console.log(`[CardStep] stripe.confirmSetup() returned at ${new Date().toISOString()} | error=${confirmError?.code ?? 'none'}`)
 
       if (confirmError) {
         // The SetupIntent may have moved to an unretryable state (e.g. setup_intent_unexpected_state).
@@ -338,15 +334,12 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
   const endTime = slot.end_time.slice(0, 5)
 
   async function fetchSetupIntent(parsed: CreateDetails) {
-    console.log(`[OrganiserPaymentForm] fetchSetupIntent called at ${new Date().toISOString()}`)
     const r = await fetch('/api/setup-intent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: parsed.name, phone: parsed.phone, slotId: slot.id }),
     })
-    const data = await r.json() as { clientSecret?: string; customerId?: string; error?: string }
-    console.log(`[OrganiserPaymentForm] fetchSetupIntent resolved at ${new Date().toISOString()} | ok=${r.ok} | hasSecret=${!!data.clientSecret}`)
-    return data
+    return await r.json() as { clientSecret?: string; customerId?: string; error?: string }
   }
 
   // Called by CardStep when stripe.confirmSetup returns an error.
@@ -371,7 +364,6 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
   }
 
   useEffect(() => {
-    console.log(`[OrganiserPaymentForm] useEffect fired at ${new Date().toISOString()}`)
     const raw = sessionStorage.getItem('bmp_create_details')
     if (!raw) {
       router.replace(`/slots/create/${slot.id}`)
@@ -389,7 +381,6 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
     fetchSetupIntent(parsed)
       .then(data => {
         if (data.clientSecret && data.customerId) {
-          console.log(`[OrganiserPaymentForm] setting clientSecret+customerId at ${new Date().toISOString()}`)
           setClientSecret(data.clientSecret)
           setCustomerId(data.customerId)
         } else {

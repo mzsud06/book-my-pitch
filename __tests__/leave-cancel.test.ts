@@ -198,3 +198,49 @@ describe('leave: no orphaned player rows after session cancel', () => {
     expect(svcDb._tables.players.length).toBe(1)
   })
 })
+
+describe('leave: organiser leaving transfers the role instead of leaving the game leaderless', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('promotes the earliest-joined remaining player to organiser', async () => {
+    const svcDb = createMockDb({
+      sessions: [{
+        id: SESSION_ID,
+        status: 'filling',
+        organiser_id: USER_A,
+        organiser_name: 'Alice',
+        organiser_phone: '+447900000001',
+        game_type: 'open',
+        is_public: true,
+      }],
+      players: [
+        { id: 'p-1', session_id: SESSION_ID, user_id: USER_A, name: 'Alice', phone: '+447900000001', stripe_payment_method_id: 'pm_a', stripe_customer_id: 'cus_a', joined_at: '2026-01-01T00:00:00Z' },
+        { id: 'p-2', session_id: SESSION_ID, user_id: USER_B, name: 'Bob', phone: '+447900000002', stripe_payment_method_id: 'pm_b', stripe_customer_id: 'cus_b', joined_at: '2026-01-01T00:01:00Z' },
+      ],
+      messages: [],
+      notifications: [],
+    })
+    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
+    vi.mocked(stripe.paymentMethods.detach).mockResolvedValue({} as any)
+
+    const req = makeRequest({ sessionId: SESSION_ID }, USER_A)
+    const res = await leaveSession(req)
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.ok).toBe(true)
+
+    // Alice's player row removed, Bob remains
+    expect(svcDb._tables.players.length).toBe(1)
+    expect(svcDb._tables.players[0].user_id).toBe(USER_B)
+
+    // Game continues — Bob is promoted to organiser rather than the session going leaderless
+    expect(svcDb._tables.sessions[0].status).toBe('filling')
+    expect(svcDb._tables.sessions[0].organiser_id).toBe(USER_B)
+    expect(svcDb._tables.sessions[0].organiser_name).toBe('Bob')
+    expect(svcDb._tables.sessions[0].organiser_phone).toBe('+447900000002')
+
+    const notified = svcDb._tables.notifications.find((n: any) => n.user_id === USER_B)
+    expect(notified?.message).toBe('The organiser has left — Bob is now the organiser.')
+  })
+})

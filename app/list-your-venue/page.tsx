@@ -102,7 +102,7 @@ export default function ListYourVenuePage() {
         <section style={{ paddingBottom: 'clamp(3rem, 7vh, 4.5rem)' }}>
           <Container>
             <div className="anim-fade-up d-80" style={{ marginBottom: '2rem', maxWidth: '640px' }}>
-              <SectionHeading eyebrow="How it works" heading="Four steps to your first booking." />
+              <SectionHeading eyebrow="How it works" heading="Five steps to your first booking." />
             </div>
             <div
               style={{

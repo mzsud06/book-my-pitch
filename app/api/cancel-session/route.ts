@@ -49,18 +49,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Session is not in a cancellable state' }, { status: 400 })
     }
 
-    if (s.game_type !== 'private' && s.game_type !== 'open') {
-      return NextResponse.json({ error: 'This session type cannot be cancelled here' }, { status: 400 })
-    }
-
-    const updatePayload: Record<string, unknown> = { status: 'cancelled' }
-    if (s.game_type === 'open') {
-      updatePayload.is_public = false
+    if (s.game_type !== 'private') {
+      return NextResponse.json({ error: 'Public games cannot be cancelled — leave the game instead' }, { status: 400 })
     }
 
     const { error: updateError } = await svc
       .from('sessions')
-      .update(updatePayload)
+      .update({ status: 'cancelled' })
       .eq('id', sessionId)
 
     if (updateError) {

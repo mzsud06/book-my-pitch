@@ -72,8 +72,6 @@ export default async function PlayerPaymentPage({ params }: Props) {
     redirect(`/session/${id}`)
   }
 
-  const playerCount = sessionPlayers.length + (organiserReserved ? 1 : 0)
-
   const { data: rivals } = await supabase
     .from('sessions')
     .select('id')
@@ -89,7 +87,6 @@ export default async function PlayerPaymentPage({ params }: Props) {
       <PlayerPaymentForm
         sessionId={id}
         slot={slot}
-        existingPlayerCount={playerCount}
         hasRival={hasRival}
         isLoggedIn={!!user}
       />
