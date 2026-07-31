@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 import { seedSlotsForVenue } from '@/lib/seedSlots'
+import { notifyAdminNewVenueSignup } from '@/lib/notifyAdmin'
 import type { Pitch } from '@/lib/slots'
 
 // Lower than the standard 10/hour used elsewhere — this creates an auth
@@ -129,6 +130,13 @@ export async function POST(req: NextRequest) {
     }
 
     await seedSlotsForVenue(svc, venue.id, [pitch as unknown as Pitch])
+
+    // Fire-and-forget — a notification failure must never fail the signup itself.
+    void notifyAdminNewVenueSignup({
+      name: trimmedVenueName,
+      address: trimmedAddress,
+      ownerEmail: email.trim(),
+    })
 
     return NextResponse.json({ ok: true, venueId: venue.id, sessionCreated: !!authData.session })
   } catch (err) {
