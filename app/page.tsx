@@ -216,7 +216,7 @@ export default async function HomePage() {
                       flexShrink: 0,
                       boxShadow: '0 0 6px rgba(198,241,53,0.65)',
                     }} />
-                    Live in East London
+                    Live in London
                   </span>
                 </div>
 

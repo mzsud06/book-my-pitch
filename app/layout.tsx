@@ -3,7 +3,7 @@ import { GeistSans } from 'geist/font/sans';
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BookMyPitch: Play football tonight in East London",
+  title: "BookMyPitch: Play football tonight in London",
   description: "Find a game near you or start one in under a minute. No bank transfers, everyone pays automatically when the team is full.",
   icons: {
     icon: [

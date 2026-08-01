@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       <h2>1. Who we are</h2>
       <p>
         BookMyPitch is the data controller for the personal data described below. BookMyPitch is operated by
-        Mohammed Rahman Masud, trading as a sole trader based in East London. Contact us about privacy at{' '}
+        Mohammed Rahman Masud, trading as a sole trader based in London. Contact us about privacy at{' '}
         <a href="mailto:masud@bookmypitch.uk" style={{ color: 'var(--green)' }}>masud@bookmypitch.uk</a>.
       </p>
       <p>

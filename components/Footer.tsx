@@ -48,7 +48,7 @@ export function Footer() {
             <span style={{ color: 'var(--text-secondary)', fontSize: '11px', verticalAlign: 'super', marginLeft: '1px', opacity: 0.75, fontWeight: 600 }}>.uk</span>
           </div>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '0.6rem', lineHeight: 1.5 }}>
-            Football booking for East London.
+            Football booking for London.
           </p>
         </div>
 

@@ -13,7 +13,7 @@ export default function TermsPage() {
       <p>
         BookMyPitch (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;BookMyPitch.uk&rdquo;) operates a platform connecting groups of
         players with football pitch venues in the UK. BookMyPitch is operated by Mohammed Rahman Masud, trading as
-        a sole trader based in East London.
+        a sole trader based in London.
         Contact us at <a href="mailto:masud@bookmypitch.uk" style={{ color: 'var(--green)' }}>masud@bookmypitch.uk</a>.
       </p>
       <p>

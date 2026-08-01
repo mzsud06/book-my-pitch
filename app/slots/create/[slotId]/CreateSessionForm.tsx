@@ -122,7 +122,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     let valid = true
-    if (!name.trim() || !/^[A-Za-z ]+$/.test(name.trim())) {
+    if (!name.trim() || !/^[a-zA-Z\s'-]+$/.test(name.trim())) {
       setNameError('Name may only contain letters and spaces')
       valid = false
     }
@@ -447,13 +447,13 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
             autoComplete="name"
             value={name}
             onChange={(e) => {
-              const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, '')
+              const cleaned = e.target.value.replace(/[^a-zA-Z\s'-]/g, '')
               setName(cleaned)
             }}
             onKeyDown={(e) => {
               if (e.ctrlKey || e.metaKey) return
               if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return
-              if (!/^[a-zA-Z0-9\s]$/.test(e.key)) e.preventDefault()
+              if (!/^[a-zA-Z\s'-]$/.test(e.key)) e.preventDefault()
             }}
             placeholder="Full name"
             required

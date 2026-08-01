@@ -243,25 +243,20 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
     }
   })
 
-  // ── Open games for the selected day ─────────────────────────────────────
-  // Source: same `sessions` state (game_type === 'open', filling).
-  // No new data fetching — purely derived from existing sessions array.
-  type NormalisedSession = Omit<SessionData, 'slots'> & { slots: SessionData['slots'] }
+  // ── Open games for this pitch, any upcoming date ────────────────────────
+  // Source: same `sessions` state (game_type === 'open'), not scoped to the
+  // currently selected day — otherwise this section reads as empty any time
+  // the selected day itself has no public games, even though the venue has
+  // plenty booked on other upcoming days. No new data fetching.
+  type NormalisedSession = Omit<SessionData, 'slots'> & { slots: SessionData['slots']; isFull: boolean }
   const dayOpenGames: NormalisedSession[] = pitchSessions
-    .filter(s => {
+    .filter(s => s.game_type === 'open' && !userSessionSet.has(s.id))
+    .map(s => {
       const slot = Array.isArray(s.slots) ? (s.slots as unknown[])[0] as SessionData['slots'] : s.slots
-      return (
-        slot?.date === dayStr &&
-        s.status === 'filling' &&
-        s.game_type === 'open' &&
-        !userSessionSet.has(s.id)
-      )
+      const isFull = s.status === 'confirmed' || totalCount(s as SessionData) >= slot.pitches.max_players
+      return { ...s, slots: slot, isFull }
     })
-    .map(s => ({
-      ...s,
-      slots: Array.isArray(s.slots) ? (s.slots as unknown[])[0] as SessionData['slots'] : s.slots,
-    }))
-    .sort((a, b) => totalCount(b as SessionData) - totalCount(a as SessionData))
+    .sort((a, b) => Number(a.isFull) - Number(b.isFull) || totalCount(b as SessionData) - totalCount(a as SessionData))
 
   // Every slot id locked by a confirmed session — either as its primary slot_id
   // or as one of the other hours in a multi-hour (60/120/180 min) booking's
@@ -499,7 +494,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
 
               {/* ── OPEN GAMES ───────────────────────────────────── */}
               {/* Data source: `sessions` state (same fetch as time slots), game_type === 'open',
-                  filtered to the selected day. No new data fetching. */}
+                  any upcoming date for the selected pitch. No new data fetching. */}
               <div className="anim-fade-up d-150 venue-area-games">
                 <div style={{ marginBottom: '1.25rem' }}>
                   <SectionHeading
@@ -525,7 +520,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       <path d="M10 16h12M16 10v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0, fontWeight: 400 }}>
-                      No public games today, create one from the booking panel
+                      No public games right now, create one from the booking panel
                     </p>
                   </div>
                 ) : (
@@ -540,88 +535,100 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       const typeVariant = slotType === 'peak' ? 'peak' : slotType === 'weekend' ? 'weekend' : 'offpeak'
                       const typeLabel = slotType === 'peak' ? 'Peak' : slotType === 'weekend' ? 'Weekend' : 'Off-peak'
 
-                      return (
+                      const cardInner = (
+                        <div className="open-game-card" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)', opacity: s.isFull ? 0.6 : 1 }}>
+                          {/* Top half — pitch photo */}
+                          <div
+                            style={{
+                              position: 'relative',
+                              height: '180px',
+                              backgroundImage: "url('/slot-card.jpg')",
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }}
+                          >
+                            <div
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'rgba(8,8,8,0.45)',
+                                pointerEvents: 'none',
+                              }}
+                            />
+                            <div
+                              style={{
+                                position: 'absolute', top: '10px', left: '10px',
+                                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                padding: '4px 10px', borderRadius: 'var(--radius-full)',
+                                background: s.isFull ? 'var(--red)' : 'var(--green)', color: s.isFull ? '#fff' : 'var(--black)',
+                                fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
+                                letterSpacing: '0.02em',
+                              }}
+                            >
+                              <PeopleIcon /> {playerCount}/{maxPlayers} players
+                            </div>
+                          </div>
+
+                          {/* Bottom half — game details */}
+                          <div style={{ background: 'var(--surface)', padding: '1rem 1.2rem' }}>
+                            <div
+                              style={{
+                                fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
+                                letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1.2, marginBottom: '6px',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {title}
+                            </div>
+                            <div style={{
+                              display: 'flex', alignItems: 'center', gap: '6px',
+                              fontFamily: 'var(--font-sans)', fontSize: '12px',
+                              color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
+                            }}>
+                              <ClockIcon /> {fmtCardDate(slot.date)} · {slot.start_time.slice(0, 5)} – {slot.end_time.slice(0, 5)}
+                            </div>
+                            <div style={{
+                              display: 'flex', alignItems: 'center', gap: '6px',
+                              fontFamily: 'var(--font-sans)', fontSize: '12px',
+                              color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
+                            }}>
+                              <PinIcon /> {venueName}{venueAddress ? ` · ${venueAddress}` : ''}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                              <Badge variant={typeVariant}>{typeLabel}</Badge>
+                              <div style={{
+                                display: 'inline-flex', alignItems: 'baseline', gap: '4px',
+                                padding: '5px 12px', borderRadius: 'var(--radius-full)',
+                                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
+                              }}>
+                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
+                                  £{perPlayer}
+                                </span>
+                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
+                                  per player
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+
+                      return s.isFull ? (
+                        <div
+                          key={s.id}
+                          className="open-game-card-link"
+                          style={{ animationName: 'fadeUp', animationDuration: '0.45s', animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)', animationFillMode: 'both', animationDelay: `${idx * 60}ms`, cursor: 'default' }}
+                        >
+                          {cardInner}
+                        </div>
+                      ) : (
                         <Link
                           key={s.id}
                           href={`/session/${s.id}`}
                           className="open-game-card-link"
                           style={{ animationName: 'fadeUp', animationDuration: '0.45s', animationTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)', animationFillMode: 'both', animationDelay: `${idx * 60}ms`, cursor: 'pointer' }}
                         >
-                          <div className="open-game-card" style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                            {/* Top half — pitch photo */}
-                            <div
-                              style={{
-                                position: 'relative',
-                                height: '180px',
-                                backgroundImage: "url('/slot-card.jpg')",
-                                backgroundSize: 'cover',
-                                backgroundPosition: 'center',
-                              }}
-                            >
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  inset: 0,
-                                  background: 'rgba(8,8,8,0.45)',
-                                  pointerEvents: 'none',
-                                }}
-                              />
-                              <div
-                                style={{
-                                  position: 'absolute', top: '10px', left: '10px',
-                                  display: 'inline-flex', alignItems: 'center', gap: '5px',
-                                  padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                                  background: 'var(--green)', color: 'var(--black)',
-                                  fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
-                                  letterSpacing: '0.02em',
-                                }}
-                              >
-                                <PeopleIcon /> {playerCount}/{maxPlayers} players
-                              </div>
-                            </div>
-
-                            {/* Bottom half — game details */}
-                            <div style={{ background: 'var(--surface)', padding: '1rem 1.2rem' }}>
-                              <div
-                                style={{
-                                  fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                                  letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1.2, marginBottom: '6px',
-                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {title}
-                              </div>
-                              <div style={{
-                                display: 'flex', alignItems: 'center', gap: '6px',
-                                fontFamily: 'var(--font-sans)', fontSize: '12px',
-                                color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
-                              }}>
-                                <ClockIcon /> {fmtCardDate(slot.date)} · {slot.start_time.slice(0, 5)} – {slot.end_time.slice(0, 5)}
-                              </div>
-                              <div style={{
-                                display: 'flex', alignItems: 'center', gap: '6px',
-                                fontFamily: 'var(--font-sans)', fontSize: '12px',
-                                color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
-                              }}>
-                                <PinIcon /> {venueName}{venueAddress ? ` · ${venueAddress}` : ''}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                                <Badge variant={typeVariant}>{typeLabel}</Badge>
-                                <div style={{
-                                  display: 'inline-flex', alignItems: 'baseline', gap: '4px',
-                                  padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                                  background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
-                                }}>
-                                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
-                                    £{perPlayer}
-                                  </span>
-                                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
-                                    per player
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                          {cardInner}
                         </Link>
                       )
                     })}

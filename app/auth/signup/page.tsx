@@ -30,7 +30,7 @@ function SignupForm() {
     e.preventDefault()
     let valid = true
 
-    if (!name.trim() || !/^[A-Za-z ]+$/.test(name.trim())) {
+    if (!name.trim() || !/^[a-zA-Z\s'-]+$/.test(name.trim())) {
       setNameError('Please enter a valid name')
       valid = false
     }
@@ -288,13 +288,13 @@ function SignupForm() {
                     autoComplete="name"
                     value={name}
                     onChange={(e) => {
-                      const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, '')
+                      const cleaned = e.target.value.replace(/[^a-zA-Z\s\-']/g, '')
                       setName(cleaned)
                     }}
                     onKeyDown={(e) => {
                       if (e.ctrlKey || e.metaKey) return
                       if (['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return
-                      if (!/^[a-zA-Z0-9\s]$/.test(e.key)) e.preventDefault()
+                      if (!/^[a-zA-Z\s'-]$/.test(e.key)) e.preventDefault()
                     }}
                     required
                     placeholder="Your full name"

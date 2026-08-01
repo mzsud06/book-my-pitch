@@ -120,7 +120,6 @@ export default function SessionClient({
   const [cancelOpen, setCancelOpen] = useState(false)
   const [cancelLoading, setCancelLoading] = useState(false)
   const [cancelError, setCancelError] = useState('')
-  const [didOrganiserCancel, setDidOrganiserCancel] = useState(false)
   const [showRegisterPopup, setShowRegisterPopup] = useState(false)
   const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
@@ -548,7 +547,7 @@ export default function SessionClient({
   async function handleJoinFormSubmit(e: React.FormEvent) {
     e.preventDefault()
     let valid = true
-    if (!joinName.trim() || !/^[A-Za-z ]+$/.test(joinName.trim())) {
+    if (!joinName.trim() || !/^[a-zA-Z\s'-]+$/.test(joinName.trim())) {
       setJoinNameError('Please enter a valid name')
       valid = false
     } else {
@@ -1537,14 +1536,14 @@ export default function SessionClient({
                         autoComplete="name"
                         value={joinName}
                         onChange={(e) => {
-                          const cleaned = e.target.value.replace(/[^a-zA-Z0-9\s]/g, '')
+                          const cleaned = e.target.value.replace(/[^a-zA-Z\s'-]/g, '')
                           setJoinName(cleaned)
                           if (joinNameError) setJoinNameError('')
                         }}
                         onKeyDown={(e) => {
                           if (e.ctrlKey || e.metaKey) return
                           if (['Backspace','Delete','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)) return
-                          if (!/^[a-zA-Z0-9\s]$/.test(e.key)) e.preventDefault()
+                          if (!/^[a-zA-Z\s'-]$/.test(e.key)) e.preventDefault()
                         }}
                         placeholder="Full name"
                         style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.8rem 1rem', color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 600, outline: 'none', transition: 'border-color 0.15s ease', boxSizing: 'border-box' as const }}
