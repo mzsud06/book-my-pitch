@@ -33,6 +33,29 @@ function makeRequest(body: object) {
   }) as unknown as NextRequest
 }
 
+// No logged-in session by default (the common case: a fresh signup) — pass
+// a signUp mock. `identities: [{}]` marks a genuinely new account; Supabase's
+// anti-enumeration protection signals "email already has an account" (with
+// no authError) via an empty identities array instead.
+function mockAnonClient(signUpResult: { data: any; error: any }) {
+  vi.mocked(createClient).mockResolvedValue({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+      signUp: vi.fn().mockResolvedValue(signUpResult),
+    },
+  } as any)
+}
+
+// Visitor already has an active session (player or previous owner signup).
+function mockLoggedInClient(user: { id: string; email: string }) {
+  vi.mocked(createClient).mockResolvedValue({
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user } }),
+      signUp: vi.fn(),
+    },
+  } as any)
+}
+
 const VALID_SIGNUP_BODY = {
   email: 'owner@example.com',
   password: 'password123',
@@ -51,20 +74,22 @@ const VALID_SIGNUP_BODY = {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(checkRateLimit).mockReturnValue(true)
+  // Default: no logged-in session — most tests only exercise input
+  // validation before auth is ever touched. Tests that need specific signUp
+  // behavior override this with mockAnonClient/mockLoggedInClient.
+  vi.mocked(createClient).mockResolvedValue({
+    auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }), signUp: vi.fn() },
+  } as any)
 })
 
 describe('POST /api/owner/signup', () => {
   it('creates the auth user, venue, and pitch, and seeds slots on a valid request', async () => {
     const svcDb = createMockDb({ venues: [], pitches: [] })
     vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
-    vi.mocked(createClient).mockResolvedValue({
-      auth: {
-        signUp: vi.fn().mockResolvedValue({
-          data: { user: { id: 'new-owner-id' }, session: { access_token: 'tok' } },
-          error: null,
-        }),
-      },
-    } as any)
+    mockAnonClient({
+      data: { user: { id: 'new-owner-id', identities: [{ id: 'x' }] }, session: { access_token: 'tok' } },
+      error: null,
+    })
 
     const res = await ownerSignup(makeRequest(VALID_SIGNUP_BODY))
     const body = await res.json()
@@ -88,14 +113,10 @@ describe('POST /api/owner/signup', () => {
   it('reports sessionCreated: false when email confirmation is required (no session returned)', async () => {
     const svcDb = createMockDb({ venues: [], pitches: [] })
     vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
-    vi.mocked(createClient).mockResolvedValue({
-      auth: {
-        signUp: vi.fn().mockResolvedValue({
-          data: { user: { id: 'new-owner-id' }, session: null },
-          error: null,
-        }),
-      },
-    } as any)
+    mockAnonClient({
+      data: { user: { id: 'new-owner-id', identities: [{ id: 'x' }] }, session: null },
+      error: null,
+    })
 
     const res = await ownerSignup(makeRequest(VALID_SIGNUP_BODY))
     const body = await res.json()
@@ -108,7 +129,9 @@ describe('POST /api/owner/signup', () => {
 
   it('rejects an invalid email without touching auth or the database', async () => {
     const signUp = vi.fn()
-    vi.mocked(createClient).mockResolvedValue({ auth: { signUp } } as any)
+    vi.mocked(createClient).mockResolvedValue({
+      auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }), signUp },
+    } as any)
 
     const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, email: 'not-an-email' }))
     expect(res.status).toBe(400)
@@ -154,14 +177,10 @@ describe('POST /api/owner/signup', () => {
   it('stores the submitted schedule on the venue row', async () => {
     const svcDb = createMockDb({ venues: [], pitches: [] })
     vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
-    vi.mocked(createClient).mockResolvedValue({
-      auth: {
-        signUp: vi.fn().mockResolvedValue({
-          data: { user: { id: 'new-owner-id' }, session: { access_token: 'tok' } },
-          error: null,
-        }),
-      },
-    } as any)
+    mockAnonClient({
+      data: { user: { id: 'new-owner-id', identities: [{ id: 'x' }] }, session: { access_token: 'tok' } },
+      error: null,
+    })
 
     const res = await ownerSignup(makeRequest({
       ...VALID_SIGNUP_BODY,
@@ -180,14 +199,10 @@ describe('POST /api/owner/signup', () => {
   it('creates multiple pitches for one venue and seeds slots once for all of them', async () => {
     const svcDb = createMockDb({ venues: [], pitches: [] })
     vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
-    vi.mocked(createClient).mockResolvedValue({
-      auth: {
-        signUp: vi.fn().mockResolvedValue({
-          data: { user: { id: 'new-owner-id' }, session: { access_token: 'tok' } },
-          error: null,
-        }),
-      },
-    } as any)
+    mockAnonClient({
+      data: { user: { id: 'new-owner-id', identities: [{ id: 'x' }] }, session: { access_token: 'tok' } },
+      error: null,
+    })
 
     const res = await ownerSignup(makeRequest({
       ...VALID_SIGNUP_BODY,
@@ -211,14 +226,10 @@ describe('POST /api/owner/signup', () => {
   it('returns the auth error message and creates nothing when signUp fails', async () => {
     const svcDb = createMockDb({ venues: [], pitches: [] })
     vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
-    vi.mocked(createClient).mockResolvedValue({
-      auth: {
-        signUp: vi.fn().mockResolvedValue({
-          data: { user: null, session: null },
-          error: { message: 'User already registered' },
-        }),
-      },
-    } as any)
+    mockAnonClient({
+      data: { user: null, session: null },
+      error: { message: 'User already registered' },
+    })
 
     const res = await ownerSignup(makeRequest(VALID_SIGNUP_BODY))
     const body = await res.json()
@@ -228,20 +239,35 @@ describe('POST /api/owner/signup', () => {
     expect(svcDb._tables.venues.length).toBe(0)
   })
 
+  it('rejects with a clear message when anti-enumeration protection silently no-ops signUp for an existing email', async () => {
+    const svcDb = createMockDb({ venues: [], pitches: [] })
+    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
+    // No authError — Supabase's enumeration protection returns a "success"
+    // with an empty identities array instead of revealing the email exists.
+    mockAnonClient({
+      data: { user: { id: 'someone-elses-id', identities: [] }, session: null },
+      error: null,
+    })
+
+    const res = await ownerSignup(makeRequest(VALID_SIGNUP_BODY))
+    const body = await res.json()
+
+    expect(res.status).toBe(409)
+    expect(body.error).toMatch(/already exists/i)
+    // Must never attach a venue to the existing account behind that email.
+    expect(svcDb._tables.venues.length).toBe(0)
+  })
+
   it('rolls back the auth user if venue creation fails', async () => {
     const svcDb = createMockDb({ venues: [], pitches: [] })
     svcDb._forceInsertError({ message: 'db down' })
     const deleteUser = vi.fn().mockResolvedValue({})
     ;(svcDb as any).auth.admin = { deleteUser }
     vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
-    vi.mocked(createClient).mockResolvedValue({
-      auth: {
-        signUp: vi.fn().mockResolvedValue({
-          data: { user: { id: 'new-owner-id' }, session: { access_token: 'tok' } },
-          error: null,
-        }),
-      },
-    } as any)
+    mockAnonClient({
+      data: { user: { id: 'new-owner-id', identities: [{ id: 'x' }] }, session: { access_token: 'tok' } },
+      error: null,
+    })
 
     const res = await ownerSignup(makeRequest(VALID_SIGNUP_BODY))
     expect(res.status).toBe(500)
@@ -252,6 +278,34 @@ describe('POST /api/owner/signup', () => {
     vi.mocked(checkRateLimit).mockReturnValue(false)
     const res = await ownerSignup(makeRequest(VALID_SIGNUP_BODY))
     expect(res.status).toBe(429)
+  })
+
+  it('attaches the venue to an already-logged-in user instead of creating a new account', async () => {
+    const svcDb = createMockDb({ venues: [], pitches: [] })
+    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
+    mockLoggedInClient({ id: 'existing-player-id', email: 'player@example.com' })
+
+    const { email, password, ...bodyWithoutCreds } = VALID_SIGNUP_BODY
+    const res = await ownerSignup(makeRequest(bodyWithoutCreds))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(svcDb._tables.venues[0].owner_id).toBe('existing-player-id')
+  })
+
+  it('never deletes an existing user on rollback, only a freshly created one', async () => {
+    const svcDb = createMockDb({ venues: [], pitches: [] })
+    svcDb._forceInsertError({ message: 'db down' })
+    const deleteUser = vi.fn().mockResolvedValue({})
+    ;(svcDb as any).auth.admin = { deleteUser }
+    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
+    mockLoggedInClient({ id: 'existing-player-id', email: 'player@example.com' })
+
+    const { email, password, ...bodyWithoutCreds } = VALID_SIGNUP_BODY
+    const res = await ownerSignup(makeRequest(bodyWithoutCreds))
+    expect(res.status).toBe(500)
+    expect(deleteUser).not.toHaveBeenCalled()
   })
 })
 

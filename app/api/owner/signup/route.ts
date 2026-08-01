@@ -68,11 +68,19 @@ export async function POST(req: NextRequest) {
       openingTime, closingTime, weekendOpeningTime, weekendClosingTime, peakStartTime,
     } = body
 
-    if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
-      return NextResponse.json({ error: 'Please enter a valid email address' }, { status: 400 })
-    }
-    if (typeof password !== 'string' || password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
+    // SSR/cookie-bound client — also lets us detect a visitor who's already
+    // logged in (as a player or a previous owner signup) before touching
+    // auth.signUp at all, so a returning user never collides with themselves.
+    const supabase = await createClient()
+    const { data: { user: existingUser } } = await supabase.auth.getUser()
+
+    if (!existingUser) {
+      if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
+        return NextResponse.json({ error: 'Please enter a valid email address' }, { status: 400 })
+      }
+      if (typeof password !== 'string' || password.length < 8) {
+        return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
+      }
     }
     const trimmedVenueName = typeof venueName === 'string' ? venueName.trim() : ''
     if (!trimmedVenueName || trimmedVenueName.length > 120) {
@@ -82,11 +90,16 @@ export async function POST(req: NextRequest) {
     if (!trimmedAddress || trimmedAddress.length > 300) {
       return NextResponse.json({ error: 'Please enter your venue address' }, { status: 400 })
     }
+    // Slots are generated within a single calendar day (see
+    // lib/slots.ts:getSlotsForDay) and can't currently wrap past midnight —
+    // closing time must be later in the clock than opening time. A venue
+    // open e.g. 18:00–01:00 isn't supported yet; the error says so plainly
+    // rather than silently accepting it and seeding zero bookable slots.
     if (!isValidTime(openingTime) || !isValidTime(closingTime) || closingTime <= openingTime) {
-      return NextResponse.json({ error: 'Please enter valid weekday opening/closing times' }, { status: 400 })
+      return NextResponse.json({ error: 'Weekday closing time must be later than opening time (hours past midnight aren\'t supported yet — contact us if you need this)' }, { status: 400 })
     }
     if (!isValidTime(weekendOpeningTime) || !isValidTime(weekendClosingTime) || weekendClosingTime <= weekendOpeningTime) {
-      return NextResponse.json({ error: 'Please enter valid weekend opening/closing times' }, { status: 400 })
+      return NextResponse.json({ error: 'Weekend closing time must be later than opening time (hours past midnight aren\'t supported yet — contact us if you need this)' }, { status: 400 })
     }
     if (!isValidTime(peakStartTime)) {
       return NextResponse.json({ error: 'Please enter a valid peak start time' }, { status: 400 })
@@ -101,33 +114,60 @@ export async function POST(req: NextRequest) {
       validatedPitches.push(result.pitch)
     }
 
-    // SSR/cookie-bound client — signUp() here both creates the auth user AND
-    // (if email confirmation is disabled on this project) sets a session
-    // cookie on the response, matching the exact pattern used for player
-    // signup at app/auth/signup/page.tsx. We don't special-case the
-    // project's email-confirmation setting — same behavior either way.
-    const supabase = await createClient()
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-    })
+    let newUserId: string
+    let ownerEmail: string
+    let sessionCreated: boolean
 
-    if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 })
-    }
-    const newUserId = authData.user?.id
-    if (!newUserId) {
-      return NextResponse.json({ error: 'Could not create account' }, { status: 500 })
+    if (existingUser) {
+      // Already logged in (player or a previous owner signup) — attach the
+      // new venue straight to this account instead of trying (and failing)
+      // to create a second one with the same email.
+      newUserId = existingUser.id
+      ownerEmail = existingUser.email ?? ''
+      sessionCreated = true
+    } else {
+      // signUp() here both creates the auth user AND (if email confirmation
+      // is disabled on this project) sets a session cookie on the response,
+      // matching the exact pattern used for player signup at
+      // app/auth/signup/page.tsx. We don't special-case the project's
+      // email-confirmation setting — same behavior either way.
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      })
+
+      if (authError) {
+        return NextResponse.json({ error: authError.message }, { status: 400 })
+      }
+      // Supabase's anti-enumeration protection returns a success response
+      // (no authError) for an email that already has an account, rather than
+      // revealing it exists — the documented way to detect that case is an
+      // empty `identities` array. Without this check we'd silently attach
+      // the new venue to a stranger's existing (player) account.
+      if (authData.user && authData.user.identities && authData.user.identities.length === 0) {
+        return NextResponse.json({
+          error: 'An account with this email already exists. Log in, then list your venue from your dashboard.',
+        }, { status: 409 })
+      }
+      if (!authData.user?.id) {
+        return NextResponse.json({ error: 'Could not create account' }, { status: 500 })
+      }
+      newUserId = authData.user.id
+      ownerEmail = email.trim()
+      sessionCreated = !!authData.session
     }
 
     const svc = createServiceClient()
 
     // Best-effort cleanup if a later step fails — an owner shouldn't be left
-    // with an auth account that has no venue behind it with no way to retry
-    // signup (email already registered).
+    // with a brand-new auth account that has no venue behind it with no way
+    // to retry signup (email already registered). Never deletes an existing
+    // user's account (the existingUser branch above) — only one we just
+    // created in this request.
     async function rollbackUser() {
+      if (existingUser) return
       try {
-        await svc.auth.admin.deleteUser(newUserId!)
+        await svc.auth.admin.deleteUser(newUserId)
       } catch (err) {
         console.error('owner-signup: failed to roll back auth user after partial failure:', err)
       }
@@ -188,10 +228,10 @@ export async function POST(req: NextRequest) {
     void notifyAdminNewVenueSignup({
       name: trimmedVenueName,
       address: trimmedAddress,
-      ownerEmail: email.trim(),
+      ownerEmail,
     })
 
-    return NextResponse.json({ ok: true, venueId: venue.id, sessionCreated: !!authData.session })
+    return NextResponse.json({ ok: true, venueId: venue.id, sessionCreated })
   } catch (err) {
     console.error('owner-signup error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

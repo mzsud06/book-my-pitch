@@ -114,3 +114,36 @@ export function removeMySession(sessionId: string): void {
   const raw = readMySessionsRaw().filter(s => s.sessionId !== sessionId)
   localStorage.setItem(MY_SESSIONS_KEY, JSON.stringify(raw))
 }
+
+// Owner-signup draft — the signup form is long (account + venue + hours + N
+// pitches), so a closed tab, crash, or dead connection mid-fill shouldn't
+// mean starting over. Never stores the password. Shorter TTL than guest PII
+// since it's in-progress form state, not something meant to persist for long.
+const OWNER_SIGNUP_DRAFT_KEY = 'bmp_owner_signup_draft'
+const DRAFT_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+export function readOwnerSignupDraft<T>(): T | null {
+  try {
+    const raw = localStorage.getItem(OWNER_SIGNUP_DRAFT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { data: T; savedAt?: number } | null
+    if (!parsed || typeof parsed.savedAt !== 'number' || Date.now() - parsed.savedAt > DRAFT_TTL_MS) {
+      localStorage.removeItem(OWNER_SIGNUP_DRAFT_KEY)
+      return null
+    }
+    return parsed.data
+  } catch {
+    localStorage.removeItem(OWNER_SIGNUP_DRAFT_KEY)
+    return null
+  }
+}
+
+export function writeOwnerSignupDraft<T>(data: T): void {
+  try {
+    localStorage.setItem(OWNER_SIGNUP_DRAFT_KEY, JSON.stringify({ data, savedAt: Date.now() }))
+  } catch {}
+}
+
+export function clearOwnerSignupDraft(): void {
+  localStorage.removeItem(OWNER_SIGNUP_DRAFT_KEY)
+}

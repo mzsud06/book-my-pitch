@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
+import { createClient } from '@/lib/supabase/client'
+import { readOwnerSignupDraft, writeOwnerSignupDraft, clearOwnerSignupDraft } from '@/lib/clientStorage'
 
 const FORMATS = [
   { value: '5-a-side', label: '5-a-side' },
@@ -36,6 +38,18 @@ function newPitchDraft(): PitchDraft {
   }
 }
 
+interface FormDraft {
+  email: string
+  venueName: string
+  address: string
+  openingTime: string
+  closingTime: string
+  weekendOpeningTime: string
+  weekendClosingTime: string
+  peakStartTime: string
+  pitches: Omit<PitchDraft, 'id'>[]
+}
+
 export default function OwnerSignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -52,6 +66,58 @@ export default function OwnerSignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [emailSent, setEmailSent] = useState(false)
+  const [stripeSetupPending, setStripeSetupPending] = useState(false)
+
+  // Already logged in (player or a previous owner signup) — skip the account
+  // section entirely rather than force a second, colliding signup.
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [existingUserEmail, setExistingUserEmail] = useState<string | null>(null)
+
+  // Restore an in-progress draft (never the password) so a closed tab or dead
+  // connection mid-fill doesn't mean starting over — form is long enough that
+  // losing it is real friction.
+  const restoredDraft = useRef(false)
+  useEffect(() => {
+    if (restoredDraft.current) return
+    restoredDraft.current = true
+    const draft = readOwnerSignupDraft<FormDraft>()
+    if (!draft) return
+    setEmail(draft.email ?? '')
+    setVenueName(draft.venueName ?? '')
+    setAddress(draft.address ?? '')
+    if (draft.openingTime) setOpeningTime(draft.openingTime)
+    if (draft.closingTime) setClosingTime(draft.closingTime)
+    if (draft.weekendOpeningTime) setWeekendOpeningTime(draft.weekendOpeningTime)
+    if (draft.weekendClosingTime) setWeekendClosingTime(draft.weekendClosingTime)
+    if (draft.peakStartTime) setPeakStartTime(draft.peakStartTime)
+    if (draft.pitches?.length) {
+      setPitchDrafts(draft.pitches.map(p => ({ ...p, id: nextPitchId++ })))
+    }
+  }, [])
+
+  // Persist on every change (excluding password) — cheap localStorage write,
+  // no debounce needed at this form size.
+  useEffect(() => {
+    if (!restoredDraft.current) return
+    writeOwnerSignupDraft<FormDraft>({
+      email, venueName, address,
+      openingTime, closingTime, weekendOpeningTime, weekendClosingTime, peakStartTime,
+      pitches: pitchDrafts.map(({ id, ...rest }) => rest),
+    })
+  }, [email, venueName, address, openingTime, closingTime, weekendOpeningTime, weekendClosingTime, peakStartTime, pitchDrafts])
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setExistingUserEmail(data.user?.email ?? null)
+      setCheckingSession(false)
+    })
+  }, [])
+
+  async function handleSignOut() {
+    await createClient().auth.signOut()
+    setExistingUserEmail(null)
+  }
 
   function updatePitch(id: number, patch: Partial<PitchDraft>) {
     setPitchDrafts(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p))
@@ -66,14 +132,16 @@ export default function OwnerSignupPage() {
   }
 
   function validate(): string | null {
-    const atIdx = email.indexOf('@')
-    if (atIdx < 0 || !email.slice(atIdx + 1).includes('.')) return 'Please enter a valid email address'
-    if (password.length < 8) return 'Password must be at least 8 characters'
-    if (password !== confirmPassword) return 'Passwords do not match'
+    if (!existingUserEmail) {
+      const atIdx = email.indexOf('@')
+      if (atIdx < 0 || !email.slice(atIdx + 1).includes('.')) return 'Please enter a valid email address'
+      if (password.length < 8) return 'Password must be at least 8 characters'
+      if (password !== confirmPassword) return 'Passwords do not match'
+    }
     if (!venueName.trim()) return 'Please enter your venue name'
     if (!address.trim()) return 'Please enter your venue address'
-    if (closingTime <= openingTime) return 'Weekday closing time must be after opening time'
-    if (weekendClosingTime <= weekendOpeningTime) return 'Weekend closing time must be after opening time'
+    if (closingTime <= openingTime) return 'Weekday closing time must be later than opening time (hours past midnight aren\'t supported yet)'
+    if (weekendClosingTime <= weekendOpeningTime) return 'Weekend closing time must be later than opening time (hours past midnight aren\'t supported yet)'
 
     for (let i = 0; i < pitchDrafts.length; i++) {
       const p = pitchDrafts[i]
@@ -138,6 +206,7 @@ export default function OwnerSignupPage() {
       if (!data.sessionCreated) {
         // Email confirmation required — venue/pitches already exist server-side,
         // Stripe setup just waits until they log in.
+        clearOwnerSignupDraft()
         setEmailSent(true)
         setLoading(false)
         return
@@ -151,11 +220,17 @@ export default function OwnerSignupPage() {
       const linkData = await linkRes.json()
 
       if (!linkRes.ok) {
-        setError('Account created, but starting Stripe setup failed. Log in and try again from your dashboard.')
+        // Venue + pitches already exist at this point (only the Stripe step
+        // failed) — leaving the form open would let them resubmit and hit
+        // an "email already registered" error, since the account is already
+        // made. Switch to a dedicated recovery screen instead.
+        clearOwnerSignupDraft()
+        setStripeSetupPending(true)
         setLoading(false)
         return
       }
 
+      clearOwnerSignupDraft()
       window.location.href = linkData.url
     } catch {
       setError('Something went wrong. Please try again.')
@@ -250,7 +325,30 @@ export default function OwnerSignupPage() {
             boxShadow: '0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
           }}
         >
-          {emailSent ? (
+          {stripeSetupPending ? (
+            <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
+              <div
+                style={{
+                  width: '64px', height: '64px', background: 'rgba(22,48,31,0.7)',
+                  border: '1px solid rgba(198,241,53,0.25)', borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '26px', margin: '0 auto 1.5rem', color: 'var(--green)',
+                }}
+              >
+                ✓
+              </div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', letterSpacing: '-0.03em', marginBottom: '0.75rem', color: 'var(--text)' }}>
+                Your venue is set up
+              </div>
+              <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.65, marginBottom: '2rem' }}>
+                We couldn&apos;t start Stripe payouts setup just now, that&apos;s the only thing that didn&apos;t finish.
+                {' '}Log in and we&apos;ll pick up right where you left off.
+              </div>
+              <Link href="/owner/login" style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, textDecoration: 'none' }}>
+                Go to owner login →
+              </Link>
+            </div>
+          ) : emailSent ? (
             <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
               <div
                 style={{
@@ -298,18 +396,41 @@ export default function OwnerSignupPage() {
               </div>
 
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={sectionLabelStyle}>Your account</div>
-                {fieldWrap('Email', (
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="owner@yourpitch.co.uk" style={inputStyle} />
-                ))}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                  {fieldWrap('Password', (
-                    <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} placeholder="Min 8 characters" style={inputStyle} />
-                  ))}
-                  {fieldWrap('Confirm password', (
-                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required minLength={8} placeholder="Repeat password" style={inputStyle} />
-                  ))}
-                </div>
+                {!checkingSession && existingUserEmail ? (
+                  <div
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
+                      background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px',
+                      padding: '0.85rem 1rem',
+                    }}
+                  >
+                    <span style={{ fontSize: '13px', color: 'var(--text)', fontWeight: 600 }}>
+                      Signed in as {existingUserEmail}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      style={{ background: 'none', border: 'none', color: 'var(--green)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
+                    >
+                      Not you?
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div style={sectionLabelStyle}>Your account</div>
+                    {fieldWrap('Email', (
+                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="owner@yourpitch.co.uk" style={inputStyle} />
+                    ))}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                      {fieldWrap('Password', (
+                        <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={8} placeholder="Min 8 characters" style={inputStyle} />
+                      ))}
+                      {fieldWrap('Confirm password', (
+                        <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required minLength={8} placeholder="Repeat password" style={inputStyle} />
+                      ))}
+                    </div>
+                  </>
+                )}
 
                 <div style={sectionLabelStyle}>Your venue</div>
                 {fieldWrap('Venue name', (
