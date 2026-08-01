@@ -269,7 +269,7 @@ export default function LoginForm() {
                   />
                 </div>
 
-                <div style={{ textAlign: 'right', marginTop: '-4px' }}>
+                <div style={{ textAlign: 'right', marginTop: '-4px', marginRight: '-8px' }}>
                   <button
                     type="button"
                     onClick={() => { setError(''); setEmailError(''); setView('forgot') }}
@@ -280,7 +280,7 @@ export default function LoginForm() {
                       fontSize: '13px',
                       fontWeight: 600,
                       cursor: 'pointer',
-                      padding: '0 0 2px',
+                      padding: '8px',
                       fontFamily: 'var(--font-sans)',
                     }}
                   >

@@ -736,6 +736,23 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 /* ============================================================
    DASHBOARD (owner)
    ============================================================ */
+/* Nav bar: fixed height + no wrap breaks once the Stripe-onboarding warning
+   button is showing on a narrow phone — let it wrap onto a second row and
+   drop the secondary label/divider instead of clipping. */
+.owner-dash-nav {
+  padding: 0.7rem 2rem;
+  min-height: 60px;
+}
+@media (max-width: 640px) {
+  .owner-dash-nav {
+    padding: 0.7rem 1.25rem;
+  }
+  .owner-dash-nav-divider,
+  .owner-dash-nav-label {
+    display: none;
+  }
+}
+
 .dash-stat-card {
   transition: transform 0.22s var(--ease-out), border-color 0.22s ease;
 }
@@ -1035,12 +1052,17 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
   }
 }
 
-.venue-area-hero        { grid-area: hero; }
-.venue-area-description { grid-area: description; }
-.venue-area-panel       { grid-area: panel; }
-.venue-area-hours       { grid-area: hours; }
-.venue-area-location    { grid-area: location; }
-.venue-area-games       { grid-area: games; }
+/* min-width: 0 breaks grid/flex intrinsic-sizing propagation — without it, a
+   single unwrappable piece of content anywhere in these areas forces the
+   whole 1-column mobile grid track to size to its max-content width, which
+   then overflows silently past body's overflow-x: hidden and clips content
+   (e.g. half the time-slot buttons become unreachable on mobile). */
+.venue-area-hero        { grid-area: hero;        min-width: 0; }
+.venue-area-description { grid-area: description; min-width: 0; }
+.venue-area-panel       { grid-area: panel;        min-width: 0; }
+.venue-area-hours       { grid-area: hours;        min-width: 0; }
+.venue-area-location    { grid-area: location;     min-width: 0; }
+.venue-area-games       { grid-area: games;        min-width: 0; }
 
 .venue-hero-stats {
   display: grid;

@@ -399,7 +399,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
               </div>
             </aside>
 
-            <div>
+            <div style={{ minWidth: 0 }}>
               {results.length > 0 ? (
                 <div className="venue-grid">
                   {results.map((venue, idx) => (

@@ -169,12 +169,13 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
     >
       {/* Dashboard Nav */}
       <div
+        className="owner-dash-nav"
         style={{
           display: 'flex',
+          flexWrap: 'wrap',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: '0 2rem',
-          height: '60px',
+          rowGap: '8px',
           borderBottom: '1px solid var(--border)',
           borderTop: '3px solid var(--green)',
           background: 'rgba(8,8,8,0.97)',
@@ -193,6 +194,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                 letterSpacing: '-0.04em',
                 color: 'var(--text)',
                 lineHeight: 1,
+                whiteSpace: 'nowrap',
               }}
             >
               Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
@@ -200,6 +202,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             </span>
           </Link>
           <span
+            className="owner-dash-nav-divider"
             style={{
               width: '1px',
               height: '16px',
@@ -208,16 +211,18 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             }}
           />
           <span
+            className="owner-dash-nav-label"
             style={{
               fontSize: '13px',
               color: 'var(--text-secondary)',
               fontWeight: 600,
+              whiteSpace: 'nowrap',
             }}
           >
             Owner dashboard
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           {!venue.stripe_onboarding_complete ? (
             <button
               onClick={handleFinishOnboarding}
@@ -302,7 +307,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
         </div>
       )}
 
-      <div style={{ maxWidth: '1060px', margin: '0 auto', padding: '2.5rem 2rem 4rem' }}>
+      <div style={{ maxWidth: '1060px', margin: '0 auto', padding: '2.5rem clamp(1rem, 4vw, 2rem) 4rem' }}>
 
         {/* Venue header */}
         <div style={{ marginBottom: '2.5rem' }}>

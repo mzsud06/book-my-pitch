@@ -640,7 +640,7 @@ export default function Nav() {
                 Sign in
               </Link>
               <Link href="/auth/signup" style={{ textDecoration: 'none' }}>
-                <Button variant="primary" size="sm" style={{ borderRadius: 'var(--radius-full)' }}>
+                <Button variant="primary" size="sm" style={{ borderRadius: 'var(--radius-full)', minHeight: '44px' }}>
                   Sign up
                 </Button>
               </Link>
