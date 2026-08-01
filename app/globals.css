@@ -403,6 +403,9 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
 @media (max-width: 480px) {
   .profile-name { display: none; }
   .nav-wordmark-text { display: none; }
+  /* Name text is hidden above, so drop the padding reserved for it —
+     otherwise the avatar button carries dead space on its right side. */
+  .profile-btn { padding: 5px !important; }
 }
 
 .nav-btn-green:active {
