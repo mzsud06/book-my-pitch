@@ -6,11 +6,16 @@ export const metadata: Metadata = {
   title: "BookMyPitch: Play football tonight in London",
   description: "Find a game near you or start one in under a minute. No bank transfers, everyone pays automatically when the team is full.",
   icons: {
+    // favicon.png/.ico have a solid black background (matching --black) —
+    // logo.png itself stays transparent since it's also used inline on the
+    // nav bar, where transparency blends correctly; a transparent favicon
+    // instead composites to white in most browsers/search results, making
+    // the ball nearly invisible at small sizes.
     icon: [
       { url: '/favicon.ico' },
-      { url: '/logo.png', type: 'image/png' },
+      { url: '/favicon.png', type: 'image/png' },
     ],
-    apple: '/logo.png',
+    apple: '/favicon.png',
   },
   openGraph: {
     title: "BookMyPitch: Play football tonight",
