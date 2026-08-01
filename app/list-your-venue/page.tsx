@@ -73,7 +73,7 @@ const OWNER_FAQS: FaqItemData[] = [
   },
   {
     q: 'Can I list more than one pitch?',
-    a: "Signup currently sets up one pitch per venue. If you run multiple pitches or need changes to pricing/schedule after you're live, get in touch and we'll sort it out directly.",
+    a: "Yes, add as many as you need during signup, each with its own format, surface and pricing. If you need changes after you're live, get in touch and we'll sort it out directly.",
   },
   {
     q: 'What happens to slots that never fill?',

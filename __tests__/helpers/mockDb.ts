@@ -136,7 +136,12 @@ export function createMockDb(
           insertedRows.forEach(r => get(table).push(r))
           const single = insertedRows[0] ?? null
           return {
-            select: (_cols?: string) => ({ single: async () => ({ data: single, error: null }) }),
+            // .insert(...).select('*') can be awaited directly (all rows) or
+            // chained with .single() (first row) — support both call shapes.
+            select: (_cols?: string) => ({
+              single: async () => ({ data: single, error: null }),
+              then: (resolve: any, reject?: any) => Promise.resolve({ data: insertedRows, error: null }).then(resolve, reject),
+            }),
             then: (resolve: any, reject?: any) =>
               Promise.resolve({ data: Array.isArray(data) ? insertedRows : single, error: null }).then(resolve, reject),
           }

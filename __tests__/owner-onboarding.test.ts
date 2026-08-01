@@ -38,11 +38,9 @@ const VALID_SIGNUP_BODY = {
   password: 'password123',
   venueName: 'Test Pitch',
   address: '1 Test Street, London',
-  format: '5-a-side',
-  surface: '4G',
-  peakPrice: 50,
-  offpeakPrice: 30,
-  weekendPrice: 40,
+  pitches: [
+    { format: '5-a-side', surface: '4G', peakPrice: 50, offpeakPrice: 30, weekendPrice: 40 },
+  ],
 }
 
 beforeEach(() => {
@@ -118,13 +116,55 @@ describe('POST /api/owner/signup', () => {
   })
 
   it('rejects an invalid pitch format', async () => {
-    const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, format: '9-a-side' }))
+    const res = await ownerSignup(makeRequest({
+      ...VALID_SIGNUP_BODY,
+      pitches: [{ ...VALID_SIGNUP_BODY.pitches[0], format: '9-a-side' }],
+    }))
     expect(res.status).toBe(400)
   })
 
   it('rejects an out-of-range price', async () => {
-    const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, peakPrice: 501 }))
+    const res = await ownerSignup(makeRequest({
+      ...VALID_SIGNUP_BODY,
+      pitches: [{ ...VALID_SIGNUP_BODY.pitches[0], peakPrice: 501 }],
+    }))
     expect(res.status).toBe(400)
+  })
+
+  it('rejects an empty pitches array', async () => {
+    const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, pitches: [] }))
+    expect(res.status).toBe(400)
+  })
+
+  it('creates multiple pitches for one venue and seeds slots once for all of them', async () => {
+    const svcDb = createMockDb({ venues: [], pitches: [] })
+    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        signUp: vi.fn().mockResolvedValue({
+          data: { user: { id: 'new-owner-id' }, session: { access_token: 'tok' } },
+          error: null,
+        }),
+      },
+    } as any)
+
+    const res = await ownerSignup(makeRequest({
+      ...VALID_SIGNUP_BODY,
+      pitches: [
+        { format: '5-a-side', surface: '4G', peakPrice: 50, offpeakPrice: 30, weekendPrice: 40 },
+        { format: '7-a-side', surface: '3G', peakPrice: 70, offpeakPrice: 42, weekendPrice: 56 },
+      ],
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(svcDb._tables.pitches.length).toBe(2)
+    expect(svcDb._tables.pitches[0].name).toBe('Pitch 1')
+    expect(svcDb._tables.pitches[1].name).toBe('Pitch 2')
+    expect(svcDb._tables.pitches[1].max_players).toBe(14) // 7-a-side
+    expect(vi.mocked(seedSlotsForVenue)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(seedSlotsForVenue).mock.calls[0][2]).toHaveLength(2)
   })
 
   it('returns the auth error message and creates nothing when signUp fails', async () => {

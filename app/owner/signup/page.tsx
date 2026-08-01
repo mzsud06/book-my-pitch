@@ -11,21 +11,54 @@ const FORMATS = [
 ]
 const SURFACES = ['4G', '3G', 'Grass']
 
+interface PitchDraft {
+  id: number
+  format: string
+  surface: string
+  samePrice: boolean
+  flatPrice: string
+  offpeakPrice: string
+  peakPrice: string
+  weekendPrice: string
+}
+
+let nextPitchId = 1
+function newPitchDraft(): PitchDraft {
+  return {
+    id: nextPitchId++,
+    format: '5-a-side',
+    surface: '4G',
+    samePrice: true,
+    flatPrice: '',
+    offpeakPrice: '',
+    peakPrice: '',
+    weekendPrice: '',
+  }
+}
+
 export default function OwnerSignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [venueName, setVenueName] = useState('')
   const [address, setAddress] = useState('')
-  const [format, setFormat] = useState('5-a-side')
-  const [surface, setSurface] = useState('4G')
-  const [peakPrice, setPeakPrice] = useState('50')
-  const [offpeakPrice, setOffpeakPrice] = useState('30')
-  const [weekendPrice, setWeekendPrice] = useState('40')
+  const [pitchDrafts, setPitchDrafts] = useState<PitchDraft[]>([newPitchDraft()])
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [emailSent, setEmailSent] = useState(false)
+
+  function updatePitch(id: number, patch: Partial<PitchDraft>) {
+    setPitchDrafts(prev => prev.map(p => p.id === id ? { ...p, ...patch } : p))
+  }
+
+  function addPitch() {
+    setPitchDrafts(prev => [...prev, newPitchDraft()])
+  }
+
+  function removePitch(id: number) {
+    setPitchDrafts(prev => prev.length > 1 ? prev.filter(p => p.id !== id) : prev)
+  }
 
   function validate(): string | null {
     const atIdx = email.indexOf('@')
@@ -34,9 +67,19 @@ export default function OwnerSignupPage() {
     if (password !== confirmPassword) return 'Passwords do not match'
     if (!venueName.trim()) return 'Please enter your venue name'
     if (!address.trim()) return 'Please enter your venue address'
-    for (const [label, val] of [['Peak', peakPrice], ['Off-peak', offpeakPrice], ['Weekend', weekendPrice]] as const) {
-      const n = Number(val)
-      if (!val || !Number.isInteger(n) || n < 1 || n > 500) return `${label} price must be a whole number between £1 and £500`
+
+    for (let i = 0; i < pitchDrafts.length; i++) {
+      const p = pitchDrafts[i]
+      const label = pitchDrafts.length > 1 ? `Pitch ${i + 1}` : 'Pitch'
+      const prices = p.samePrice
+        ? [['price', p.flatPrice]] as const
+        : [['Off-peak', p.offpeakPrice], ['Peak', p.peakPrice], ['Weekend', p.weekendPrice]] as const
+      for (const [name, val] of prices) {
+        const n = Number(val)
+        if (!val || !Number.isInteger(n) || n < 1 || n > 500) {
+          return `${label}: ${name} price must be a whole number between £1 and £500`
+        }
+      }
     }
     return null
   }
@@ -53,6 +96,14 @@ export default function OwnerSignupPage() {
     setError('')
 
     try {
+      const pitches = pitchDrafts.map(p => ({
+        format: p.format,
+        surface: p.surface,
+        offpeakPrice: Number(p.samePrice ? p.flatPrice : p.offpeakPrice),
+        peakPrice: Number(p.samePrice ? p.flatPrice : p.peakPrice),
+        weekendPrice: Number(p.samePrice ? p.flatPrice : p.weekendPrice),
+      }))
+
       const res = await fetch('/api/owner/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -61,11 +112,7 @@ export default function OwnerSignupPage() {
           password,
           venueName,
           address,
-          format,
-          surface,
-          peakPrice: Number(peakPrice),
-          offpeakPrice: Number(offpeakPrice),
-          weekendPrice: Number(weekendPrice),
+          pitches,
         }),
       })
       const data = await res.json()
@@ -77,7 +124,7 @@ export default function OwnerSignupPage() {
       }
 
       if (!data.sessionCreated) {
-        // Email confirmation required — venue/pitch already exist server-side,
+        // Email confirmation required — venue/pitches already exist server-side,
         // Stripe setup just waits until they log in.
         setEmailSent(true)
         setLoading(false)
@@ -172,7 +219,7 @@ export default function OwnerSignupPage() {
         }}
       />
 
-      <div style={{ width: '100%', maxWidth: '480px', position: 'relative', zIndex: 1 }}>
+      <div style={{ width: '100%', maxWidth: '520px', position: 'relative', zIndex: 1 }}>
         <div className="anim-fade-up" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: '20px', letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1 }}>
@@ -260,31 +307,94 @@ export default function OwnerSignupPage() {
                   <input type="text" value={address} onChange={e => setAddress(e.target.value)} required maxLength={300} placeholder="Street, area, postcode" style={inputStyle} />
                 ))}
 
-                <div style={sectionLabelStyle}>Your pitch</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                  {fieldWrap('Format', (
-                    <select value={format} onChange={e => setFormat(e.target.value)} style={inputStyle}>
-                      {FORMATS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-                    </select>
-                  ))}
-                  {fieldWrap('Surface', (
-                    <select value={surface} onChange={e => setSurface(e.target.value)} style={inputStyle}>
-                      {SURFACES.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  ))}
-                </div>
+                <div style={sectionLabelStyle}>Your pitches</div>
+                {pitchDrafts.map((p, i) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      border: '1px solid var(--border)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                        {pitchDrafts.length > 1 ? `Pitch ${i + 1}` : 'Pitch details'}
+                      </div>
+                      {pitchDrafts.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removePitch(p.id)}
+                          style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
 
-                <div>
-                  <label style={labelStyle}>Hourly price per game (whole £, split between players)</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                    <input type="number" min={1} max={500} value={offpeakPrice} onChange={e => setOffpeakPrice(e.target.value)} placeholder="Off-peak £" style={inputStyle} />
-                    <input type="number" min={1} max={500} value={peakPrice} onChange={e => setPeakPrice(e.target.value)} placeholder="Peak £" style={inputStyle} />
-                    <input type="number" min={1} max={500} value={weekendPrice} onChange={e => setWeekendPrice(e.target.value)} placeholder="Weekend £" style={inputStyle} />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                      {fieldWrap('Format', (
+                        <select value={p.format} onChange={e => updatePitch(p.id, { format: e.target.value })} style={inputStyle}>
+                          {FORMATS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                        </select>
+                      ))}
+                      {fieldWrap('Surface', (
+                        <select value={p.surface} onChange={e => updatePitch(p.id, { surface: e.target.value })} style={inputStyle}>
+                          {SURFACES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      ))}
+                    </div>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--muted)', fontWeight: 500, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={p.samePrice}
+                        onChange={e => updatePitch(p.id, { samePrice: e.target.checked })}
+                        style={{ width: '15px', height: '15px', accentColor: 'var(--green)' }}
+                      />
+                      Same price at all times
+                    </label>
+
+                    {p.samePrice ? (
+                      fieldWrap('Hourly price (£, split between players)', (
+                        <input
+                          type="number" min={1} max={500}
+                          value={p.flatPrice}
+                          onChange={e => updatePitch(p.id, { flatPrice: e.target.value })}
+                          placeholder="e.g. 30"
+                          style={inputStyle}
+                        />
+                      ))
+                    ) : (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                        {fieldWrap('Off-peak £', (
+                          <input type="number" min={1} max={500} value={p.offpeakPrice} onChange={e => updatePitch(p.id, { offpeakPrice: e.target.value })} placeholder="e.g. 30" style={inputStyle} />
+                        ))}
+                        {fieldWrap('Peak £', (
+                          <input type="number" min={1} max={500} value={p.peakPrice} onChange={e => updatePitch(p.id, { peakPrice: e.target.value })} placeholder="e.g. 50" style={inputStyle} />
+                        ))}
+                        {fieldWrap('Weekend £', (
+                          <input type="number" min={1} max={500} value={p.weekendPrice} onChange={e => updatePitch(p.id, { weekendPrice: e.target.value })} placeholder="e.g. 40" style={inputStyle} />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px', fontWeight: 500 }}>
-                    Just a starting point, get in touch anytime to change your pricing later.
-                  </div>
-                </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={addPitch}
+                  style={{
+                    background: 'none', border: '1px dashed var(--border)', borderRadius: '10px',
+                    padding: '0.7rem', color: 'var(--green)', fontSize: '13px', fontWeight: 700,
+                    cursor: 'pointer', letterSpacing: '-0.01em',
+                  }}
+                >
+                  + Add another pitch
+                </button>
 
                 {error && (
                   <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '10px', padding: '0.85rem 1rem', fontSize: '13px', color: 'var(--red)', fontWeight: 600, lineHeight: 1.5 }}>

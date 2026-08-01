@@ -28,6 +28,28 @@ function isValidPrice(v: unknown): v is number {
   return typeof v === 'number' && Number.isInteger(v) && v >= 1 && v <= 500
 }
 
+const MAX_PITCHES_PER_SIGNUP = 12
+
+interface PitchInput {
+  format: string
+  surface: string
+  peakPrice: number
+  offpeakPrice: number
+  weekendPrice: number
+}
+
+function validatePitch(p: unknown, index: number): { pitch: PitchInput } | { error: string } {
+  const label = `Pitch ${index + 1}`
+  if (typeof p !== 'object' || p === null) return { error: `${label}: invalid pitch data` }
+  const { format, surface, peakPrice, offpeakPrice, weekendPrice } = p as Record<string, unknown>
+  if (!FORMAT_MAX_PLAYERS[format as string]) return { error: `${label}: please choose a valid pitch format` }
+  if (typeof surface !== 'string' || !VALID_SURFACES.has(surface)) return { error: `${label}: please choose a valid surface` }
+  if (!isValidPrice(peakPrice) || !isValidPrice(offpeakPrice) || !isValidPrice(weekendPrice)) {
+    return { error: `${label}: prices must be whole pounds between £1 and £500` }
+  }
+  return { pitch: { format: format as string, surface, peakPrice, offpeakPrice, weekendPrice } }
+}
+
 export async function POST(req: NextRequest) {
   if (!checkRateLimit(`owner-signup:${getClientIp(req)}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS)) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
@@ -35,7 +57,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { email, password, venueName, address, format, surface, peakPrice, offpeakPrice, weekendPrice } = body
+    const { email, password, venueName, address, pitches } = body
 
     if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
       return NextResponse.json({ error: 'Please enter a valid email address' }, { status: 400 })
@@ -51,15 +73,14 @@ export async function POST(req: NextRequest) {
     if (!trimmedAddress || trimmedAddress.length > 300) {
       return NextResponse.json({ error: 'Please enter your venue address' }, { status: 400 })
     }
-    const maxPlayers = FORMAT_MAX_PLAYERS[format as string]
-    if (!maxPlayers) {
-      return NextResponse.json({ error: 'Please choose a valid pitch format' }, { status: 400 })
+    if (!Array.isArray(pitches) || pitches.length === 0 || pitches.length > MAX_PITCHES_PER_SIGNUP) {
+      return NextResponse.json({ error: 'Please add at least one pitch' }, { status: 400 })
     }
-    if (typeof surface !== 'string' || !VALID_SURFACES.has(surface)) {
-      return NextResponse.json({ error: 'Please choose a valid surface' }, { status: 400 })
-    }
-    if (!isValidPrice(peakPrice) || !isValidPrice(offpeakPrice) || !isValidPrice(weekendPrice)) {
-      return NextResponse.json({ error: 'Prices must be whole pounds between £1 and £500' }, { status: 400 })
+    const validatedPitches: PitchInput[] = []
+    for (let i = 0; i < pitches.length; i++) {
+      const result = validatePitch(pitches[i], i)
+      if ('error' in result) return NextResponse.json({ error: result.error }, { status: 400 })
+      validatedPitches.push(result.pitch)
     }
 
     // SSR/cookie-bound client — signUp() here both creates the auth user AND
@@ -106,30 +127,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create venue. Please try again.' }, { status: 500 })
     }
 
-    const pitchInsert = {
+    const pitchInserts = validatedPitches.map((p, i) => ({
       venue_id: venue.id,
-      name: 'Main Pitch',
-      format,
-      surface,
-      max_players: maxPlayers,
-      peak_price: peakPrice,
-      offpeak_price: offpeakPrice,
-      weekend_price: weekendPrice,
-    }
-    const { data: pitch, error: pitchError } = await svc
+      name: validatedPitches.length > 1 ? `Pitch ${i + 1}` : 'Main Pitch',
+      format: p.format,
+      surface: p.surface,
+      max_players: FORMAT_MAX_PLAYERS[p.format],
+      peak_price: p.peakPrice,
+      offpeak_price: p.offpeakPrice,
+      weekend_price: p.weekendPrice,
+    }))
+    const { data: insertedPitches, error: pitchError } = await svc
       .from('pitches')
-      .insert(pitchInsert)
+      .insert(pitchInserts)
       .select('*')
-      .single()
 
-    if (pitchError || !pitch) {
+    if (pitchError || !insertedPitches || insertedPitches.length === 0) {
       console.error('owner-signup: pitch insert failed:', pitchError?.message)
       await svc.from('venues').delete().eq('id', venue.id)
       await rollbackUser()
-      return NextResponse.json({ error: 'Failed to create pitch. Please try again.' }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to create pitches. Please try again.' }, { status: 500 })
     }
 
-    await seedSlotsForVenue(svc, venue.id, [pitch as unknown as Pitch])
+    await seedSlotsForVenue(svc, venue.id, insertedPitches as unknown as Pitch[])
 
     // Fire-and-forget — a notification failure must never fail the signup itself.
     void notifyAdminNewVenueSignup({
