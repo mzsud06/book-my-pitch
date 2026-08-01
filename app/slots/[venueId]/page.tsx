@@ -93,8 +93,15 @@ export default async function VenueSlotsPage({ params }: Props) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Service client for the sessions read: the players(count) embed needs
+  // table-level SELECT on players to run its count() aggregate, which anon/
+  // authenticated deliberately don't have (only column-level grants on the
+  // non-sensitive columns — see security-migration-3.sql). The anon-scoped
+  // client 42501s on this query every time; svc bypasses RLS/grants outright,
+  // same as the homepage and /public-games, which never hit this wall
+  // because they already read via the service client.
   const [{ data: sessions }, { data: dbSlots }] = await Promise.all([
-    supabase
+    svc
       .from('sessions')
       .select(`
         id,
