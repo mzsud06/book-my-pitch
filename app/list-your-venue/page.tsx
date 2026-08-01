@@ -106,6 +106,10 @@ const OWNER_FAQS: FaqItemData[] = [
     q: 'What happens to slots that never fill?',
     a: "Nothing is charged and the slot simply expires. It drops off the public listing automatically once its time passes, so your dashboard always reflects what's actually still bookable.",
   },
+  {
+    q: 'Can I still take bookings outside BookMyPitch?',
+    a: "To avoid double-bookings, bookable slots listed on BookMyPitch should be reserved exclusively for the platform. You can choose which days or time slots to list, so you're always in control of what availability you offer.",
+  },
 ]
 
 export default function ListYourVenuePage() {
