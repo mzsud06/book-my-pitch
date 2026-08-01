@@ -16,11 +16,13 @@ vi.mock('@/lib/stripe', () => ({
   STRIPE_PROCESSING_PENCE: 30,
 }))
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }))
+vi.mock('@/lib/rateLimit', () => ({ checkRateLimit: vi.fn().mockReturnValue(true), getClientIp: vi.fn().mockReturnValue('test-ip') }))
 
 import { POST as leaveSession } from '@/app/api/leave/route'
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 const SESSION_ID = '11111111-1111-1111-1111-111111111111'
 const USER_A = 'user-aaaa-aaaa'
@@ -242,5 +244,15 @@ describe('leave: organiser leaving transfers the role instead of leaving the gam
 
     const notified = svcDb._tables.notifications.find((n: any) => n.user_id === USER_B)
     expect(notified?.message).toBe('The organiser has left, Bob is now the organiser.')
+  })
+})
+
+describe('leave: rate limiting', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns 429 when rate limited', async () => {
+    vi.mocked(checkRateLimit).mockReturnValueOnce(false)
+    const res = await leaveSession(makeRequest({ sessionId: SESSION_ID }))
+    expect(res.status).toBe(429)
   })
 })

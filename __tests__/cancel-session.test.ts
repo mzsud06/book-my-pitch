@@ -8,10 +8,12 @@ import { createMockDb } from './helpers/mockDb'
 
 vi.mock('@/lib/supabase/service', () => ({ createServiceClient: vi.fn() }))
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }))
+vi.mock('@/lib/rateLimit', () => ({ checkRateLimit: vi.fn().mockReturnValue(true), getClientIp: vi.fn().mockReturnValue('test-ip') }))
 
 import { POST as cancelSession } from '@/app/api/cancel-session/route'
 import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 const SESSION_ID = '11111111-1111-1111-1111-111111111111'
 const ORGANISER_ID = 'organiser-aaa'
@@ -119,5 +121,11 @@ describe('cancel-session: only the organiser can cancel', () => {
 
     expect(res.status).toBe(400)
     expect(body.error).toBe('Session is not in a cancellable state')
+  })
+
+  it('returns 429 when rate limited', async () => {
+    vi.mocked(checkRateLimit).mockReturnValueOnce(false)
+    const res = await cancelSession(makeRequest({ sessionId: SESSION_ID }))
+    expect(res.status).toBe(429)
   })
 })
