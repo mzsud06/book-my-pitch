@@ -1147,9 +1147,6 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                                     </div>
                                   </div>
                                 </div>
-                                <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 500, fontStyle: 'italic', whiteSpace: 'nowrap' }}>
-                                  {formatPerPlayer(pitch.offpeak_price, pitch.max_players)}/player
-                                </span>
                               </button>
                             )
                           })}
