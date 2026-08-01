@@ -19,9 +19,9 @@ export default function OwnerSignupPage() {
   const [address, setAddress] = useState('')
   const [format, setFormat] = useState('5-a-side')
   const [surface, setSurface] = useState('4G')
-  const [peakPrice, setPeakPrice] = useState('')
-  const [offpeakPrice, setOffpeakPrice] = useState('')
-  const [weekendPrice, setWeekendPrice] = useState('')
+  const [peakPrice, setPeakPrice] = useState('50')
+  const [offpeakPrice, setOffpeakPrice] = useState('30')
+  const [weekendPrice, setWeekendPrice] = useState('40')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -280,6 +280,9 @@ export default function OwnerSignupPage() {
                     <input type="number" min={1} max={500} value={offpeakPrice} onChange={e => setOffpeakPrice(e.target.value)} placeholder="Off-peak £" style={inputStyle} />
                     <input type="number" min={1} max={500} value={peakPrice} onChange={e => setPeakPrice(e.target.value)} placeholder="Peak £" style={inputStyle} />
                     <input type="number" min={1} max={500} value={weekendPrice} onChange={e => setWeekendPrice(e.target.value)} placeholder="Weekend £" style={inputStyle} />
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px', fontWeight: 500 }}>
+                    Just a starting point, get in touch anytime to change your pricing later.
                   </div>
                 </div>
 

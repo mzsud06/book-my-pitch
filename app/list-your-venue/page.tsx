@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Nav from '@/components/Nav'
 import { Container } from '@/components/ui/Container'
@@ -6,6 +7,24 @@ import { Button } from '@/components/ui/Button'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { FaqAccordion, FaqItemData } from '@/components/FaqAccordion'
 import { Footer } from '@/components/Footer'
+
+export const metadata: Metadata = {
+  title: 'List your venue on BookMyPitch — fill empty pitch hours, get paid automatically',
+  description: 'Turn spare pitch hours into confirmed, paid bookings. No monthly fees, you keep 100% of your price, payouts land via Stripe the moment a game fills.',
+  openGraph: {
+    title: 'List your venue on BookMyPitch',
+    description: 'Turn spare pitch hours into confirmed, paid bookings — no monthly fees, you keep 100% of your price.',
+    url: 'https://bookmypitch.uk/list-your-venue',
+    type: 'website',
+    images: [
+      {
+        url: 'https://bookmypitch.uk/og-image.png',
+        width: 1200,
+        height: 630,
+      },
+    ],
+  },
+}
 
 const STEPS = [
   {
@@ -93,6 +112,12 @@ export default function ListYourVenuePage() {
               </Link>
               <Link href="/owner/login" style={{ textDecoration: 'none' }}>
                 <Button variant="secondary" size="lg">Already listed? Sign in</Button>
+              </Link>
+            </div>
+            <div style={{ marginTop: '1.25rem', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+              Already live: Globe Football Pitch, Bethnal Green —{' '}
+              <Link href="/slots/c5d1422b-8c1e-4497-b8a4-13cd96677bdc" style={{ color: 'var(--green)', fontWeight: 700, textDecoration: 'none' }}>
+                see the listing →
               </Link>
             </div>
           </div>
@@ -212,6 +237,12 @@ export default function ListYourVenuePage() {
               <Link href="/owner/signup" style={{ textDecoration: 'none' }}>
                 <Button variant="primary" size="lg" arrow>List your venue</Button>
               </Link>
+              <div style={{ marginTop: '1.25rem', fontSize: '13px', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                Have questions first? Email{' '}
+                <a href="mailto:masud@bookmypitch.uk?subject=Question about listing my venue" style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 700 }}>
+                  masud@bookmypitch.uk
+                </a>{' '}and we&apos;ll talk it through before you set anything up.
+              </div>
             </Card>
           </Container>
         </section>
