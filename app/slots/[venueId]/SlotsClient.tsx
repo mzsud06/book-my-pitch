@@ -209,13 +209,19 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
     function refresh() {
       const nowStr = formatDate(startOfDay(new Date()))
       const endStr = formatDate(addDays(startOfDay(new Date()), 14))
+      // RPC instead of a raw players(count) embed: the anon/authenticated
+      // roles only have column-level SELECT on players (deliberately
+      // excludes phone/Stripe fields), and Postgres's count() aggregate
+      // needs table-level SELECT regardless of which columns it touches —
+      // a direct query here 42501s every time. The RPC runs as
+      // SECURITY DEFINER and returns nothing beyond what RLS already lets
+      // anon read row-by-row, plus a bare count.
       supabase
-        .from('sessions')
-        .select('id, slot_id, organiser_id, status, organiser_name, is_public, game_type, slot_ids, slots!inner(id, date, start_time, end_time, price, max_players, venue_id, pitches(id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price)), players(count)')
-        .eq('slots.venue_id', venueId)
-        .gte('slots.date', nowStr)
-        .lte('slots.date', endStr)
-        .in('status', ['filling', 'confirmed'])
+        .rpc('venue_sessions_with_counts', {
+          p_venue_id: venueId,
+          p_from_date: nowStr,
+          p_to_date: endStr,
+        })
         .then(({ data }) => { if (data) setSessions(data as unknown as SessionData[]) })
     }
 
