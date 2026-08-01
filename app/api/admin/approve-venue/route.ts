@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { isAdminEmail } from '@/lib/adminAuth'
-import { checkRateLimit } from '@/lib/rateLimit'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+import { logSecurityEvent } from '@/lib/securityLog'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isValidUUID(val: unknown): val is string {
@@ -17,6 +18,11 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user || !isAdminEmail(user.email)) {
+    logSecurityEvent('admin_auth_failed', {
+      userId: user?.id ?? null,
+      email: user?.email ?? null,
+      ip: getClientIp(req),
+    })
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

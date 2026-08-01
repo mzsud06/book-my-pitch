@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/service'
 import { triggerPayments, SlotForPayment } from '@/lib/triggerPayments'
+import { getClientIp } from '@/lib/rateLimit'
+import { logSecurityEvent } from '@/lib/securityLog'
 
 function secretsMatch(provided: string, expected: string): boolean {
   const a = Buffer.from(provided)
@@ -23,12 +25,13 @@ export async function POST(req: NextRequest) {
   // An unset or empty secret must never grant access.
   const internalSecret = process.env.INTERNAL_SECRET
   if (!internalSecret) {
-    console.error('INTERNAL_SECRET is not configured — trigger-payments endpoint is disabled')
+    logSecurityEvent('internal_secret_not_configured', { ip: getClientIp(req) })
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const providedSecret = req.headers.get('x-internal-secret')
   if (!providedSecret || !secretsMatch(providedSecret, internalSecret)) {
+    logSecurityEvent('internal_secret_mismatch', { ip: getClientIp(req), hadSecret: !!providedSecret })
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

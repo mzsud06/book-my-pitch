@@ -16,11 +16,12 @@ vi.mock('@/lib/stripe', () => ({
   PLATFORM_FEE_PENCE: 50,
   STRIPE_PROCESSING_PENCE: 30,
 }))
-vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }))
+vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }))
 
 import { POST as triggerPayments } from '@/app/api/trigger-payments/route'
 import { createServiceClient } from '@/lib/supabase/service'
 import { stripe } from '@/lib/stripe'
+import * as Sentry from '@sentry/nextjs'
 
 const INTERNAL_SECRET = 'test-secret'
 const SESSION_ID = '11111111-1111-1111-1111-111111111111'
@@ -112,6 +113,26 @@ describe('trigger-payments: fires exactly once (idempotency guard)', () => {
     const res = await triggerPayments(req)
     expect(res.status).toBe(401)
     expect(vi.mocked(stripe.paymentIntents.create)).not.toHaveBeenCalled()
+    expect(vi.mocked(Sentry.captureMessage)).toHaveBeenCalledWith(
+      expect.stringContaining('internal_secret_mismatch'),
+      expect.anything()
+    )
+  })
+
+  it('rejects and logs a security event when INTERNAL_SECRET is not configured at all', async () => {
+    delete process.env.INTERNAL_SECRET
+    const req = new Request('http://localhost/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-internal-secret': INTERNAL_SECRET },
+      body: JSON.stringify({ sessionId: SESSION_ID }),
+    }) as unknown as NextRequest
+
+    const res = await triggerPayments(req)
+    expect(res.status).toBe(401)
+    expect(vi.mocked(Sentry.captureMessage)).toHaveBeenCalledWith(
+      expect.stringContaining('internal_secret_not_configured'),
+      expect.anything()
+    )
   })
 
   it('returns 400 if not enough players are present to trigger payments', async () => {

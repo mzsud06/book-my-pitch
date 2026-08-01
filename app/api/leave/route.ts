@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { stripe } from '@/lib/stripe'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+import { logSecurityEvent } from '@/lib/securityLog'
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isValidUUID(val: unknown): val is string {
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
       // flag it, since this is the shape of an attempt to remove someone else's
       // guest entry by guessing/knowing their number.
       if (!player) {
-        console.warn(`[leave] suspicious: phone ${redactPhone(trimmedPhone)} does not match any player in session ${sessionId}`)
+        logSecurityEvent('leave_phone_mismatch', { phone: redactPhone(trimmedPhone), sessionId, ip: getClientIp(req) })
       }
     } else {
       return NextResponse.json({ error: 'Cannot identify player' }, { status: 401 })
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
       (!!user?.id && player.user_id === user.id) ||
       (!!trimmedPhone && player.phone === trimmedPhone)
     if (!identityConfirmed) {
-      console.warn(`[leave] suspicious: identity not confirmed for player ${player.id} in session ${sessionId}`)
+      logSecurityEvent('leave_identity_not_confirmed', { playerId: player.id, sessionId, ip: getClientIp(req) })
       return NextResponse.json({ error: 'Cannot identify player' }, { status: 401 })
     }
 

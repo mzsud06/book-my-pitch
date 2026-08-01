@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import { logSecurityEvent } from './securityLog'
 
 /**
  * Minimal in-memory sliding-window rate limiter.
@@ -9,8 +10,15 @@ import { NextRequest } from 'next/server'
  */
 const buckets = new Map<string, number[]>()
 
+// Last time each key's rate-limit trip was actually logged — a sustained
+// flood would otherwise log (and Sentry-report) every single blocked
+// request, turning the abuse into a logging flood of its own. One log per
+// key per cooldown is enough to know it's happening.
+const lastLoggedTrip = new Map<string, number>()
+const LOG_COOLDOWN_MS = 5 * 60 * 1000 // 5 minutes
+
 // Idle-key sweep — keys that haven't been touched in a while are dropped so a
-// flood of distinct keys (e.g. spoofed IPs) can't grow the Map unboundedly.
+// flood of distinct keys (e.g. spoofed IPs) can't grow the Maps unboundedly.
 const STALE_MS = 2 * 60 * 60 * 1000 // 2 hours
 const SWEEP_INTERVAL_MS = 15 * 60 * 1000 // 15 minutes
 
@@ -24,6 +32,9 @@ function startSweep() {
       const newest = timestamps[timestamps.length - 1] ?? 0
       if (now - newest > STALE_MS) buckets.delete(key)
     }
+    for (const [key, loggedAt] of lastLoggedTrip) {
+      if (now - loggedAt > STALE_MS) lastLoggedTrip.delete(key)
+    }
   }, SWEEP_INTERVAL_MS)
   timer.unref?.()
 }
@@ -36,6 +47,11 @@ export function checkRateLimit(key: string, max: number, windowMs: number): bool
 
   if (recent.length >= max) {
     buckets.set(key, recent)
+    const lastLogged = lastLoggedTrip.get(key) ?? 0
+    if (now - lastLogged > LOG_COOLDOWN_MS) {
+      lastLoggedTrip.set(key, now)
+      logSecurityEvent('rate_limit_exceeded', { key, max, windowMs })
+    }
     return false
   }
 

@@ -10,7 +10,7 @@ import { createMockDb } from './helpers/mockDb'
 
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }))
 vi.mock('@/lib/supabase/service', () => ({ createServiceClient: vi.fn() }))
-vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }))
+vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }))
 vi.mock('@/lib/rateLimit', () => ({ checkRateLimit: vi.fn().mockReturnValue(true), getClientIp: vi.fn().mockReturnValue('test-ip') }))
 
 import { POST as createSession } from '@/app/api/sessions/route'

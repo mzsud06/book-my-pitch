@@ -16,7 +16,7 @@ vi.mock('@/lib/stripe', () => ({
   PLATFORM_FEE_PENCE: 50,
   STRIPE_PROCESSING_PENCE: 30,
 }))
-vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }))
+vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }))
 
 import { POST as joinSession } from '@/app/api/join/route'
 import { createServiceClient } from '@/lib/supabase/service'
