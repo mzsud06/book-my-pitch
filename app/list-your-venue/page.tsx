@@ -26,6 +26,33 @@ export const metadata: Metadata = {
   },
 }
 
+const BENEFITS = [
+  {
+    title: 'More bookings',
+    body: 'Let individual players join existing games to help fill quieter sessions.',
+    icon: (
+      <path d="M3 17l5-5 4 4 7-8M19 8h-4M19 8v4" strokeLinecap="round" strokeLinejoin="round" />
+    ),
+  },
+  {
+    title: 'Less admin',
+    body: 'No WhatsApp groups, bank transfers or chasing organisers.',
+    icon: (
+      <>
+        <path d="M4 5h16v10H8l-4 4V5Z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4 4l16 16" strokeLinecap="round" />
+      </>
+    ),
+  },
+  {
+    title: 'Guaranteed payment',
+    body: 'Players are charged together only when the game is confirmed.',
+    icon: (
+      <path d="M12 3l7 3v6c0 4.4-3 7.8-7 9-4-1.2-7-4.6-7-9V6l7-3Z M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+    ),
+  },
+]
+
 const STEPS = [
   {
     n: '01',
@@ -122,6 +149,41 @@ export default function ListYourVenuePage() {
             </div>
           </div>
         </Container>
+
+        {/* Why it matters — the outcomes, not just the mechanics */}
+        <section style={{ paddingBottom: 'clamp(3rem, 7vh, 4.5rem)' }}>
+          <Container>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '1.25rem',
+              }}
+            >
+              {BENEFITS.map((b, i) => (
+                <Card key={b.title} className="anim-fade-up" style={{ padding: '1.5rem', animationDelay: `${i * 60}ms` }}>
+                  <div
+                    style={{
+                      width: '38px', height: '38px', borderRadius: '10px',
+                      background: 'rgba(198,241,53,0.1)', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center', marginBottom: '0.9rem',
+                    }}
+                  >
+                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2">
+                      {b.icon}
+                    </svg>
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '17px', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '0.5rem', color: 'var(--text)' }}>
+                    {b.title}
+                  </div>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, fontWeight: 500 }}>
+                    {b.body}
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </Container>
+        </section>
 
         {/* How it works */}
         <section style={{ paddingBottom: 'clamp(3rem, 7vh, 4.5rem)' }}>
