@@ -61,6 +61,7 @@ const VALID_SIGNUP_BODY = {
   password: 'password123',
   venueName: 'Test Pitch',
   address: '1 Test Street, London',
+  contactPhone: '07123 456789',
   openingTime: '15:30',
   closingTime: '21:30',
   weekendOpeningTime: '09:30',
@@ -172,6 +173,114 @@ describe('POST /api/owner/signup', () => {
   it('rejects a malformed time string', async () => {
     const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, peakStartTime: 'not-a-time' }))
     expect(res.status).toBe(400)
+  })
+
+  it('rejects a peak start time that can never trigger (after both closing times)', async () => {
+    const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, peakStartTime: '22:00' }))
+    const body = await res.json()
+    expect(res.status).toBe(400)
+    expect(body.error).toMatch(/before your venue closes/)
+  })
+
+  it('rejects a missing contact phone number', async () => {
+    const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, contactPhone: '' }))
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects an invalid amenity', async () => {
+    const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, amenities: ['floodlights', 'jacuzzi'] }))
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects daily hours where closing is before opening', async () => {
+    const res = await ownerSignup(makeRequest({
+      ...VALID_SIGNUP_BODY,
+      dailyHours: { monday: { opening: '10:00', closing: '08:00' } },
+    }))
+    expect(res.status).toBe(400)
+  })
+
+  it('stores contact phone, amenities, booking notice, daily hours, and custom pitch name', async () => {
+    const svcDb = createMockDb({ venues: [], pitches: [] })
+    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
+    mockAnonClient({
+      data: { user: { id: 'new-owner-id', identities: [{ id: 'x' }] }, session: { access_token: 'tok' } },
+      error: null,
+    })
+
+    const res = await ownerSignup(makeRequest({
+      ...VALID_SIGNUP_BODY,
+      amenities: ['floodlights', 'parking'],
+      minBookingNoticeMinutes: 30,
+      dailyHours: { monday: { opening: '09:00', closing: '22:00' } },
+      pitches: [{ ...VALID_SIGNUP_BODY.pitches[0], name: 'The Cage' }],
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(svcDb._tables.venues[0].contact_phone).toBe('07123 456789')
+    expect(svcDb._tables.venues[0].amenities).toEqual(['floodlights', 'parking'])
+    expect(svcDb._tables.venues[0].min_booking_notice_minutes).toBe(30)
+    expect(svcDb._tables.venues[0].daily_hours).toEqual({ monday: { opening: '09:00', closing: '22:00' } })
+    expect(svcDb._tables.pitches[0].name).toBe('The Cage')
+  })
+
+  it('uploads a venue photo and stores its public URL when one is submitted', async () => {
+    const svcDb = createMockDb({ venues: [], pitches: [] })
+    const upload = vi.fn().mockResolvedValue({ error: null })
+    const getPublicUrl = vi.fn().mockReturnValue({ data: { publicUrl: 'https://cdn.example/venue-photos/abc.jpg' } })
+    ;(svcDb as any).storage = { from: () => ({ upload, getPublicUrl }) }
+    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
+    mockAnonClient({
+      data: { user: { id: 'new-owner-id', identities: [{ id: 'x' }] }, session: { access_token: 'tok' } },
+      error: null,
+    })
+
+    const res = await ownerSignup(makeRequest({
+      ...VALID_SIGNUP_BODY,
+      photoDataUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ==',
+    }))
+
+    expect(res.status).toBe(200)
+    expect(upload).toHaveBeenCalledTimes(1)
+    expect(svcDb._tables.venues[0].photo_url).toBe('https://cdn.example/venue-photos/abc.jpg')
+  })
+
+  it('does not touch storage when no photo is submitted', async () => {
+    const svcDb = createMockDb({ venues: [], pitches: [] })
+    const upload = vi.fn()
+    ;(svcDb as any).storage = { from: () => ({ upload, getPublicUrl: vi.fn() }) }
+    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
+    mockAnonClient({
+      data: { user: { id: 'new-owner-id', identities: [{ id: 'x' }] }, session: { access_token: 'tok' } },
+      error: null,
+    })
+
+    const res = await ownerSignup(makeRequest(VALID_SIGNUP_BODY))
+    expect(res.status).toBe(200)
+    expect(upload).not.toHaveBeenCalled()
+  })
+
+  it('succeeds even when the photo upload fails (best-effort, non-fatal)', async () => {
+    const svcDb = createMockDb({ venues: [], pitches: [] })
+    const upload = vi.fn().mockResolvedValue({ error: { message: 'storage down' } })
+    ;(svcDb as any).storage = { from: () => ({ upload, getPublicUrl: vi.fn() }) }
+    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
+    mockAnonClient({
+      data: { user: { id: 'new-owner-id', identities: [{ id: 'x' }] }, session: { access_token: 'tok' } },
+      error: null,
+    })
+
+    const res = await ownerSignup(makeRequest({
+      ...VALID_SIGNUP_BODY,
+      photoDataUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ==',
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.ok).toBe(true)
+    expect(svcDb._tables.venues[0].photo_url).toBeUndefined()
   })
 
   it('stores the submitted schedule on the venue row', async () => {

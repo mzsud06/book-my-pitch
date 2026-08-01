@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
 
     const { data: slotsFound } = await supabase
       .from('slots')
-      .select('id, venue_id')
+      .select('id, venue_id, date, start_time')
       .in('id', finalSlotIds)
 
     if (!slotsFound || slotsFound.length !== finalSlotIds.length) {
@@ -134,12 +134,27 @@ export async function POST(req: NextRequest) {
     const venueId = (slotsFound[0] as { venue_id: string }).venue_id
     const { data: venue } = await supabase
       .from('venues')
-      .select('admin_approved, stripe_onboarding_complete')
+      .select('admin_approved, stripe_onboarding_complete, min_booking_notice_minutes')
       .eq('id', venueId)
       .single()
 
     if (!venue || !venue.admin_approved || !venue.stripe_onboarding_complete) {
       return NextResponse.json({ error: 'This venue is not currently accepting bookings' }, { status: 403 })
+    }
+
+    // Some venues require a minimum lead time before kickoff (set at signup) —
+    // check the earliest slot in a multi-hour booking, since that's when the
+    // game actually starts.
+    const minNoticeMinutes = (venue as { min_booking_notice_minutes: number }).min_booking_notice_minutes ?? 0
+    if (minNoticeMinutes > 0) {
+      const typedSlots = slotsFound as unknown as { date: string; start_time: string }[]
+      const earliestStart = typedSlots.reduce((earliest, s) => {
+        const dt = new Date(`${s.date}T${s.start_time}`).getTime()
+        return dt < earliest ? dt : earliest
+      }, Infinity)
+      if (earliestStart - Date.now() < minNoticeMinutes * 60 * 1000) {
+        return NextResponse.json({ error: `This venue requires bookings at least ${minNoticeMinutes} minutes before kickoff` }, { status: 400 })
+      }
     }
 
     // None of the requested slots may already be locked by a confirmed session —

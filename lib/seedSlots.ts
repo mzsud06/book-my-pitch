@@ -71,7 +71,7 @@ export async function seedSlotsForVenue(svc: SupabaseClient, venueId: string, pi
 export async function seedSlotsForAllVenues(svc: SupabaseClient) {
   const [{ data: pitches }, { data: venues }] = await Promise.all([
     svc.from('pitches').select('id, venue_id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'),
-    svc.from('venues').select('id, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time'),
+    svc.from('venues').select('id, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time, daily_hours'),
   ])
 
   if (!pitches || pitches.length === 0) return

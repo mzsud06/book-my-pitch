@@ -73,7 +73,7 @@ export default async function PublicGamesPage() {
   const today = new Date().toISOString().slice(0, 10)
   const { data: rawGames } = await createServiceClient()
     .from('sessions')
-    .select('id, organiser_name, status, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, address, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time)), players(count)')
+    .select('id, organiser_name, status, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, address, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time, daily_hours)), players(count)')
     .eq('game_type', 'open')
     .in('status', ['filling', 'confirmed'])
     .eq('is_public', true)

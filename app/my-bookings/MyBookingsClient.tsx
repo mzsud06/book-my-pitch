@@ -300,7 +300,7 @@ export default function MyBookingsClient() {
             joined_at,
             sessions(
               id, status, game_type, organiser_name,
-              slots(date, start_time, end_time, price, pitches(max_players), venues(name, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time), sessions(status)),
+              slots(date, start_time, end_time, price, pitches(max_players), venues(name, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time, daily_hours), sessions(status)),
               players(count)
             )
           `)
@@ -326,7 +326,7 @@ export default function MyBookingsClient() {
             .from('sessions')
             .select(`
               id, status, game_type, organiser_name,
-              slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time), sessions(status)),
+              slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time, daily_hours), sessions(status)),
               players(count)
             `)
             .in('id', ids)

@@ -51,6 +51,29 @@ interface Props {
   userSessionIds: string[]
   userId: string | null
   schedule?: VenueSchedule
+  amenities?: string[]
+  contactPhone?: string | null
+  minBookingNoticeMinutes?: number
+  photoUrl?: string | null
+}
+
+function formatNoticePeriod(minutes: number): string {
+  if (minutes < 60) return `${minutes} minutes`
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60
+    return `${hours} hour${hours > 1 ? 's' : ''}`
+  }
+  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`
+}
+
+const AMENITY_LABELS: Record<string, string> = {
+  floodlights: 'Floodlights',
+  parking: 'Parking',
+  changing_rooms: 'Changing rooms',
+  toilets: 'Toilets',
+  showers: 'Showers',
+  cafe: 'Café',
+  water_fountain: 'Water fountain',
 }
 
 function formatDate(date: Date): string {
@@ -163,7 +186,7 @@ function CheckIcon() {
   )
 }
 
-export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, pitches, userSessionIds, userId, schedule = DEFAULT_SCHEDULE }: Props) {
+export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, pitches, userSessionIds, userId, schedule = DEFAULT_SCHEDULE, amenities = [], contactPhone, minBookingNoticeMinutes = 0, photoUrl }: Props) {
   const userSessionSet = new Set(userSessionIds)
   const router = useRouter()
   const supabase = createClient()
@@ -446,6 +469,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 </div>
               </div>
 
+              {/* Venue photo */}
+              {photoUrl && (
+                <div className="anim-fade-up venue-area-photo" style={{ ...infoCardStyle, padding: 0, overflow: 'hidden' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photoUrl} alt={venueName} style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
+                </div>
+              )}
+
               {/* Description — composed from real venue/pitch fields, no invented copy */}
               <div className="anim-fade-up d-80 venue-area-description" style={infoCardStyle}>
                 <h3 style={{ ...infoCardHeading, marginBottom: '0.875rem' }}>Description</h3>
@@ -462,15 +493,52 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   <ClockIcon />
                   <h3 style={infoCardHeading}>Opening Hours</h3>
                 </div>
-                <div style={hoursRowStyle}>
-                  <span>Weekdays</span>
-                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>{openingHours.weekday.start} – {openingHours.weekday.end}</span>
-                </div>
-                <div style={{ ...hoursRowStyle, marginBottom: 0 }}>
-                  <span>Weekends</span>
-                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>{openingHours.weekend.start} – {openingHours.weekend.end}</span>
-                </div>
+                {openingHours.perDay ? (
+                  openingHours.perDay.map((d, i) => (
+                    <div key={d.day} style={i === openingHours.perDay!.length - 1 ? { ...hoursRowStyle, marginBottom: 0 } : hoursRowStyle}>
+                      <span style={{ textTransform: 'capitalize' }}>{d.day}</span>
+                      <span style={{ color: 'var(--green)', fontWeight: 700 }}>{d.start} – {d.end}</span>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <div style={hoursRowStyle}>
+                      <span>Weekdays</span>
+                      <span style={{ color: 'var(--green)', fontWeight: 700 }}>{openingHours.weekday.start} – {openingHours.weekday.end}</span>
+                    </div>
+                    <div style={{ ...hoursRowStyle, marginBottom: 0 }}>
+                      <span>Weekends</span>
+                      <span style={{ color: 'var(--green)', fontWeight: 700 }}>{openingHours.weekend.start} – {openingHours.weekend.end}</span>
+                    </div>
+                  </>
+                )}
+                {minBookingNoticeMinutes > 0 && (
+                  <p style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: 500, margin: '0.75rem 0 0' }}>
+                    Bookings must be made at least {formatNoticePeriod(minBookingNoticeMinutes)} before kickoff.
+                  </p>
+                )}
               </div>
+
+              {/* Amenities — free-form facility tags collected at signup */}
+              {amenities.length > 0 && (
+                <div className="anim-fade-up d-110 venue-area-amenities" style={infoCardStyle}>
+                  <h3 style={{ ...infoCardHeading, marginBottom: '0.875rem' }}>Amenities</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {amenities.map(a => (
+                      <span
+                        key={a}
+                        style={{
+                          fontSize: '12px', fontWeight: 600, color: 'var(--text)',
+                          background: 'var(--surface2)', border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-full)', padding: '0.4rem 0.85rem',
+                        }}
+                      >
+                        {AMENITY_LABELS[a] ?? a}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Location — real embed built from the venue's actual address, no API key required */}
               <div className="anim-fade-up d-120 venue-area-location" style={infoCardStyle}>
@@ -479,6 +547,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   <h3 style={infoCardHeading}>Location</h3>
                 </div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '0 0 1rem' }}>{venueAddress}</p>
+                {contactPhone && (
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '-0.5rem 0 1rem' }}>
+                    <a href={`tel:${contactPhone}`} style={{ color: 'var(--green)', fontWeight: 700, textDecoration: 'none' }}>{contactPhone}</a>
+                  </p>
+                )}
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${venueName}, ${venueAddress}`)}`}
                   target="_blank"

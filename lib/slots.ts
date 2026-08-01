@@ -17,17 +17,28 @@ export interface SlotTemplate {
   type: SlotType
 }
 
+export type DayName = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday'
+export const DAY_NAMES: DayName[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+
+export interface DayHours {
+  opening: string
+  closing: string
+}
+
 // A venue's bookable hours and peak window — every venue used to share one
 // hardcoded schedule (originally built for Globe Football Pitch); this makes
 // it per-venue instead. Times are 'HH:MM'. Peak applies from peak_start_time
 // until closing on both weekdays and weekends; before that it's off-peak on
-// weekdays and the flat weekend rate on weekends.
+// weekdays and the flat weekend rate on weekends. `daily_hours` is an optional
+// per-weekday override (only present if the venue ticked "hours differ by
+// day" at signup) — a day missing from the map falls back to weekday/weekend.
 export interface VenueSchedule {
   opening_time: string
   closing_time: string
   weekend_opening_time: string
   weekend_closing_time: string
   peak_start_time: string
+  daily_hours?: Partial<Record<DayName, DayHours>> | null
 }
 
 // Matches the schedule every venue effectively had before this was
@@ -39,6 +50,7 @@ export const DEFAULT_SCHEDULE: VenueSchedule = {
   weekend_opening_time: '09:30',
   weekend_closing_time: '21:30',
   peak_start_time: '18:30',
+  daily_hours: null,
 }
 
 // Pulls the schedule fields off a fetched venue row, falling back to
@@ -51,6 +63,7 @@ export function scheduleFromVenue(venue: Partial<VenueSchedule> | null | undefin
     weekend_opening_time: venue?.weekend_opening_time ?? DEFAULT_SCHEDULE.weekend_opening_time,
     weekend_closing_time: venue?.weekend_closing_time ?? DEFAULT_SCHEDULE.weekend_closing_time,
     peak_start_time: venue?.peak_start_time ?? DEFAULT_SCHEDULE.peak_start_time,
+    daily_hours: venue?.daily_hours ?? null,
   }
 }
 
@@ -68,8 +81,9 @@ function minutesToTime(mins: number): string {
 export function getSlotsForDay(date: Date, schedule: VenueSchedule = DEFAULT_SCHEDULE): SlotTemplate[] {
   const day = date.getDay() // 0=Sun, 6=Sat
   const isWeekend = day === 0 || day === 6
-  const open = timeToMinutes(isWeekend ? schedule.weekend_opening_time : schedule.opening_time)
-  const close = timeToMinutes(isWeekend ? schedule.weekend_closing_time : schedule.closing_time)
+  const override = schedule.daily_hours?.[DAY_NAMES[day]]
+  const open = timeToMinutes(override?.opening ?? (isWeekend ? schedule.weekend_opening_time : schedule.opening_time))
+  const close = timeToMinutes(override?.closing ?? (isWeekend ? schedule.weekend_closing_time : schedule.closing_time))
   const peakStart = timeToMinutes(schedule.peak_start_time)
 
   const slots: SlotTemplate[] = []
@@ -81,11 +95,32 @@ export function getSlotsForDay(date: Date, schedule: VenueSchedule = DEFAULT_SCH
 }
 
 // Derived from a venue's schedule so displayed opening hours can never drift
-// out of sync with the actual bookable window.
+// out of sync with the actual bookable window. When the venue has any
+// per-day overrides, returns a full Sun-Sat breakdown instead of the
+// weekday/weekend summary, so the display never contradicts what's actually
+// bookable.
 export function getOpeningHours(schedule: VenueSchedule = DEFAULT_SCHEDULE) {
+  const hasOverrides = schedule.daily_hours && Object.keys(schedule.daily_hours).length > 0
+  if (!hasOverrides) {
+    return {
+      weekday: { start: schedule.opening_time, end: schedule.closing_time },
+      weekend: { start: schedule.weekend_opening_time, end: schedule.weekend_closing_time },
+      perDay: null as { day: DayName; start: string; end: string }[] | null,
+    }
+  }
+  const perDay = DAY_NAMES.map(day => {
+    const isWeekend = day === 'sunday' || day === 'saturday'
+    const override = schedule.daily_hours?.[day]
+    return {
+      day,
+      start: override?.opening ?? (isWeekend ? schedule.weekend_opening_time : schedule.opening_time),
+      end: override?.closing ?? (isWeekend ? schedule.weekend_closing_time : schedule.closing_time),
+    }
+  })
   return {
     weekday: { start: schedule.opening_time, end: schedule.closing_time },
     weekend: { start: schedule.weekend_opening_time, end: schedule.weekend_closing_time },
+    perDay,
   }
 }
 

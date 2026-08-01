@@ -6,6 +6,11 @@
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
+-- Public storage bucket for venue photos (uploaded server-side via service
+-- role during signup — see supabase/venue-photo-migration.sql and
+-- app/api/owner/signup/route.ts). Not a table, so not expressible as DDL
+-- here; the migration file is the source of truth for recreating it.
+
 -- Venues
 create table if not exists venues (
   id uuid primary key default uuid_generate_v4(),
@@ -28,7 +33,25 @@ create table if not exists venues (
   closing_time time not null default '21:30',
   weekend_opening_time time not null default '09:30',
   weekend_closing_time time not null default '21:30',
-  peak_start_time time not null default '18:30'
+  peak_start_time time not null default '18:30',
+  -- Optional per-weekday override of the weekday/weekend hours above — a
+  -- venue only collects this if it ticks "hours differ by day" at signup.
+  -- Shape: { "monday": {"opening":"09:00","closing":"22:00"}, ... } for any
+  -- subset of days; a day missing from the map falls back to weekday/weekend
+  -- hours as normal (see lib/slots.ts:getSlotsForDay).
+  daily_hours jsonb,
+  -- Operational contact for booking issues — collected at signup, not used
+  -- by any booking logic.
+  contact_phone text,
+  -- Free-form facility tags shown on the venue's public listing.
+  amenities text[] not null default '{}',
+  -- How many minutes before kickoff a slot stops being bookable — see
+  -- app/api/sessions/route.ts, which enforces this on session creation.
+  min_booking_notice_minutes integer not null default 0,
+  -- Public URL of the venue's photo in the 'venue-photos' storage bucket —
+  -- uploaded server-side (service role) during signup, see
+  -- app/api/owner/signup/route.ts.
+  photo_url text
 );
 
 -- Pitches (a bookable playing surface at a venue — a venue may have several)

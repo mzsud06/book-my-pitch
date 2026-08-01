@@ -60,7 +60,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
       .select(`
         id, status, created_at, organiser_name, organiser_phone, organiser_id, game_type, is_public, slot_ids,
         slots(id, date, start_time, end_time, price, max_players, pitches(${PITCH_COLS}),
-          venues(id, name, address, stripe_account_id, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time)
+          venues(id, name, address, stripe_account_id, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time, daily_hours)
         )
       `)
       .eq('id', id)

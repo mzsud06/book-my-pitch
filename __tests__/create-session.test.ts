@@ -78,3 +78,59 @@ describe('POST /api/sessions: venue approval gate', () => {
     expect(db._tables.sessions.length).toBe(1)
   })
 })
+
+describe('POST /api/sessions: minimum booking notice', () => {
+  // Production code parses `${date}T${start_time}` as local time (no 'Z'
+  // suffix — see lib/slots.ts:isSlotInPast), so this must build those parts
+  // from local getters too, not toISOString() (UTC), or the round-trip drifts
+  // by the runner's timezone offset.
+  function isoSlot(msFromNow: number): { date: string; start_time: string } {
+    const d = new Date(Date.now() + msFromNow)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return {
+      date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      start_time: `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`,
+    }
+  }
+
+  it('rejects a booking inside the venue\'s minimum notice window', async () => {
+    const db = createMockDb({
+      slots: [{ id: SLOT_ID, venue_id: VENUE_ID, ...isoSlot(10 * 60 * 1000) }], // kicks off in 10 min
+      venues: [{ id: VENUE_ID, admin_approved: true, stripe_onboarding_complete: true, min_booking_notice_minutes: 30 }],
+      sessions: [],
+    }, { id: USER_ID })
+    vi.mocked(createClient).mockResolvedValue(db as any)
+
+    const res = await createSession(makeRequest(VALID_BODY))
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.error).toMatch(/30 minutes before kickoff/)
+    expect(db._tables.sessions.length).toBe(0)
+  })
+
+  it('allows a booking outside the venue\'s minimum notice window', async () => {
+    const db = createMockDb({
+      slots: [{ id: SLOT_ID, venue_id: VENUE_ID, ...isoSlot(60 * 60 * 1000) }], // kicks off in 1 hour
+      venues: [{ id: VENUE_ID, admin_approved: true, stripe_onboarding_complete: true, min_booking_notice_minutes: 30 }],
+      sessions: [],
+    }, { id: USER_ID })
+    vi.mocked(createClient).mockResolvedValue(db as any)
+
+    const res = await createSession(makeRequest(VALID_BODY))
+    expect(res.status).toBe(200)
+    expect(db._tables.sessions.length).toBe(1)
+  })
+
+  it('does not enforce a notice window when the venue has none set', async () => {
+    const db = createMockDb({
+      slots: [{ id: SLOT_ID, venue_id: VENUE_ID, ...isoSlot(60 * 1000) }], // kicks off in 1 min
+      venues: [{ id: VENUE_ID, admin_approved: true, stripe_onboarding_complete: true, min_booking_notice_minutes: 0 }],
+      sessions: [],
+    }, { id: USER_ID })
+    vi.mocked(createClient).mockResolvedValue(db as any)
+
+    const res = await createSession(makeRequest(VALID_BODY))
+    expect(res.status).toBe(200)
+  })
+})

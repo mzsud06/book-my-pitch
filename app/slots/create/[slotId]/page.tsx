@@ -5,7 +5,7 @@ import CreateSessionForm from './CreateSessionForm'
 import { combineSlots, getSlotType, scheduleFromVenue, Pitch, VenueSchedule } from '@/lib/slots'
 
 const PITCH_COLS = 'id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'
-const VENUE_COLS = 'name, address, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time'
+const VENUE_COLS = 'name, address, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time, daily_hours'
 
 interface Props {
   params: Promise<{ slotId: string }>

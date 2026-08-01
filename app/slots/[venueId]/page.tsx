@@ -31,7 +31,7 @@ export default async function VenueSlotsPage({ params }: Props) {
 
   const { data: venue } = await supabase
     .from('venues')
-    .select('id, name, address, stripe_onboarding_complete, admin_approved, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time')
+    .select('id, name, address, stripe_onboarding_complete, admin_approved, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time, daily_hours, contact_phone, amenities, min_booking_notice_minutes, photo_url')
     .eq('id', venueId)
     .single()
 
@@ -161,6 +161,10 @@ export default async function VenueSlotsPage({ params }: Props) {
         venueAddress={venue.address}
         pitches={venuePitches}
         schedule={schedule}
+        amenities={(venue as unknown as { amenities: string[] }).amenities ?? []}
+        contactPhone={(venue as unknown as { contact_phone: string | null }).contact_phone}
+        minBookingNoticeMinutes={(venue as unknown as { min_booking_notice_minutes: number }).min_booking_notice_minutes ?? 0}
+        photoUrl={(venue as unknown as { photo_url: string | null }).photo_url}
         userSessionIds={userSessionIds}
         userId={user?.id ?? null}
       />
