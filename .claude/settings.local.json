@@ -40,7 +40,10 @@
       "PowerShell(Head *)",
       "PowerShell(node --version)",
       "mcp__claude_ai_Supabase__list_projects",
-      "mcp__claude_ai_Supabase__execute_sql"
+      "mcp__claude_ai_Supabase__execute_sql",
+      "Bash(netstat -ano)",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "Bash(npm test *)"
     ]
   }
 }
