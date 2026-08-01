@@ -568,7 +568,7 @@ export default function SessionClient({
 
   function shareWhatsApp() {
     const venueName = slot.venues?.name ?? 'your local pitch'
-    const text = `Join my ${slot.pitches.format} at ${venueName} — ${sliceTime(slot.start_time)}–${sliceTime(slot.end_time)} on ${formatDate(slot.date)}!\n${shareUrl}`
+    const text = `Join my ${slot.pitches.format} at ${venueName}, ${sliceTime(slot.start_time)}–${sliceTime(slot.end_time)} on ${formatDate(slot.date)}!\n${shareUrl}`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
@@ -813,7 +813,7 @@ export default function SessionClient({
               marginBottom: '5px',
             }}
           >
-            ✓ Game Confirmed — {formatDate(slot.date)} · {sliceTime(slot.start_time)} · {slot.venues?.name ?? 'your local pitch'}
+            ✓ Game Confirmed: {formatDate(slot.date)} · {sliceTime(slot.start_time)} · {slot.venues?.name ?? 'your local pitch'}
           </div>
           <div style={{ fontSize: '13px', color: 'rgba(0,0,0,0.6)', fontWeight: 600 }}>
             £{perPlayerPounds} was charged to your card
@@ -940,7 +940,7 @@ export default function SessionClient({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
               <div style={{ fontSize: '14px', color: 'var(--green)', fontWeight: 700, lineHeight: 1.5 }}>
                 <span style={{ marginRight: '6px', fontSize: '16px' }}>⚽</span>
-                You&apos;re in this game · Spot {returningPlayerJerseyNumber ?? '—'} · {remaining} more player{remaining !== 1 ? 's' : ''} needed to confirm
+                You&apos;re in this game · Spot {returningPlayerJerseyNumber ?? '-'} · {remaining} more player{remaining !== 1 ? 's' : ''} needed to confirm
               </div>
               <button
                 onClick={() => setBannerLeaveOpen(true)}
@@ -1102,11 +1102,11 @@ export default function SessionClient({
 
           <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 600 }}>
             {isConfirmed ? (
-              <strong style={{ color: 'var(--green)', fontWeight: 800 }}>Confirmed — all {maxPlayers} players ✓</strong>
+              <strong style={{ color: 'var(--green)', fontWeight: 800 }}>Confirmed: all {maxPlayers} players ✓</strong>
             ) : (
               <>
                 <strong style={{ color: 'var(--text)', fontWeight: 800 }}>{playerCount}/{maxPlayers} players</strong>
-                {' '}— {remaining} more needed
+                {', '}{remaining} more needed
               </>
             )}
           </div>
@@ -1217,7 +1217,7 @@ export default function SessionClient({
             This game is already confirmed
           </div>
           <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
-            It&apos;s underway — no spots available.
+            It&apos;s underway, no spots available.
           </div>
           <Link href="/slots" style={{ textDecoration: 'none' }}>
             <button
@@ -1369,7 +1369,7 @@ export default function SessionClient({
                     Make this public?
                   </div>
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
-                    Anyone will be able to find and join this game publicly. Once public, the game can no longer be cancelled — you can still leave it yourself.
+                    Anyone will be able to find and join this game publicly. Once public, the game can no longer be cancelled, though you can still leave it yourself.
                   </div>
                   {convertError && (
                     <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
@@ -1524,7 +1524,7 @@ export default function SessionClient({
                     Join this game
                   </div>
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.1rem' }}>
-                    Nothing is charged now — your card is only saved once all {maxPlayers} players join.
+                    Nothing is charged now, your card is only saved once all {maxPlayers} players join.
                   </div>
                   <form onSubmit={handleJoinFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div>
@@ -1567,7 +1567,7 @@ export default function SessionClient({
                     </div>
 
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.55 }}>
-                      🔒 <strong style={{ color: 'var(--text)' }}>Nothing is charged now</strong> — your card is only taken when all {maxPlayers} players join.
+                      🔒 <strong style={{ color: 'var(--text)' }}>Nothing is charged now</strong>, your card is only taken when all {maxPlayers} players join.
                     </div>
 
                     <button
@@ -2326,7 +2326,7 @@ export default function SessionClient({
                       }}
                     >
                       {regError === 'already_registered' ? (
-                        <>This email is already registered — <Link href="/auth/login" style={{ color: 'var(--red)', textDecoration: 'underline' }}>try logging in instead</Link>.</>
+                        <>This email is already registered, <Link href="/auth/login" style={{ color: 'var(--red)', textDecoration: 'underline' }}>try logging in instead</Link>.</>
                       ) : regError}
                     </div>
                   )}

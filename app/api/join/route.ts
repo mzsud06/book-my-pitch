@@ -226,7 +226,7 @@ export async function POST(req: NextRequest) {
         otherUserIds.map(uid => ({
           user_id: uid,
           session_id: sessionId,
-          message: `${trimmedName} just joined your game — ${playerCount}/${capacity} players now.`,
+          message: `${trimmedName} just joined your game, ${playerCount}/${capacity} players now.`,
         }))
       )
     }
@@ -236,7 +236,7 @@ export async function POST(req: NextRequest) {
       await serviceSupabase.from('notifications').insert({
         user_id: organiserId,
         session_id: sessionId,
-        message: 'Your game is almost full — one more player needed to confirm!',
+        message: 'Your game is almost full, one more player needed to confirm!',
       })
     }
 
@@ -293,7 +293,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         sessionId,
         playerCount: currentCount ?? playerCount - 1,
-        note: "You're in! Another player's card didn't go through, so the game isn't confirmed yet — you'll be charged automatically once it fills back up.",
+        note: "You're in! Another player's card didn't go through, so the game isn't confirmed yet, you'll be charged automatically once it fills back up.",
       })
     }
 

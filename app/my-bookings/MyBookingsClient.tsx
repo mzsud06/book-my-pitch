@@ -149,7 +149,7 @@ function gameTypeInfo(gameType: string): { label: string; variant: 'public' | 'n
 
 function cancelReasonText(c: BookingCard): string | null {
   if (c.status !== 'cancelled') return null
-  if (c.slotTakenByRival) return 'Cancelled — slot taken by another group'
+  if (c.slotTakenByRival) return 'Cancelled: slot taken by another group'
   return 'Cancelled by organiser'
 }
 
@@ -470,7 +470,7 @@ export default function MyBookingsClient() {
       {/* Confirmed — Upcoming */}
       {upcoming.length > 0 && (
         <div style={{ marginBottom: '2.5rem' }}>
-          <SectionLabel label="Confirmed — Upcoming" color="var(--green)" lineColor="var(--green)" />
+          <SectionLabel label="Confirmed: Upcoming" color="var(--green)" lineColor="var(--green)" />
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {upcoming.map((c, idx) => (
               <BookingCardTile key={c.sessionId} c={c} animationDelay={`${idx * 60}ms`} />

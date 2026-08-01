@@ -428,16 +428,16 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 <div className="venue-hero-stats">
                   <div className="venue-stat-tile">
                     <span className="venue-stat-label">Surface</span>
-                    <span className="venue-stat-value">{selectedPitch?.surface ?? '—'}</span>
+                    <span className="venue-stat-value">{selectedPitch?.surface ?? '-'}</span>
                   </div>
                   <div className="venue-stat-tile">
                     <span className="venue-stat-label">Format</span>
-                    <span className="venue-stat-value">{selectedPitch?.format ?? '—'}</span>
+                    <span className="venue-stat-value">{selectedPitch?.format ?? '-'}</span>
                   </div>
                   <div className="venue-stat-tile">
                     <span className="venue-stat-label">From</span>
                     <span className="venue-stat-value" style={{ color: 'var(--green)' }}>
-                      {selectedPitch ? formatPerPlayer(selectedPitch.offpeak_price, selectedPitch.max_players) : '—'}
+                      {selectedPitch ? formatPerPlayer(selectedPitch.offpeak_price, selectedPitch.max_players) : '-'}
                     </span>
                   </div>
                 </div>
@@ -448,7 +448,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 <h3 style={{ ...infoCardHeading, marginBottom: '0.875rem' }}>Description</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
                   {pitches.length > 1
-                    ? `${venueName} has ${pitches.length} pitches available — ${pitches.map(p => p.format).join(' and ')} — on ${Array.from(new Set(pitches.map(p => p.surface))).join('/')} surface, located at ${venueAddress}.`
+                    ? `${venueName} has ${pitches.length} pitches available (${pitches.map(p => p.format).join(' and ')}) on ${Array.from(new Set(pitches.map(p => p.surface))).join('/')} surface, located at ${venueAddress}.`
                     : `${venueName} features a ${selectedPitch?.format} football pitch on ${selectedPitch?.surface} surface, located at ${venueAddress}.`}
                 </p>
               </div>
@@ -525,7 +525,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       <path d="M10 16h12M16 10v12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     </svg>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0, fontWeight: 400 }}>
-                      No public games today — create one from the booking panel
+                      No public games today, create one from the booking panel
                     </p>
                   </div>
                 ) : (
@@ -830,7 +830,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   <path d="M18 11v7M18 21v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '15px', margin: 0, fontWeight: 400 }}>
-                  No game times here — try another day
+                  No game times here, try another day
                 </p>
               </div>
             ) : (

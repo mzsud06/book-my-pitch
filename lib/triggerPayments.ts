@@ -15,7 +15,7 @@ export interface TriggerPaymentsResult {
   failedPlayerIds?: string[]
 }
 
-const FREED_SPOT_MESSAGE = 'Your payment failed for a game you joined — your spot has been freed up. Rejoin with a working card to secure your place.'
+const FREED_SPOT_MESSAGE = 'Your payment failed for a game you joined, your spot has been freed up. Rejoin with a working card to secure your place.'
 
 function formatNameList(names: string[]): string {
   if (names.length === 1) return names[0]
@@ -42,7 +42,7 @@ async function notifyOrganiserOfFailure(
   await serviceSupabase.from('notifications').insert({
     user_id: organiserId,
     session_id: sessionId,
-    message: `${formatNameList(others.map(p => p.name))}'s payment didn't go through, so the game hasn't filled. If they joined as a guest they won't see this — worth messaging them directly to rejoin with a working card.`,
+    message: `${formatNameList(others.map(p => p.name))}'s payment didn't go through, so the game hasn't filled. If they joined as a guest they won't see this, worth messaging them directly to rejoin with a working card.`,
   })
 }
 
@@ -134,7 +134,7 @@ export async function triggerPayments(sessionId: string, slot: SlotForPayment, s
         confirm: true,
         off_session: true,
         capture_method: 'manual',
-        description: `BookMyPitch — ${venue?.name ?? 'your local pitch'} ${combined.start_time}–${combined.end_time} ${combined.date}`,
+        description: `BookMyPitch: ${venue?.name ?? 'your local pitch'} ${combined.start_time}–${combined.end_time} ${combined.date}`,
         ...(venueStripeAccountId ? {
           application_fee_amount: PLATFORM_FEE_PENCE,
           transfer_data: { destination: venueStripeAccountId },
@@ -323,7 +323,7 @@ export async function triggerPayments(sessionId: string, slot: SlotForPayment, s
         (rivalPlayers as unknown as { user_id: string; session_id: string }[]).map(p => ({
           user_id: p.user_id,
           session_id: p.session_id,
-          message: 'Another group confirmed this slot — your game has been cancelled. No charge was made.',
+          message: 'Another group confirmed this slot, your game has been cancelled. No charge was made.',
         }))
       )
     }

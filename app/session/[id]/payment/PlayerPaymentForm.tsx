@@ -291,7 +291,7 @@ function CardForm({
           lineHeight: 1,
         }}
       >
-        {loading ? 'Processing...' : parentDisabled ? 'Refreshing payment form…' : `Join — only £${totalPerPlayer} if confirmed`}
+        {loading ? 'Processing...' : parentDisabled ? 'Refreshing payment form…' : `Join: only £${totalPerPlayer} if confirmed`}
       </button>
 
       <div

@@ -303,7 +303,7 @@ function CardStep({
             lineHeight: 1,
           }}
         >
-          {loading ? 'Confirming your spot…' : parentDisabled ? 'Refreshing payment form…' : `Confirm your spot — only £${total} if confirmed`}
+          {loading ? 'Confirming your spot…' : parentDisabled ? 'Refreshing payment form…' : `Confirm your spot: only £${total} if confirmed`}
         </button>
         <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
           No charge until game is full.

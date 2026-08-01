@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (s.game_type !== 'private') {
-      return NextResponse.json({ error: 'Public games cannot be cancelled — leave the game instead' }, { status: 400 })
+      return NextResponse.json({ error: 'Public games cannot be cancelled, leave the game instead' }, { status: 400 })
     }
 
     const { error: updateError } = await svc

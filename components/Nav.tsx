@@ -810,7 +810,7 @@ export default function Nav() {
             textAlign: 'center',
           }}
         >
-          All Rights Reserved — © {new Date().getFullYear()} BookMyPitch
+          All Rights Reserved, © {new Date().getFullYear()} BookMyPitch
         </div>
       </div>,
       document.body

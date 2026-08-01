@@ -3,8 +3,8 @@ import { GeistSans } from 'geist/font/sans';
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BookMyPitch — Play football tonight in East London",
-  description: "Find a game near you or start one in under a minute. No bank transfers — everyone pays automatically when the team is full.",
+  title: "BookMyPitch: Play football tonight in East London",
+  description: "Find a game near you or start one in under a minute. No bank transfers, everyone pays automatically when the team is full.",
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -13,8 +13,8 @@ export const metadata: Metadata = {
     apple: '/logo.png',
   },
   openGraph: {
-    title: "BookMyPitch — Play football tonight",
-    description: "Find a game near you or start one in under a minute. No bank transfers — everyone pays automatically when the team is full.",
+    title: "BookMyPitch: Play football tonight",
+    description: "Find a game near you or start one in under a minute. No bank transfers, everyone pays automatically when the team is full.",
     url: "https://bookmypitch.uk",
     type: "website",
     images: [

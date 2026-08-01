@@ -11,7 +11,7 @@ const STEPS = [
   {
     n: '01',
     title: 'List your venue',
-    body: 'Tell us your venue name, address, pitch format and your pricing. Takes a few minutes — no paperwork.',
+    body: 'Tell us your venue name, address, pitch format and your pricing. Takes a few minutes, no paperwork.',
   },
   {
     n: '02',
@@ -21,7 +21,7 @@ const STEPS = [
   {
     n: '03',
     title: 'Quick review',
-    body: "We do a quick manual check on every new venue before it goes live — just making sure it's a real, bookable pitch. Usually done within a day.",
+    body: "We do a quick manual check on every new venue before it goes live, just making sure it's a real, bookable pitch. Usually done within a day.",
   },
   {
     n: '04',
@@ -31,26 +31,26 @@ const STEPS = [
   {
     n: '05',
     title: 'Get paid automatically',
-    body: 'Groups reserve a slot and save a card, but nobody is charged until enough players join. The moment a game fills, everyone is charged at once and your payout is on its way — no chasing, no no-shows on payment.',
+    body: 'Groups reserve a slot and save a card, but nobody is charged until enough players join. The moment a game fills, everyone is charged at once and your payout is on its way. No chasing, no no-shows on payment.',
   },
 ]
 
 const OWNER_FAQS: FaqItemData[] = [
   {
     q: 'What does BookMyPitch cost me?',
-    a: "Nothing upfront. You set your own hourly pricing, and you receive the full amount via Stripe Connect, automatically, the moment a game confirms. Players pay a small platform fee (50p) and Stripe's processing fee on top of your price — neither comes out of your payout.",
+    a: "Nothing upfront. You set your own hourly pricing, and you receive the full amount via Stripe Connect, automatically, the moment a game confirms. Players pay a small platform fee (50p) and Stripe's processing fee on top of your price, neither comes out of your payout.",
   },
   {
     q: 'How do I actually get paid?',
-    a: "Through Stripe Connect. When you list your venue, you'll verify your business/bank details directly with Stripe (identity check + bank account) — the same process used by thousands of UK marketplaces. Once verified, payouts land in your account automatically whenever a game confirms.",
+    a: "Through Stripe Connect. When you list your venue, you'll verify your business/bank details directly with Stripe (identity check + bank account), the same process used by thousands of UK marketplaces. Once verified, payouts land in your account automatically whenever a game confirms.",
   },
   {
     q: "What if a group's payment fails?",
-    a: "Cards are only authorised, not charged, until every player in the group has a valid payment method confirmed. If any card fails, nobody is charged — you're never left chasing a partial payment or a no-show on money.",
+    a: "Cards are only authorised, not charged, until every player in the group has a valid payment method confirmed. If any card fails, nobody is charged, so you're never left chasing a partial payment or a no-show on money.",
   },
   {
     q: 'Do I need to manually confirm each booking?',
-    a: "No. Once a group fills their slot, payment is captured and the booking is confirmed automatically — you'll see it appear on your dashboard in real time.",
+    a: "No. Once a group fills their slot, payment is captured and the booking is confirmed automatically. You'll see it appear on your dashboard in real time.",
   },
   {
     q: 'Can I list more than one pitch?',
@@ -58,7 +58,7 @@ const OWNER_FAQS: FaqItemData[] = [
   },
   {
     q: 'What happens to slots that never fill?',
-    a: "Nothing is charged and the slot simply expires — it drops off the public listing automatically once its time passes, so your dashboard always reflects what's actually still bookable.",
+    a: "Nothing is charged and the slot simply expires. It drops off the public listing automatically once its time passes, so your dashboard always reflects what's actually still bookable.",
   },
 ]
 
@@ -85,7 +85,7 @@ export default function ListYourVenuePage() {
                   <span style={{ color: 'var(--green)' }}>Get paid automatically.</span>
                 </>
               }
-              sub="List your pitch, connect payouts, and let BookMyPitch handle group coordination, payment collection and no-shows — you just show up to a booked pitch."
+              sub="List your pitch, connect payouts, and let BookMyPitch handle group coordination, payment collection and no-shows. You just show up to a booked pitch."
             />
             <div style={{ marginTop: '1.75rem', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <Link href="/owner/signup" style={{ textDecoration: 'none' }}>
@@ -155,7 +155,7 @@ export default function ListYourVenuePage() {
                   You set the price. You keep the price.
                 </div>
                 <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.65, fontWeight: 500 }}>
-                  Players pay your pitch price plus a small platform fee (50p/player) and Stripe&apos;s processing fee — both on top of what you set, never deducted from your payout. You receive your full pitch price automatically via Stripe Connect the moment a game confirms.
+                  Players pay your pitch price plus a small platform fee (50p/player) and Stripe&apos;s processing fee, both on top of what you set, never deducted from your payout. You receive your full pitch price automatically via Stripe Connect the moment a game confirms.
                 </div>
               </div>
               <div
@@ -167,7 +167,7 @@ export default function ListYourVenuePage() {
                 }}
               >
                 <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: '0.75rem' }}>
-                  Example — £30 off-peak, 10 players
+                  Example: £30 off-peak, 10 players
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 600, marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
                   <span>Your payout</span><span style={{ color: 'var(--green)' }}>£30.00</span>

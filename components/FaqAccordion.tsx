@@ -20,11 +20,11 @@ const DEFAULT_FAQS: FaqItemData[] = [
   },
   {
     q: "What happens if the game doesn't fill up?",
-    a: "Nobody is charged. Your card is only ever authorised to hold your place — if the game doesn't reach the required number of players, nothing is taken and you're free to find another game.",
+    a: "Nobody is charged. Your card is only ever authorised to hold your place, and if the game doesn't reach the required number of players, nothing is taken and you're free to find another game.",
   },
   {
     q: "Why do I need to add my card if I'm not being charged yet?",
-    a: "Adding your card upfront means the moment the game fills, everyone is charged automatically and the booking locks in instantly — no chasing people for payment afterwards, no risk of someone backing out after agreeing to come.",
+    a: "Adding your card upfront means the moment the game fills, everyone is charged automatically and the booking locks in instantly. No chasing people for payment afterwards, no risk of someone backing out after agreeing to come.",
   },
   {
     q: "What if someone doesn't show up after the game is confirmed?",
@@ -32,7 +32,7 @@ const DEFAULT_FAQS: FaqItemData[] = [
   },
   {
     q: "Can I get a refund if I can't make it anymore?",
-    a: "Once a game is confirmed and charged, refunds aren't automatic through the platform. If something comes up, let your organiser know — they may be able to find a replacement player.",
+    a: "Once a game is confirmed and charged, refunds aren't automatic through the platform. If something comes up, let your organiser know, as they may be able to find a replacement player.",
   },
   {
     q: "How do I know the other players are real?",

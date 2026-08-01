@@ -173,8 +173,8 @@ export async function POST(req: NextRequest) {
 
     if (remainingPlayers && remainingPlayers.length > 0) {
       const leaveMessage = organiserLeaveAllowed
-        ? `The organiser has left — ${(newOrganiserName ?? 'a player').split(' ')[0]} is now the organiser.`
-        : 'A player has dropped out — the game needs one more player to confirm.'
+        ? `The organiser has left, ${(newOrganiserName ?? 'a player').split(' ')[0]} is now the organiser.`
+        : 'A player has dropped out, the game needs one more player to confirm.'
       await svc.from('notifications').insert(
         (remainingPlayers as unknown as { user_id: string }[]).map(p => ({
           user_id: p.user_id,
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
 
     await svc.from('messages').insert({
       session_id: sessionId,
-      content: `${firstName} left the game — ${needed} more ${plural} needed`,
+      content: `${firstName} left the game, ${needed} more ${plural} needed`,
       user_id: null,
     })
 

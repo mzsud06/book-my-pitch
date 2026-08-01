@@ -62,7 +62,7 @@ describe('cancel-session: only the organiser can cancel', () => {
     const body = await res.json()
 
     expect(res.status).toBe(400)
-    expect(body.error).toBe('Public games cannot be cancelled — leave the game instead')
+    expect(body.error).toBe('Public games cannot be cancelled, leave the game instead')
     expect(svcDb._tables.sessions[0].status).toBe('filling')
   })
 

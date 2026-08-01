@@ -429,7 +429,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
         </div>
         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 500 }}>
           <strong style={{ color: 'var(--text)', fontWeight: 800 }}>1/{slot.pitches.max_players} players</strong>
-          {' '}— {slot.pitches.max_players - 1} more needed to confirm
+          {', '}{slot.pitches.max_players - 1} more needed to confirm
         </div>
       </div>
 

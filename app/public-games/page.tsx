@@ -100,7 +100,7 @@ export default async function PublicGamesPage() {
               <SectionHeading
                 eyebrow="Live now"
                 heading="Public games"
-                sub="Join a game that's already filling up — no organising needed."
+                sub="Join a game that's already filling up, no organising needed."
               />
             </div>
 

@@ -208,7 +208,7 @@ export default function OwnerSignupPage() {
               </div>
               <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.65, marginBottom: '2rem' }}>
                 We&apos;ve sent a confirmation link to <strong style={{ color: 'var(--text)' }}>{email}</strong>.
-                {' '}Your venue is already set up — click the link, then log in to finish connecting your payouts.
+                {' '}Your venue is already set up, click the link, then log in to finish connecting your payouts.
               </div>
               <Link href="/owner/login" style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, textDecoration: 'none' }}>
                 Go to owner login →

@@ -70,8 +70,8 @@ export function Footer() {
         {/* Right — support links */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
           <div style={columnLabelStyle}>Support</div>
-          <a href="mailto:masud.bookmypitch@gmail.com" style={linkStyle}>Get in touch</a>
-          <a href="mailto:masud.bookmypitch@gmail.com?subject=Bug Report" style={linkStyle}>Report a bug</a>
+          <a href="mailto:masud@bookmypitch.uk" style={linkStyle}>Get in touch</a>
+          <a href="mailto:masud@bookmypitch.uk?subject=Bug Report" style={linkStyle}>Report a bug</a>
           <Link href="/terms" style={linkStyle}>Terms of service</Link>
           <Link href="/privacy" style={linkStyle}>Privacy policy</Link>
         </div>

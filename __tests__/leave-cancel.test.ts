@@ -241,6 +241,6 @@ describe('leave: organiser leaving transfers the role instead of leaving the gam
     expect(svcDb._tables.sessions[0].organiser_phone).toBe('+447900000002')
 
     const notified = svcDb._tables.notifications.find((n: any) => n.user_id === USER_B)
-    expect(notified?.message).toBe('The organiser has left — Bob is now the organiser.')
+    expect(notified?.message).toBe('The organiser has left, Bob is now the organiser.')
   })
 })
