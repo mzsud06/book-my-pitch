@@ -6,7 +6,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="1 August 2026"
+      updated="2 August 2026"
       intro="This explains what personal data BookMyPitch collects, why, and your rights over it."
     >
       <h2>1. Who we are</h2>
@@ -69,10 +69,28 @@ export default function PrivacyPage() {
         records for that period regardless, to meet our legal obligations.
       </p>
 
-      <h2>6. Cookies</h2>
+      <h2 id="cookies">6. Cookies and local storage</h2>
       <p>
-        We use only essential cookies needed to keep you signed in (set by Supabase authentication). We don&apos;t
-        use advertising or analytics-tracking cookies.
+        We only use cookies and browser storage that are necessary to run the service. We don&apos;t use any
+        advertising, analytics, or cross-site tracking cookies, and we never sell or profile your browsing activity.
+      </p>
+      <ul>
+        <li><strong>Sign-in cookies</strong> (set by Supabase, our authentication provider): keep you logged in between visits.</li>
+        <li><strong>Payment cookies</strong> (set by Stripe when you enter card details): required by Stripe to detect card fraud during checkout. We don&apos;t control these directly; see Stripe&apos;s own cookie policy.</li>
+        <li>
+          <strong>Local storage</strong>{' '}
+          (kept in your browser, not sent to us as a cookie): if you book as a guest
+          without an account, we store your name/phone and which games you&apos;ve joined locally on your device so
+          you can find &ldquo;My Bookings&rdquo; again without logging in, and it expires automatically after 7 days.
+          If you&apos;re part-way through listing a venue, we also save your form progress locally so a closed tab
+          doesn&apos;t lose your work.
+        </li>
+      </ul>
+      <p>
+        Because none of these are used for advertising, analytics, or tracking, none require your consent under UK
+        law, but we&apos;re telling you about them anyway. You can clear cookies/local storage at any time via your
+        browser settings, though sign-in and guest-booking features won&apos;t work properly until you sign back in
+        or rejoin.
       </p>
 
       <h2>7. Your rights</h2>

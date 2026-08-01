@@ -147,3 +147,24 @@ export function writeOwnerSignupDraft<T>(data: T): void {
 export function clearOwnerSignupDraft(): void {
   localStorage.removeItem(OWNER_SIGNUP_DRAFT_KEY)
 }
+
+// Remembers that the visitor has already seen the cookie/storage notice, so
+// it doesn't reappear on every page. Not personal data — just a dismissal
+// flag — and remembering it is itself the kind of strictly-necessary storage
+// that doesn't need its own separate consent (otherwise showing the notice
+// again to ask permission to remember you saw it would be circular).
+const COOKIE_NOTICE_KEY = 'bmp_cookie_notice_dismissed'
+
+export function hasCookieNoticeBeenDismissed(): boolean {
+  try {
+    return localStorage.getItem(COOKIE_NOTICE_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function dismissCookieNotice(): void {
+  try {
+    localStorage.setItem(COOKIE_NOTICE_KEY, '1')
+  } catch {}
+}
