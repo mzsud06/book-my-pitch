@@ -98,15 +98,16 @@ export default async function HomePage() {
   const today = new Date().toISOString().slice(0, 10)
   const { data: rawGames } = await createServiceClient()
     .from('sessions')
-    .select('id, organiser_name, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, address)), players(count)')
+    .select('id, organiser_name, status, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, address)), players(count)')
     .eq('game_type', 'open')
-    .eq('status', 'filling')
+    .in('status', ['filling', 'confirmed'])
     .eq('is_public', true)
     .gte('slots.date', today)
 
   type LiveGameRow = {
     id: string
     organiser_name: string | null
+    status: string
     slots: {
       date: string; start_time: string; end_time: string; price: number
       pitches: { max_players: number }
@@ -126,6 +127,7 @@ export default async function HomePage() {
       return {
         id: s.id,
         organiserName: s.organiser_name,
+        isFull: s.status === 'confirmed' || playerCount >= maxPlayers,
         venueName: venue?.name ?? 'your local pitch',
         venueAddress: venue?.address ?? '',
         time: `${slot.start_time.slice(0, 5)} – ${slot.end_time.slice(0, 5)}`,
@@ -138,7 +140,7 @@ export default async function HomePage() {
         badgeLabel: type === 'peak' ? 'Peak · Every day' : type === 'offpeak' ? 'Off-peak · Mon–Fri' : 'Weekend',
       }
     })
-    .sort((a, b) => b.playerCount - a.playerCount)
+    .sort((a, b) => Number(a.isFull) - Number(b.isFull) || b.playerCount - a.playerCount)
 
   const liveGames = allPublicGames.slice(0, 3)
 
@@ -518,21 +520,17 @@ export default async function HomePage() {
           </Container>
           <div className="preview-cards-scroller">
             {/* ── Real public games ── */}
-            {liveGames.map((game, idx) => (
-              <Link
-                key={game.id}
-                href={`/session/${game.id}`}
-                className="preview-card-link anim-fade-up"
-                style={{ animationDelay: `${idx * 80}ms`, cursor: 'pointer' }}
-              >
+            {liveGames.map((game, idx) => {
+              const cardInner = (
                 <Card
-                  hover
+                  hover={!game.isFull}
                   style={{
                     padding: 0,
                     overflow: 'hidden',
                     height: '100%',
                     borderRadius: '16px',
                     border: '1px solid rgba(255,255,255,0.06)',
+                    opacity: game.isFull ? 0.6 : 1,
                   }}
                 >
                   {/* Top half — pitch photo */}
@@ -550,8 +548,8 @@ export default async function HomePage() {
                         position: 'absolute', top: '10px', left: '10px',
                         display: 'inline-flex', alignItems: 'center', gap: '5px',
                         padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                        background: '#C6F135',
-                        color: '#080808',
+                        background: game.isFull ? 'var(--red)' : '#C6F135',
+                        color: game.isFull ? '#fff' : '#080808',
                         fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
                         letterSpacing: '0.02em',
                       }}
@@ -599,8 +597,27 @@ export default async function HomePage() {
                     </div>
                   </div>
                 </Card>
-              </Link>
-            ))}
+              )
+
+              return game.isFull ? (
+                <div
+                  key={game.id}
+                  className="preview-card-link anim-fade-up"
+                  style={{ animationDelay: `${idx * 80}ms`, cursor: 'default' }}
+                >
+                  {cardInner}
+                </div>
+              ) : (
+                <Link
+                  key={game.id}
+                  href={`/session/${game.id}`}
+                  className="preview-card-link anim-fade-up"
+                  style={{ animationDelay: `${idx * 80}ms`, cursor: 'pointer' }}
+                >
+                  {cardInner}
+                </Link>
+              )
+            })}
 
             {/* ── Example / illustrative cards (fills remaining slots to 3) ── */}
             {exampleCards.map((card, i) => {
