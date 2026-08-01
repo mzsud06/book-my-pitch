@@ -89,7 +89,7 @@ export function Footer() {
             textAlign: 'center',
           }}
         >
-          © 2025 BookMyPitch. All rights reserved.
+          © 2026 BookMyPitch. All rights reserved.
         </div>
       </div>
     </footer>

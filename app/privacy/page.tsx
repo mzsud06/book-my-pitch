@@ -6,23 +6,19 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="28 July 2026"
+      updated="1 August 2026"
       intro="This explains what personal data BookMyPitch collects, why, and your rights over it."
     >
-      <div className="legal-note">
-        This is standard-form content describing what the platform actually collects and how, drafted to be
-        accurate and usable — it has <strong>not</strong> been reviewed by a solicitor. Bracketed items like{' '}
-        <span className="legal-placeholder">[details]</span> are placeholders (ICO registration, data-protection
-        contact). Get a legal review before treating this as your final policy — you are processing payment-adjacent
-        personal data commercially, which brings UK GDPR obligations.
-      </div>
-
       <h2>1. Who we are</h2>
       <p>
-        BookMyPitch is the data controller for the personal data described below. We are{' '}
-        <span className="legal-placeholder">[legal entity name, registered address, ICO registration number — to be completed]</span>.
-        Contact us about privacy at{' '}
+        BookMyPitch is the data controller for the personal data described below. BookMyPitch is operated by
+        Mohammed Rahman Masud, trading as a sole trader based in East London. Contact us about privacy at{' '}
         <a href="mailto:masud.bookmypitch@gmail.com" style={{ color: 'var(--green)' }}>masud.bookmypitch@gmail.com</a>.
+      </p>
+      <p>
+        We are not yet registered with the Information Commissioner&apos;s Office (ICO). BookMyPitch currently has
+        no live venues and is not processing any real player or venue data — we will complete ICO registration
+        before the first venue goes live and add the registration number here at that point.
       </p>
 
       <h2>2. What we collect</h2>
@@ -67,10 +63,10 @@ export default function PrivacyPage() {
 
       <h2>5. How long we keep it</h2>
       <p>
-        We keep account and booking data for as long as your account is active, plus a reasonable period afterward
-        for accounting and dispute-resolution purposes.{' '}
-        <span className="legal-placeholder">[Exact retention periods to be confirmed.]</span> You can ask us to
-        delete your account and associated data at any time (see your rights below).
+        We keep account and booking data for as long as your account is active, and for up to 6 years afterward, in
+        line with HMRC&apos;s record-keeping requirements for financial and accounting records. You can ask us to
+        delete your account at any time (see your rights below), though we may need to retain limited transaction
+        records for that period regardless, to meet our legal obligations.
       </p>
 
       <h2>6. Cookies</h2>

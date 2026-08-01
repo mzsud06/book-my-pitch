@@ -352,7 +352,10 @@ function SignupForm() {
                 </button>
 
                 <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 400, fontFamily: 'var(--font-sans)' }}>
-                  By signing up you agree to our terms of service.
+                  By signing up you agree to our{' '}
+                  <Link href="/terms" style={{ color: 'var(--green)', textDecoration: 'none' }}>terms</Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" style={{ color: 'var(--green)', textDecoration: 'none' }}>privacy policy</Link>.
                 </div>
               </form>
             </>

@@ -6,21 +6,14 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of Service"
-      updated="28 July 2026"
+      updated="1 August 2026"
       intro="These terms cover how BookMyPitch works for both players and venue owners. Please read them before booking or listing a venue."
     >
-      <div className="legal-note">
-        This is standard-form content describing how BookMyPitch actually works, drafted to be accurate and usable —
-        it has <strong>not</strong> been reviewed by a solicitor. Bracketed items like{' '}
-        <span className="legal-placeholder">[company details]</span> are placeholders. Get a legal review before
-        treating this as binding, especially given the platform processes real payments.
-      </div>
-
       <h2>1. Who we are</h2>
       <p>
         BookMyPitch (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;BookMyPitch.uk&rdquo;) operates a platform connecting groups of
-        players with football pitch venues in the UK. We are{' '}
-        <span className="legal-placeholder">[legal entity name, company number, registered office address — to be completed]</span>.
+        players with football pitch venues in the UK. BookMyPitch is operated by Mohammed Rahman Masud, trading as
+        a sole trader based in East London.
         Contact us at <a href="mailto:masud.bookmypitch@gmail.com" style={{ color: 'var(--green)' }}>masud.bookmypitch@gmail.com</a>.
       </p>
       <p>
@@ -100,9 +93,18 @@ export default function TermsPage() {
       <p>
         BookMyPitch is a booking and payment intermediary. We are not responsible for injuries, property damage, or
         disputes arising from playing at a venue — that&apos;s between players and the venue. We aim to keep the
-        platform accurate and available but don&apos;t guarantee it will be error-free or uninterrupted.{' '}
-        <span className="legal-placeholder">[A solicitor should tighten this section — liability caps, indemnities,
-        and consumer-rights carve-outs need proper drafting.]</span>
+        platform accurate and available but don&apos;t guarantee it will be error-free or uninterrupted.
+      </p>
+      <p>
+        To the fullest extent permitted by law, our total liability to you for any claim arising from your use of
+        BookMyPitch is limited to the platform fees you paid us (not amounts passed through to venues or Stripe) in
+        the 12 months before the claim arose. We are not liable for indirect or consequential losses, such as loss
+        of profit or a missed event.
+      </p>
+      <p>
+        Nothing in these terms excludes or limits liability where it would be unlawful to do so — including
+        liability for death or personal injury caused by negligence, or for fraud — and nothing here affects your
+        statutory rights as a consumer under the Consumer Rights Act 2015.
       </p>
 
       <h2>8. Changes to these terms</h2>
