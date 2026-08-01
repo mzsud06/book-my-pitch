@@ -30,7 +30,11 @@ interface SessionData {
     price: number
     max_players: number
     pitches: Pitch
-    venues: { id: string; name: string; address: string }
+    venues: {
+      id: string; name: string; address: string
+      opening_time: string; closing_time: string
+      weekend_opening_time: string; weekend_closing_time: string; peak_start_time: string
+    }
   }
   players: { id: string; name: string; joined_at: string; session_id: string; user_id: string | null }[]
 }
@@ -56,7 +60,7 @@ export default async function SessionPage({ params, searchParams }: Props) {
       .select(`
         id, status, created_at, organiser_name, organiser_phone, organiser_id, game_type, is_public, slot_ids,
         slots(id, date, start_time, end_time, price, max_players, pitches(${PITCH_COLS}),
-          venues(id, name, address, stripe_account_id)
+          venues(id, name, address, stripe_account_id, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time)
         )
       `)
       .eq('id', id)

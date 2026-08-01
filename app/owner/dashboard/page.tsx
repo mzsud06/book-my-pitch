@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import OwnerDashboardClient from './OwnerDashboardClient'
-import { getSlotType, isSlotInPast } from '@/lib/slots'
+import { getSlotType, isSlotInPast, scheduleFromVenue } from '@/lib/slots'
 import { expireIfStale } from '@/lib/expireSessions'
 import { stripe } from '@/lib/stripe'
 
@@ -43,6 +43,8 @@ export default async function OwnerDashboardPage() {
     .single()
 
   if (!venue) redirect('/owner/login')
+
+  const schedule = scheduleFromVenue(venue)
 
   // Self-healing onboarding status: the venue can have a stripe_account_id
   // long before Stripe has actually verified it. Rather than requiring a
@@ -136,7 +138,7 @@ export default async function OwnerDashboardPage() {
     const slot = getSlot(s.slots)
     if (!slot) return
     const key = slot.start_time
-    if (!slotOccupancy.has(key)) slotOccupancy.set(key, { confirmed: 0, total: 0, type: getSlotType(slot.date, slot.start_time) })
+    if (!slotOccupancy.has(key)) slotOccupancy.set(key, { confirmed: 0, total: 0, type: getSlotType(slot.date, slot.start_time, schedule) })
     const entry = slotOccupancy.get(key)!
     entry.total++
     if (s.status === 'confirmed') entry.confirmed++
@@ -157,7 +159,7 @@ export default async function OwnerDashboardPage() {
       created_at: s.created_at,
       organiser_name: (s as unknown as { organiser_name?: string | null }).organiser_name ?? null,
       slots: slot
-        ? { ...slot, type: getSlotType(slot.date, slot.start_time), max_players: slot.pitches.max_players }
+        ? { ...slot, type: getSlotType(slot.date, slot.start_time, schedule), max_players: slot.pitches.max_players }
         : { date: '', start_time: '', end_time: '', type: '', price: 0, max_players: 10 },
       players,
       bookings,

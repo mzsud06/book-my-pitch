@@ -17,52 +17,85 @@ export interface SlotTemplate {
   type: SlotType
 }
 
-// Globe Pitch slot schedule — fixed hourly time boundaries per weekday/weekend.
-// Pricing tier (offpeak/peak/weekend) is a property of the time-of-day, not
-// per-row state — actual £ pricing comes from the pitch (see priceForSlotType).
-const WEEKDAY_SLOTS: SlotTemplate[] = [
-  { startTime: '15:30', endTime: '16:30', type: 'offpeak' },
-  { startTime: '16:30', endTime: '17:30', type: 'offpeak' },
-  { startTime: '17:30', endTime: '18:30', type: 'offpeak' },
-  { startTime: '18:30', endTime: '19:30', type: 'peak' },
-  { startTime: '19:30', endTime: '20:30', type: 'peak' },
-  { startTime: '20:30', endTime: '21:30', type: 'peak' },
-]
-
-const WEEKEND_SLOTS: SlotTemplate[] = [
-  { startTime: '09:30', endTime: '10:30', type: 'weekend' },
-  { startTime: '10:30', endTime: '11:30', type: 'weekend' },
-  { startTime: '11:30', endTime: '12:30', type: 'weekend' },
-  { startTime: '12:30', endTime: '13:30', type: 'weekend' },
-  { startTime: '13:30', endTime: '14:30', type: 'weekend' },
-  { startTime: '14:30', endTime: '15:30', type: 'weekend' },
-  { startTime: '15:30', endTime: '16:30', type: 'weekend' },
-  { startTime: '16:30', endTime: '17:30', type: 'weekend' },
-  { startTime: '17:30', endTime: '18:30', type: 'weekend' },
-  { startTime: '18:30', endTime: '19:30', type: 'peak' },
-  { startTime: '19:30', endTime: '20:30', type: 'peak' },
-  { startTime: '20:30', endTime: '21:30', type: 'peak' },
-]
-
-export function getSlotsForDay(date: Date): SlotTemplate[] {
-  const day = date.getDay() // 0=Sun, 6=Sat
-  return day === 0 || day === 6 ? WEEKEND_SLOTS : WEEKDAY_SLOTS
+// A venue's bookable hours and peak window — every venue used to share one
+// hardcoded schedule (originally built for Globe Football Pitch); this makes
+// it per-venue instead. Times are 'HH:MM'. Peak applies from peak_start_time
+// until closing on both weekdays and weekends; before that it's off-peak on
+// weekdays and the flat weekend rate on weekends.
+export interface VenueSchedule {
+  opening_time: string
+  closing_time: string
+  weekend_opening_time: string
+  weekend_closing_time: string
+  peak_start_time: string
 }
 
-// Derived from the schedules above so the displayed opening hours can never
-// drift out of sync with the actual bookable window.
-export const OPENING_HOURS = {
-  weekday: { start: WEEKDAY_SLOTS[0].startTime, end: WEEKDAY_SLOTS[WEEKDAY_SLOTS.length - 1].endTime },
-  weekend: { start: WEEKEND_SLOTS[0].startTime, end: WEEKEND_SLOTS[WEEKEND_SLOTS.length - 1].endTime },
+// Matches the schedule every venue effectively had before this was
+// configurable — used as a fallback so any caller that hasn't been updated
+// with a real venue schedule yet keeps behaving exactly as before.
+export const DEFAULT_SCHEDULE: VenueSchedule = {
+  opening_time: '15:30',
+  closing_time: '21:30',
+  weekend_opening_time: '09:30',
+  weekend_closing_time: '21:30',
+  peak_start_time: '18:30',
+}
+
+// Pulls the schedule fields off a fetched venue row, falling back to
+// DEFAULT_SCHEDULE for any field missing (e.g. a query that hasn't been
+// updated to select the new columns yet).
+export function scheduleFromVenue(venue: Partial<VenueSchedule> | null | undefined): VenueSchedule {
+  return {
+    opening_time: venue?.opening_time ?? DEFAULT_SCHEDULE.opening_time,
+    closing_time: venue?.closing_time ?? DEFAULT_SCHEDULE.closing_time,
+    weekend_opening_time: venue?.weekend_opening_time ?? DEFAULT_SCHEDULE.weekend_opening_time,
+    weekend_closing_time: venue?.weekend_closing_time ?? DEFAULT_SCHEDULE.weekend_closing_time,
+    peak_start_time: venue?.peak_start_time ?? DEFAULT_SCHEDULE.peak_start_time,
+  }
+}
+
+function timeToMinutes(t: string): number {
+  const [h, m] = t.slice(0, 5).split(':').map(Number)
+  return h * 60 + m
+}
+
+function minutesToTime(mins: number): string {
+  const h = Math.floor(mins / 60).toString().padStart(2, '0')
+  const m = (mins % 60).toString().padStart(2, '0')
+  return `${h}:${m}`
+}
+
+export function getSlotsForDay(date: Date, schedule: VenueSchedule = DEFAULT_SCHEDULE): SlotTemplate[] {
+  const day = date.getDay() // 0=Sun, 6=Sat
+  const isWeekend = day === 0 || day === 6
+  const open = timeToMinutes(isWeekend ? schedule.weekend_opening_time : schedule.opening_time)
+  const close = timeToMinutes(isWeekend ? schedule.weekend_closing_time : schedule.closing_time)
+  const peakStart = timeToMinutes(schedule.peak_start_time)
+
+  const slots: SlotTemplate[] = []
+  for (let t = open; t + 60 <= close; t += 60) {
+    const type: SlotType = t >= peakStart ? 'peak' : (isWeekend ? 'weekend' : 'offpeak')
+    slots.push({ startTime: minutesToTime(t), endTime: minutesToTime(t + 60), type })
+  }
+  return slots
+}
+
+// Derived from a venue's schedule so displayed opening hours can never drift
+// out of sync with the actual bookable window.
+export function getOpeningHours(schedule: VenueSchedule = DEFAULT_SCHEDULE) {
+  return {
+    weekday: { start: schedule.opening_time, end: schedule.closing_time },
+    weekend: { start: schedule.weekend_opening_time, end: schedule.weekend_closing_time },
+  }
 }
 
 // `slots.type` was removed from the DB in the pitches migration — pricing tier
-// is a fixed property of the time-of-day/weekday schedule, so it's recomputed
-// from date+start_time here instead of being stored per row.
-export function getSlotType(dateStr: string, startTime: string): SlotType {
+// is a property of the time-of-day and the venue's own schedule, so it's
+// recomputed from date+start_time here instead of being stored per row.
+export function getSlotType(dateStr: string, startTime: string, schedule: VenueSchedule = DEFAULT_SCHEDULE): SlotType {
   const d = new Date(`${dateStr}T12:00:00`)
   const hhmm = startTime.slice(0, 5)
-  const match = getSlotsForDay(d).find(t => t.startTime === hhmm)
+  const match = getSlotsForDay(d, schedule).find(t => t.startTime === hhmm)
   return match?.type ?? 'offpeak'
 }
 

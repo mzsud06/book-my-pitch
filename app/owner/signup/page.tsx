@@ -42,6 +42,11 @@ export default function OwnerSignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [venueName, setVenueName] = useState('')
   const [address, setAddress] = useState('')
+  const [openingTime, setOpeningTime] = useState('15:30')
+  const [closingTime, setClosingTime] = useState('21:30')
+  const [weekendOpeningTime, setWeekendOpeningTime] = useState('09:30')
+  const [weekendClosingTime, setWeekendClosingTime] = useState('21:30')
+  const [peakStartTime, setPeakStartTime] = useState('18:30')
   const [pitchDrafts, setPitchDrafts] = useState<PitchDraft[]>([newPitchDraft()])
 
   const [loading, setLoading] = useState(false)
@@ -67,6 +72,8 @@ export default function OwnerSignupPage() {
     if (password !== confirmPassword) return 'Passwords do not match'
     if (!venueName.trim()) return 'Please enter your venue name'
     if (!address.trim()) return 'Please enter your venue address'
+    if (closingTime <= openingTime) return 'Weekday closing time must be after opening time'
+    if (weekendClosingTime <= weekendOpeningTime) return 'Weekend closing time must be after opening time'
 
     for (let i = 0; i < pitchDrafts.length; i++) {
       const p = pitchDrafts[i]
@@ -112,6 +119,11 @@ export default function OwnerSignupPage() {
           password,
           venueName,
           address,
+          openingTime,
+          closingTime,
+          weekendOpeningTime,
+          weekendClosingTime,
+          peakStartTime,
           pitches,
         }),
       })
@@ -307,6 +319,30 @@ export default function OwnerSignupPage() {
                   <input type="text" value={address} onChange={e => setAddress(e.target.value)} required maxLength={300} placeholder="Street, area, postcode" style={inputStyle} />
                 ))}
 
+                <div style={sectionLabelStyle}>Your hours</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  {fieldWrap('Weekday opening time', (
+                    <input type="time" value={openingTime} onChange={e => setOpeningTime(e.target.value)} required style={inputStyle} />
+                  ))}
+                  {fieldWrap('Weekday closing time', (
+                    <input type="time" value={closingTime} onChange={e => setClosingTime(e.target.value)} required style={inputStyle} />
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                  {fieldWrap('Weekend opening time', (
+                    <input type="time" value={weekendOpeningTime} onChange={e => setWeekendOpeningTime(e.target.value)} required style={inputStyle} />
+                  ))}
+                  {fieldWrap('Weekend closing time', (
+                    <input type="time" value={weekendClosingTime} onChange={e => setWeekendClosingTime(e.target.value)} required style={inputStyle} />
+                  ))}
+                </div>
+                {fieldWrap('Peak time starts at', (
+                  <input type="time" value={peakStartTime} onChange={e => setPeakStartTime(e.target.value)} required style={inputStyle} />
+                ))}
+                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '-6px', fontWeight: 500 }}>
+                  Every day, bookings from this time use your peak price below. Only matters if you set different peak/off-peak pricing for a pitch.
+                </div>
+
                 <div style={sectionLabelStyle}>Your pitches</div>
                 {pitchDrafts.map((p, i) => (
                   <div
@@ -359,7 +395,7 @@ export default function OwnerSignupPage() {
                     </label>
 
                     {p.samePrice ? (
-                      fieldWrap('Hourly price (£, split between players)', (
+                      fieldWrap('Hourly price', (
                         <input
                           type="number" min={1} max={500}
                           value={p.flatPrice}

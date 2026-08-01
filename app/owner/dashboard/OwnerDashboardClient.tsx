@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getSlotType, isSlotInPast } from '@/lib/slots'
+import { getSlotType, isSlotInPast, scheduleFromVenue } from '@/lib/slots'
 import { Card } from '@/components/ui/Card'
 
 interface Venue {
@@ -14,6 +14,11 @@ interface Venue {
   stripe_account_id: string | null
   stripe_onboarding_complete: boolean
   admin_approved: boolean
+  opening_time?: string
+  closing_time?: string
+  weekend_opening_time?: string
+  weekend_closing_time?: string
+  peak_start_time?: string
 }
 
 interface SessionData {
@@ -84,6 +89,7 @@ const typeColors: Record<string, string> = {
 
 export default function OwnerDashboardClient({ venue, sessions: initialSessions, stats, occupancyData }: Props) {
   const [sessions, setSessions] = useState(initialSessions)
+  const schedule = scheduleFromVenue(venue)
   const [onboardingLoading, setOnboardingLoading] = useState(false)
   const [onboardingError, setOnboardingError] = useState('')
   const supabase = createClient()
@@ -130,7 +136,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             const raw = Array.isArray(s.slots) ? s.slots[0] : s.slots
             return {
               ...s,
-              slots: { ...raw, type: getSlotType(raw.date, raw.start_time), max_players: raw.pitches.max_players },
+              slots: { ...raw, type: getSlotType(raw.date, raw.start_time, schedule), max_players: raw.pitches.max_players },
             }
           })
           setSessions(withType as unknown as SessionData[])

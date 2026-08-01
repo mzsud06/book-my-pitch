@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import PhoneInput, { parsePhone } from '@/components/PhoneInput'
 import { readPlayerDetails, readMySessions, readSessionPlayer, removeSessionPlayer, removeMySession } from '@/lib/clientStorage'
 import { Footer } from '@/components/Footer'
-import { getSlotType, formatSlotType, Pitch } from '@/lib/slots'
+import { getSlotType, formatSlotType, scheduleFromVenue, Pitch } from '@/lib/slots'
 import { Badge } from '@/components/ui/Badge'
 
 interface Player {
@@ -43,7 +43,11 @@ interface Session {
     price: number
     max_players: number
     pitches: Pitch
-    venues: { id: string; name: string; address: string }
+    venues: {
+      id: string; name: string; address: string
+      opening_time?: string; closing_time?: string
+      weekend_opening_time?: string; weekend_closing_time?: string; peak_start_time?: string
+    }
   }
   players: Player[]
 }
@@ -1065,7 +1069,7 @@ export default function SessionClient({
           {sliceTime(slot.start_time)} – {sliceTime(slot.end_time)}
         </div>
         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
-          {formatDate(slot.date)} · {formatSlotType(getSlotType(slot.date, slot.start_time))} · {slot.pitches.format}
+          {formatDate(slot.date)} · {formatSlotType(getSlotType(slot.date, slot.start_time, scheduleFromVenue(slot.venues)))} · {slot.pitches.format}
         </div>
         {session.game_type === 'private' && (
           <div style={{ marginBottom: '0.6rem' }}>

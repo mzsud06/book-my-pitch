@@ -38,6 +38,11 @@ const VALID_SIGNUP_BODY = {
   password: 'password123',
   venueName: 'Test Pitch',
   address: '1 Test Street, London',
+  openingTime: '15:30',
+  closingTime: '21:30',
+  weekendOpeningTime: '09:30',
+  weekendClosingTime: '21:30',
+  peakStartTime: '18:30',
   pitches: [
     { format: '5-a-side', surface: '4G', peakPrice: 50, offpeakPrice: 30, weekendPrice: 40 },
   ],
@@ -134,6 +139,42 @@ describe('POST /api/owner/signup', () => {
   it('rejects an empty pitches array', async () => {
     const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, pitches: [] }))
     expect(res.status).toBe(400)
+  })
+
+  it('rejects a weekday closing time before opening time', async () => {
+    const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, closingTime: '10:00', openingTime: '15:30' }))
+    expect(res.status).toBe(400)
+  })
+
+  it('rejects a malformed time string', async () => {
+    const res = await ownerSignup(makeRequest({ ...VALID_SIGNUP_BODY, peakStartTime: 'not-a-time' }))
+    expect(res.status).toBe(400)
+  })
+
+  it('stores the submitted schedule on the venue row', async () => {
+    const svcDb = createMockDb({ venues: [], pitches: [] })
+    vi.mocked(createServiceClient).mockReturnValue(svcDb as any)
+    vi.mocked(createClient).mockResolvedValue({
+      auth: {
+        signUp: vi.fn().mockResolvedValue({
+          data: { user: { id: 'new-owner-id' }, session: { access_token: 'tok' } },
+          error: null,
+        }),
+      },
+    } as any)
+
+    const res = await ownerSignup(makeRequest({
+      ...VALID_SIGNUP_BODY,
+      openingTime: '09:00',
+      closingTime: '23:00',
+      weekendOpeningTime: '08:00',
+      weekendClosingTime: '23:00',
+      peakStartTime: '17:00',
+    }))
+
+    expect(res.status).toBe(200)
+    expect(svcDb._tables.venues[0].opening_time).toBe('09:00')
+    expect(svcDb._tables.venues[0].peak_start_time).toBe('17:00')
   })
 
   it('creates multiple pitches for one venue and seeds slots once for all of them', async () => {

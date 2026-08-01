@@ -6,6 +6,12 @@ import { seedSlotsForVenue } from '@/lib/seedSlots'
 import { notifyAdminNewVenueSignup } from '@/lib/notifyAdmin'
 import type { Pitch } from '@/lib/slots'
 
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
+
+function isValidTime(v: unknown): v is string {
+  return typeof v === 'string' && TIME_RE.test(v)
+}
+
 // Lower than the standard 10/hour used elsewhere — this creates an auth
 // user, a venue, a pitch, and ~14 days of slot rows in one call, so it's a
 // much heavier action than e.g. a Stripe SetupIntent.
@@ -57,7 +63,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { email, password, venueName, address, pitches } = body
+    const {
+      email, password, venueName, address, pitches,
+      openingTime, closingTime, weekendOpeningTime, weekendClosingTime, peakStartTime,
+    } = body
 
     if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
       return NextResponse.json({ error: 'Please enter a valid email address' }, { status: 400 })
@@ -72,6 +81,15 @@ export async function POST(req: NextRequest) {
     const trimmedAddress = typeof address === 'string' ? address.trim() : ''
     if (!trimmedAddress || trimmedAddress.length > 300) {
       return NextResponse.json({ error: 'Please enter your venue address' }, { status: 400 })
+    }
+    if (!isValidTime(openingTime) || !isValidTime(closingTime) || closingTime <= openingTime) {
+      return NextResponse.json({ error: 'Please enter valid weekday opening/closing times' }, { status: 400 })
+    }
+    if (!isValidTime(weekendOpeningTime) || !isValidTime(weekendClosingTime) || weekendClosingTime <= weekendOpeningTime) {
+      return NextResponse.json({ error: 'Please enter valid weekend opening/closing times' }, { status: 400 })
+    }
+    if (!isValidTime(peakStartTime)) {
+      return NextResponse.json({ error: 'Please enter a valid peak start time' }, { status: 400 })
     }
     if (!Array.isArray(pitches) || pitches.length === 0 || pitches.length > MAX_PITCHES_PER_SIGNUP) {
       return NextResponse.json({ error: 'Please add at least one pitch' }, { status: 400 })
@@ -117,7 +135,16 @@ export async function POST(req: NextRequest) {
 
     const { data: venue, error: venueError } = await svc
       .from('venues')
-      .insert({ name: trimmedVenueName, address: trimmedAddress, owner_id: newUserId })
+      .insert({
+        name: trimmedVenueName,
+        address: trimmedAddress,
+        owner_id: newUserId,
+        opening_time: openingTime,
+        closing_time: closingTime,
+        weekend_opening_time: weekendOpeningTime,
+        weekend_closing_time: weekendClosingTime,
+        peak_start_time: peakStartTime,
+      })
       .select('id')
       .single()
 
@@ -149,7 +176,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create pitches. Please try again.' }, { status: 500 })
     }
 
-    await seedSlotsForVenue(svc, venue.id, insertedPitches as unknown as Pitch[])
+    await seedSlotsForVenue(svc, venue.id, insertedPitches as unknown as Pitch[], {
+      opening_time: openingTime,
+      closing_time: closingTime,
+      weekend_opening_time: weekendOpeningTime,
+      weekend_closing_time: weekendClosingTime,
+      peak_start_time: peakStartTime,
+    })
 
     // Fire-and-forget — a notification failure must never fail the signup itself.
     void notifyAdminNewVenueSignup({

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { getSlotsForDay, getSlotType, formatPerPlayer, OPENING_HOURS, SlotTemplate, Pitch } from '@/lib/slots'
+import { getSlotsForDay, getSlotType, formatPerPlayer, getOpeningHours, SlotTemplate, Pitch, VenueSchedule, DEFAULT_SCHEDULE } from '@/lib/slots'
 import { Container } from '@/components/ui/Container'
 import { Badge } from '@/components/ui/Badge'
 import { Eyebrow } from '@/components/ui/Eyebrow'
@@ -50,6 +50,7 @@ interface Props {
   pitches: Pitch[]
   userSessionIds: string[]
   userId: string | null
+  schedule?: VenueSchedule
 }
 
 function formatDate(date: Date): string {
@@ -162,7 +163,7 @@ function CheckIcon() {
   )
 }
 
-export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, pitches, userSessionIds, userId }: Props) {
+export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, pitches, userSessionIds, userId, schedule = DEFAULT_SCHEDULE }: Props) {
   const userSessionSet = new Set(userSessionIds)
   const router = useRouter()
   const supabase = createClient()
@@ -229,7 +230,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
   }, [])
 
   const dayStr = formatDate(selectedDate)
-  const rawSlotTemplates = getSlotsForDay(selectedDate)
+  const rawSlotTemplates = getSlotsForDay(selectedDate, schedule)
+  const openingHours = getOpeningHours(schedule)
   // Hide slots on today's date whose start time has already passed.
   const nowTimeStr = dayStr === formatDate(new Date())
     ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`
@@ -462,11 +464,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 </div>
                 <div style={hoursRowStyle}>
                   <span>Weekdays</span>
-                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>{OPENING_HOURS.weekday.start} – {OPENING_HOURS.weekday.end}</span>
+                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>{openingHours.weekday.start} – {openingHours.weekday.end}</span>
                 </div>
                 <div style={{ ...hoursRowStyle, marginBottom: 0 }}>
                   <span>Weekends</span>
-                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>{OPENING_HOURS.weekend.start} – {OPENING_HOURS.weekend.end}</span>
+                  <span style={{ color: 'var(--green)', fontWeight: 700 }}>{openingHours.weekend.start} – {openingHours.weekend.end}</span>
                 </div>
               </div>
 
@@ -537,7 +539,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       const maxPlayers = slot.pitches.max_players
                       const perPlayer = (slot.price / maxPlayers).toFixed(2)
                       const title = s.organiser_name ? `${s.organiser_name}'s game` : 'Public game'
-                      const slotType = getSlotType(slot.date, slot.start_time)
+                      const slotType = getSlotType(slot.date, slot.start_time, schedule)
                       const typeVariant = slotType === 'peak' ? 'peak' : slotType === 'weekend' ? 'weekend' : 'offpeak'
                       const typeLabel = slotType === 'peak' ? 'Peak' : slotType === 'weekend' ? 'Weekend' : 'Off-peak'
 

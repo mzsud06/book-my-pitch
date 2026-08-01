@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { readMySessions } from '@/lib/clientStorage'
-import { getSlotType } from '@/lib/slots'
+import { getSlotType, scheduleFromVenue, VenueSchedule } from '@/lib/slots'
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
@@ -40,7 +40,7 @@ interface RawSlot {
   end_time: string
   price: number
   pitches: { max_players: number }
-  venues: { name: string } | null
+  venues: (Partial<VenueSchedule> & { name: string }) | null
   sessions: { status: string }[] | null
 }
 
@@ -272,7 +272,7 @@ function toCard(s: RawSession): BookingCard | null {
     date: slot.date,
     startTime: slot.start_time.slice(0, 5),
     endTime: slot.end_time.slice(0, 5),
-    type: getSlotType(slot.date, slot.start_time),
+    type: getSlotType(slot.date, slot.start_time, scheduleFromVenue(slot.venues)),
     price: slot.price,
     maxPlayers: slot.pitches.max_players,
     playerCount: s.players?.[0]?.count ?? 0,
@@ -300,7 +300,7 @@ export default function MyBookingsClient() {
             joined_at,
             sessions(
               id, status, game_type, organiser_name,
-              slots(date, start_time, end_time, price, pitches(max_players), venues(name), sessions(status)),
+              slots(date, start_time, end_time, price, pitches(max_players), venues(name, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time), sessions(status)),
               players(count)
             )
           `)
@@ -326,7 +326,7 @@ export default function MyBookingsClient() {
             .from('sessions')
             .select(`
               id, status, game_type, organiser_name,
-              slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name), sessions(status)),
+              slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time), sessions(status)),
               players(count)
             `)
             .in('id', ids)

@@ -2,9 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Nav from '@/components/Nav'
 import OrganiserPaymentForm from './OrganiserPaymentForm'
-import { combineSlots, getSlotType, Pitch } from '@/lib/slots'
+import { combineSlots, getSlotType, scheduleFromVenue, Pitch, VenueSchedule } from '@/lib/slots'
 
 const PITCH_COLS = 'id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'
+const VENUE_COLS = 'name, address, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time'
 
 interface Props {
   params: Promise<{ slotId: string }>
@@ -19,7 +20,7 @@ interface SlotRow {
   price: number
   max_players: number
   pitches: Pitch
-  venues: { name: string; address: string } | { name: string; address: string }[] | null
+  venues: (Partial<VenueSchedule> & { name: string; address: string }) | (Partial<VenueSchedule> & { name: string; address: string })[] | null
 }
 
 export default async function CreatePaymentPage({ params, searchParams }: Props) {
@@ -36,7 +37,7 @@ export default async function CreatePaymentPage({ params, searchParams }: Props)
 
   const { data: rawSlots } = await supabase
     .from('slots')
-    .select(`id, date, start_time, end_time, price, max_players, pitches(${PITCH_COLS}), venues(name, address)`)
+    .select(`id, date, start_time, end_time, price, max_players, pitches(${PITCH_COLS}), venues(${VENUE_COLS})`)
     .in('id', idsToFetch)
 
   if (!rawSlots || rawSlots.length !== idsToFetch.length) notFound()
@@ -50,7 +51,7 @@ export default async function CreatePaymentPage({ params, searchParams }: Props)
     date: combined.date,
     start_time: combined.start_time,
     end_time: combined.end_time,
-    type: getSlotType(combined.date, combined.start_time),
+    type: getSlotType(combined.date, combined.start_time, scheduleFromVenue(venue)),
     price: combined.price,
     max_players: combined.pitches.max_players,
     pitches: combined.pitches,

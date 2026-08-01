@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { getSlotsForDay, priceForSlotType, Pitch } from './slots'
+import { getSlotsForDay, priceForSlotType, scheduleFromVenue, DEFAULT_SCHEDULE, Pitch, VenueSchedule } from './slots'
 
 export const SLOT_SEED_DAYS = 14
 
@@ -20,7 +20,7 @@ export function ukDateStr(date: Date): string {
 // the DB for one pitch. INSERT ... ON CONFLICT DO UPDATE — fast no-ops after
 // the first run, keyed on (venue_id, pitch_id, date, start_time) so multiple
 // pitches at the same venue can each have their own slot at the same time.
-async function seedSlotsForPitch(svc: SupabaseClient, venueId: string, pitch: Pitch) {
+async function seedSlotsForPitch(svc: SupabaseClient, venueId: string, pitch: Pitch, schedule: VenueSchedule) {
   const today = new Date()
   const slotInserts: {
     venue_id: string
@@ -39,7 +39,7 @@ async function seedSlotsForPitch(svc: SupabaseClient, venueId: string, pitch: Pi
     // Use noon on the UK date so getDay() returns the correct UK weekday
     // even during the 23:00–00:00 UTC hour when UTC day != UK day.
     const ukNoon = new Date(`${dateStr}T12:00:00`)
-    getSlotsForDay(ukNoon).forEach(t => {
+    getSlotsForDay(ukNoon, schedule).forEach(t => {
       slotInserts.push({
         venue_id: venueId,
         pitch_id: pitch.id,
@@ -60,19 +60,25 @@ async function seedSlotsForPitch(svc: SupabaseClient, venueId: string, pitch: Pi
 
 // Reusable per venue/pitch — call with any venue id and its pitches, no
 // per-venue code required. Adding a new venue is a database insert away from
-// having its slots seeded.
-export async function seedSlotsForVenue(svc: SupabaseClient, venueId: string, pitches: Pitch[]) {
-  await Promise.all(pitches.map(pitch => seedSlotsForPitch(svc, venueId, pitch)))
+// having its slots seeded. `schedule` defaults to the old global hardcoded
+// hours for any caller that hasn't been updated to pass the venue's own yet.
+export async function seedSlotsForVenue(svc: SupabaseClient, venueId: string, pitches: Pitch[], schedule: VenueSchedule = DEFAULT_SCHEDULE) {
+  await Promise.all(pitches.map(pitch => seedSlotsForPitch(svc, venueId, pitch, schedule)))
 }
 
 // Seeds every venue/pitch in the database. Used by the venue picker page so
 // slots exist for all venues before a user picks one.
 export async function seedSlotsForAllVenues(svc: SupabaseClient) {
-  const { data: pitches } = await svc
-    .from('pitches')
-    .select('id, venue_id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price')
+  const [{ data: pitches }, { data: venues }] = await Promise.all([
+    svc.from('pitches').select('id, venue_id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'),
+    svc.from('venues').select('id, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time'),
+  ])
 
   if (!pitches || pitches.length === 0) return
+
+  const schedules = new Map<string, VenueSchedule>(
+    ((venues ?? []) as (VenueSchedule & { id: string })[]).map(v => [v.id, scheduleFromVenue(v)])
+  )
 
   const byVenue = new Map<string, Pitch[]>()
   ;(pitches as (Pitch & { venue_id: string })[]).forEach(p => {
@@ -81,7 +87,9 @@ export async function seedSlotsForAllVenues(svc: SupabaseClient) {
   })
 
   await Promise.all(
-    Array.from(byVenue.entries()).map(([venueId, venuePitches]) => seedSlotsForVenue(svc, venueId, venuePitches))
+    Array.from(byVenue.entries()).map(([venueId, venuePitches]) =>
+      seedSlotsForVenue(svc, venueId, venuePitches, schedules.get(venueId) ?? DEFAULT_SCHEDULE)
+    )
   )
 }
 

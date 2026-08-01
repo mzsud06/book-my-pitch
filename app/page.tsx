@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Nav from '@/components/Nav'
 import PageReveal from '@/components/PageReveal'
 import { createServiceClient } from '@/lib/supabase/service'
-import { getSlotType } from '@/lib/slots'
+import { getSlotType, scheduleFromVenue, VenueSchedule } from '@/lib/slots'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -98,12 +98,13 @@ export default async function HomePage() {
   const today = new Date().toISOString().slice(0, 10)
   const { data: rawGames } = await createServiceClient()
     .from('sessions')
-    .select('id, organiser_name, status, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, address)), players(count)')
+    .select('id, organiser_name, status, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, address, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time)), players(count)')
     .eq('game_type', 'open')
     .in('status', ['filling', 'confirmed'])
     .eq('is_public', true)
     .gte('slots.date', today)
 
+  type GameVenue = Partial<VenueSchedule> & { name: string; address: string }
   type LiveGameRow = {
     id: string
     organiser_name: string | null
@@ -111,7 +112,7 @@ export default async function HomePage() {
     slots: {
       date: string; start_time: string; end_time: string; price: number
       pitches: { max_players: number }
-      venues: { name: string; address: string } | { name: string; address: string }[] | null
+      venues: GameVenue | GameVenue[] | null
     }
     players: { count: number }[]
   }
@@ -123,7 +124,7 @@ export default async function HomePage() {
       const venue = Array.isArray(rawVenue) ? rawVenue[0] : rawVenue
       const playerCount = (Array.isArray(s.players) ? s.players[0]?.count : 0) ?? 0
       const maxPlayers = slot.pitches.max_players
-      const type = getSlotType(slot.date, slot.start_time)
+      const type = getSlotType(slot.date, slot.start_time, scheduleFromVenue(venue))
       return {
         id: s.id,
         organiserName: s.organiser_name,

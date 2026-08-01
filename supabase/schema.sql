@@ -19,7 +19,16 @@ create table if not exists venues (
   stripe_onboarding_complete boolean not null default false,
   -- A human reviews every new venue before it's bookable — see
   -- app/api/sessions/route.ts, which refuses to create a session otherwise.
-  admin_approved boolean not null default false
+  admin_approved boolean not null default false,
+  -- This venue's own bookable hours and peak-price window (see
+  -- lib/slots.ts:getSlotsForDay/getSlotType) — every venue used to share one
+  -- hardcoded schedule originally built for Globe Football Pitch; these
+  -- columns let each venue set its own, collected at signup.
+  opening_time time not null default '15:30',
+  closing_time time not null default '21:30',
+  weekend_opening_time time not null default '09:30',
+  weekend_closing_time time not null default '21:30',
+  peak_start_time time not null default '18:30'
 );
 
 -- Pitches (a bookable playing surface at a venue — a venue may have several)
@@ -37,10 +46,11 @@ create table if not exists pitches (
 );
 
 -- Slots (each bookable time period)
--- Pricing tier (offpeak/peak/weekend) is derived from date+start_time at the
--- application layer (see lib/slots.ts:getSlotType) rather than stored here —
--- price/max_players/format below are seeded from the linked pitch at slot
--- creation time and denormalized for fast reads.
+-- Pricing tier (offpeak/peak/weekend) is derived from date+start_time and the
+-- owning venue's schedule columns above at the application layer (see
+-- lib/slots.ts:getSlotType) rather than stored here — price/max_players/format
+-- below are seeded from the linked pitch at slot creation time and
+-- denormalized for fast reads.
 create table if not exists slots (
   id uuid primary key default uuid_generate_v4(),
   venue_id uuid references venues(id) on delete cascade not null,

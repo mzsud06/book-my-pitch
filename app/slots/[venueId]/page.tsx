@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import SlotsClient, { SessionData, DbSlot } from './SlotsClient'
 import { seedSlotsForVenue, cleanupExpiredSessions, ukDateStr, SLOT_SEED_DAYS } from '@/lib/seedSlots'
-import { Pitch } from '@/lib/slots'
+import { Pitch, scheduleFromVenue } from '@/lib/slots'
 
 const PITCH_COLS = 'id, name, format, surface, max_players, peak_price, offpeak_price, weekend_price'
 
@@ -31,11 +31,13 @@ export default async function VenueSlotsPage({ params }: Props) {
 
   const { data: venue } = await supabase
     .from('venues')
-    .select('id, name, address, stripe_onboarding_complete, admin_approved')
+    .select('id, name, address, stripe_onboarding_complete, admin_approved, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time')
     .eq('id', venueId)
     .single()
 
   if (!venue) notFound()
+
+  const schedule = scheduleFromVenue(venue)
 
   // A venue whose Stripe Connect onboarding isn't verified yet, or that
   // hasn't been manually approved, is filtered out of the /slots browse
@@ -87,7 +89,7 @@ export default async function VenueSlotsPage({ params }: Props) {
   if (venuePitches.length > 0) {
     // Reusable per venue/pitch — ensures every slot template for the next 14
     // days exists in the DB, regardless of how many pitches this venue has.
-    await seedSlotsForVenue(svc, venueId, venuePitches)
+    await seedSlotsForVenue(svc, venueId, venuePitches, schedule)
     await cleanupExpiredSessions(svc, venueId)
   }
 
@@ -158,6 +160,7 @@ export default async function VenueSlotsPage({ params }: Props) {
         venueName={venue.name}
         venueAddress={venue.address}
         pitches={venuePitches}
+        schedule={schedule}
         userSessionIds={userSessionIds}
         userId={user?.id ?? null}
       />
