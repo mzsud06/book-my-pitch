@@ -73,17 +73,26 @@ function sliceTime(t: string): string {
 }
 
 function SegBar({ count, isConfirmed, max = 10 }: { count: number; isConfirmed: boolean; max?: number }) {
-  const isAmber = count >= Math.ceil(max * 0.7) && count < max
-  const segClass = isConfirmed ? 'lit-green' : isAmber ? 'lit-amber' : 'lit-green'
+  const pct = Math.min(100, Math.round((count / Math.max(max, 1)) * 100))
+  const fast = !isConfirmed && count >= Math.ceil(max * 0.7) && count < max
   return (
-    <div className="seg-bar" style={{ margin: '16px 0 12px', width: '100%', boxSizing: 'border-box' }}>
-      {Array.from({ length: max }, (_, i) => (
-        <div
-          key={i}
-          className={`seg-bar-seg ${i < count ? segClass : 'unlit'}`}
-          style={{ transitionDelay: `${i * 35}ms` }}
-        />
-      ))}
+    <div
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={max}
+      aria-valuenow={count}
+      aria-label={`${count} of ${max} players`}
+      style={{ margin: '14px 0 12px', width: '100%', height: '16px', borderRadius: '999px', background: 'rgba(11,17,48,0.08)', overflow: 'hidden' }}
+    >
+      <div
+        style={{
+          width: `${pct}%`,
+          height: '100%',
+          borderRadius: '999px',
+          background: fast ? 'var(--coral)' : 'var(--green)',
+          transition: 'width 0.5s ease',
+        }}
+      />
     </div>
   )
 }
@@ -600,6 +609,7 @@ export default function SessionClient({
 
   const perPlayerPounds = (slot.price / slot.pitches.max_players + 0.50 + 0.30).toFixed(2)
   const isOrganiserUser = !!(currentUserId && session.organiser_id && currentUserId === session.organiser_id)
+  const showStickyJoin = isFilling && !isFull && !localAlreadyIn && !isOrganiserUser && isLoggedIn !== null
   const isMyPlayerOrganiser = isOrganiserUser || !!(myPlayer && session.organiser_name && myPlayer.name.toLowerCase() === session.organiser_name.toLowerCase())
   // Organiser may leave private/open sessions — they need a real player row (id !== 'organiser')
   const isLeaveableGameType = session.game_type === 'private' || session.game_type === 'open'
@@ -623,91 +633,64 @@ export default function SessionClient({
         key={i}
         title={player ? `${player.name}${isOrganiserToken ? ' (Organiser)' : ''}` : `Spot ${i + 1}`}
         className={`player-token ${player ? 'filled' : ''}`}
-        style={{
-          position: 'relative',
-          flex: 1,
-          height: '60px',
-          borderRadius: 'var(--radius-lg)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '4px',
-          background: player ? 'rgba(31,59,255,0.09)' : 'rgba(11,17,48,0.02)',
-          border: player ? '1px solid rgba(31,59,255,0.28)' : '1px dashed rgba(11,17,48,0.07)',
-          boxShadow: player ? '0 0 20px rgba(31,59,255,0.08)' : 'none',
-          animationDelay: `${i * 40}ms`,
-          transition: 'background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
-        }}
+        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', minWidth: 0, animationDelay: `${i * 40}ms` }}
       >
         <div
           style={{
-            position: 'absolute',
-            top: '4px',
-            right: '5px',
-            fontSize: '7px',
-            fontWeight: 700,
-            fontFamily: 'var(--font-display)',
-            color: player ? 'rgba(31,59,255,0.4)' : 'rgba(11,17,48,0.06)',
-            lineHeight: 1,
-          }}
-        >
-          {i + 1}
-        </div>
-
-        {isOrganiserToken && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '3px',
-              left: '4px',
-              fontSize: '8px',
-              color: 'rgba(31,59,255,0.8)',
-              lineHeight: 1,
-            }}
-          >
-            ♛
-          </div>
-        )}
-
-        <div
-          style={{
-            width: '26px',
-            height: '26px',
+            position: 'relative',
+            width: '48px',
+            height: '48px',
             borderRadius: '50%',
-            background: player ? 'var(--green)' : 'rgba(11,17,48,0.05)',
+            background: player ? 'var(--green)' : 'transparent',
+            border: player ? 'none' : '2px dashed rgba(11,17,48,0.22)',
+            color: player ? '#fff' : 'var(--text-tertiary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '9px',
-            fontWeight: 700,
-            color: player ? 'var(--black)' : 'transparent',
-            flexShrink: 0,
             fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: player ? '16px' : '14px',
+            flexShrink: 0,
           }}
         >
-          {player ? initials : ''}
+          {player ? initials : i + 1}
+          {isOrganiserToken && (
+            <span
+              aria-label="Organiser"
+              style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-4px',
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: 'var(--acid)',
+                color: 'var(--ink)',
+                fontSize: '11px',
+                lineHeight: '20px',
+                textAlign: 'center',
+                border: '2px solid var(--surface)',
+              }}
+            >
+              ♛
+            </span>
+          )}
         </div>
-
-        {player && (
-          <div
-            style={{
-              fontSize: '7px',
-              fontWeight: 700,
-              color: 'var(--text)',
-              textAlign: 'center',
-              lineHeight: 1,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              maxWidth: '100%',
-              padding: '0 4px',
-              opacity: 0.85,
-            }}
-          >
-            {firstName}
-          </div>
-        )}
+        <div
+          style={{
+            fontSize: '13px',
+            fontWeight: 600,
+            color: player ? 'var(--text)' : 'var(--text-tertiary)',
+            textAlign: 'center',
+            lineHeight: 1.2,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            maxWidth: '100%',
+          }}
+        >
+          {player ? firstName : 'Open'}
+        </div>
       </div>
     )
   }
@@ -775,7 +758,7 @@ export default function SessionClient({
           <Link
             href="/slots"
             style={{
-              fontSize: '14px',
+              display: 'inline-flex', alignItems: 'center', minHeight: '44px', fontSize: '16px',
               color: 'var(--text-secondary)',
               textDecoration: 'none',
               fontWeight: 600,
@@ -791,7 +774,7 @@ export default function SessionClient({
 
   return (
     <>
-    <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
+    <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 6rem' }}>
 
       {/* ============================================================
           CONFIRMED BANNER
@@ -818,7 +801,7 @@ export default function SessionClient({
           >
             ✓ Game Confirmed: {formatDate(slot.date)} · {sliceTime(slot.start_time)} · {slot.venues?.name ?? 'your local pitch'}
           </div>
-          <div style={{ fontSize: '14px', color: 'rgba(11,17,48,0.14)', fontWeight: 600 }}>
+          <div style={{ fontSize: '16px', color: 'rgba(255,255,255,0.92)', fontWeight: 600 }}>
             £{perPlayerPounds} was charged to your card
           </div>
         </div>
@@ -865,7 +848,7 @@ export default function SessionClient({
       {justCreated && isFilling && (
         <div
           style={{
-            background: 'linear-gradient(135deg, rgba(31,59,255,0.07) 0%, rgba(31,59,255,0.03) 100%)',
+            background: 'rgba(31,59,255,0.06)',
             border: '1px solid rgba(31,59,255,0.25)',
             borderRadius: 'var(--radius-lg)',
             padding: '1.15rem 1.25rem',
@@ -1060,9 +1043,10 @@ export default function SessionClient({
         <div
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: '28px',
-            letterSpacing: '-0.04em',
-            marginBottom: '3px',
+            fontSize: '36px',
+            fontWeight: 900,
+            letterSpacing: '-0.01em',
+            marginBottom: '6px',
             lineHeight: 1,
           }}
         >
@@ -1080,38 +1064,26 @@ export default function SessionClient({
           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(slot.venues?.address ?? slot.venues?.name ?? 'football pitch London')}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ display: 'inline-block', fontSize: '14px', color: 'rgba(31,59,255,0.65)', fontWeight: 600, textDecoration: 'underline', marginBottom: '1.5rem', textUnderlineOffset: '2px' }}
+          style={{ display: 'inline-flex', alignItems: 'center', minHeight: '44px', fontSize: '16px', color: 'var(--green)', fontWeight: 700, textDecoration: 'underline', marginBottom: '0.75rem', textUnderlineOffset: '3px' }}
         >
           Get directions →
         </a>
 
         {/* TEAM LINEUP */}
         <div style={{ marginBottom: '1.2rem' }}>
-          <div style={{ display: 'flex', gap: '5px', marginBottom: '0' }}>
-            {Array.from({ length: Math.ceil(maxPlayers / 2) }, (_, i) => renderPlayerToken(i))}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(11,17,48,0.05)' }} />
-            <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(11,17,48,0.12)', letterSpacing: '0.14em',  flexShrink: 0 }}>
-              {slot.pitches.format}
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', marginBottom: '2px' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '40px', lineHeight: 1, letterSpacing: '-0.01em' }}>
+              {playerCount}<span style={{ color: 'var(--text-tertiary)' }}>/{maxPlayers}</span>
             </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(11,17,48,0.05)' }} />
-          </div>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            {Array.from({ length: Math.floor(maxPlayers / 2) }, (_, i) => renderPlayerToken(i + Math.ceil(maxPlayers / 2)))}
+            <div style={{ fontSize: '16px', fontWeight: 700, color: isConfirmed ? 'var(--green)' : 'var(--text-secondary)', textAlign: 'right' }}>
+              {isConfirmed ? 'Game on' : remaining === 1 ? '1 more needed' : `${remaining} more needed`}
+            </div>
           </div>
 
           <SegBar count={playerCount} isConfirmed={isConfirmed} max={maxPlayers} />
 
-          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 600 }}>
-            {isConfirmed ? (
-              <strong style={{ color: 'var(--green)', fontWeight: 700 }}>Confirmed: all {maxPlayers} players ✓</strong>
-            ) : (
-              <>
-                <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{playerCount}/{maxPlayers} players</strong>
-                {', '}{remaining} more needed
-              </>
-            )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(52px, 1fr))', gap: '16px 8px', marginTop: '1.25rem' }}>
+            {Array.from({ length: maxPlayers }, (_, i) => renderPlayerToken(i))}
           </div>
         </div>
 
@@ -1254,7 +1226,7 @@ export default function SessionClient({
           <div
             className="anim-fade-up d-200"
             style={{
-              background: 'linear-gradient(145deg, rgba(31,59,255,0.07) 0%, rgba(31,59,255,0.03) 100%)',
+              background: 'var(--surface)',
               border: '1px solid rgba(31,59,255,0.28)',
               borderRadius: 'var(--radius-xl)',
               padding: '1.5rem',
@@ -1334,18 +1306,19 @@ export default function SessionClient({
                 padding: '0.875rem',
                 borderRadius: 'var(--radius-lg)',
                 border: 'none',
-                background: '#25D366',
-                color: 'var(--text)',
+                background: '#128C4A',
+                color: '#fff',
+                minHeight: '52px',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
-                fontSize: '14px',
+                fontSize: '16px',
                 letterSpacing: '-0.015em',
                 cursor: 'pointer',
                 transition: 'background 160ms ease, transform 160ms var(--ease-out), box-shadow 160ms ease',
                 lineHeight: 1,
               }}
             >
-              WhatsApp →
+              Share on WhatsApp
             </button>
           </div>
           )}
@@ -2111,8 +2084,8 @@ export default function SessionClient({
       <div style={{ marginTop: '2rem', textAlign: 'center' }}>
         <Link
           href="/slots"
-          style={{
-            fontSize: '14px',
+          style={{ display: 'inline-flex', alignItems: 'center', minHeight: '44px',
+            fontSize: '16px',
             color: 'var(--text-secondary)',
             textDecoration: 'none',
             fontWeight: 600,
@@ -2380,6 +2353,24 @@ export default function SessionClient({
               </>
             )}
           </div>
+        </div>
+      )}
+      {showStickyJoin && (
+        <div className="sticky-join">
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '18px', lineHeight: 1.1 }}>
+              {playerCount}/{maxPlayers} in
+            </div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              £{perPlayerPounds} a player
+            </div>
+          </div>
+          <a
+            href={isLoggedIn === false && session.game_type === 'open' ? `/auth/login?redirect=${encodeURIComponent(`/session/${session.id}`)}` : '#join-form'}
+            className="sticky-join-btn"
+          >
+            Join game
+          </a>
         </div>
       )}
     </div>

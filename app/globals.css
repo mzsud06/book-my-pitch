@@ -1434,3 +1434,20 @@ button, [role="button"], input:not([type="checkbox"]):not([type="radio"]), selec
   .feature-card h3 { margin: 0.1rem 0 0.3rem !important; }
   .feature-card > span:last-child { padding-top: 0.6rem !important; }
 }
+
+/* Game page: sticky join bar (mobile only) */
+.sticky-join { display: none; }
+@media (max-width: 639px) {
+  .sticky-join {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+    background: #fff; border-top: 1px solid var(--border-strong);
+  }
+  .sticky-join-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 0 1.75rem; border-radius: 999px;
+    background: var(--acid); color: var(--ink);
+    font-family: var(--font-display); font-weight: 800; font-size: 16px; text-decoration: none;
+  }
+}
