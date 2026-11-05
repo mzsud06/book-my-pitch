@@ -8,10 +8,7 @@ export const metadata: Metadata = {
   title: "BookMyPitch: Book a 5-a-side pitch in East London",
   description: "Pick a pitch, share one link, and your mates join. Nobody is charged until the game is full.",
   icons: {
-    icon: [
-      { url: '/favicon.ico' },
-      { url: '/favicon.png', type: 'image/png' },
-    ],
+    icon: [{ url: '/logo-mark.svg', type: 'image/svg+xml' }, { url: '/favicon.ico' }],
     apple: '/favicon.png',
   },
   openGraph: {

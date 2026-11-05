@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { Logo } from '@/components/Logo'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -34,6 +35,8 @@ function formatNotifTime(iso: string): string {
 }
 
 const NAV_LINKS = [
+  { href: '/', label: 'Home' },
+  { href: '/public-games', label: 'Games' },
   { href: '/slots', label: 'Book a pitch' },
   { href: '/list-your-venue', label: 'For venues' },
 ]
@@ -195,12 +198,12 @@ export default function Nav() {
         alignItems: 'center',
         paddingLeft: 'clamp(0.75rem, 2vw, 1.25rem)',
         paddingRight: 'max(clamp(1.5rem, 5vw, 2rem), env(safe-area-inset-right, 0px) + 1rem)',
-        height: '60px',
-                borderBottom: '1px solid var(--border)',
+        height: '72px',
+        borderBottom: '1px solid var(--border-subtle)',
         position: 'sticky',
         top: 0,
         zIndex: 300,
-        background: 'var(--black)',
+        background: '#FFFFFF',
       }}
     >
         {/* Wordmark */}
@@ -214,35 +217,7 @@ export default function Nav() {
             minHeight: '44px',
           }}
         >
-          <span aria-hidden style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--green)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-            <img src="/logo.png" alt="" style={{ width: '56px', height: '56px', maxWidth: 'none', display: 'block' }} />
-          </span>
-          <span
-            className="nav-wordmark-text"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(15px, 3.5vw, 18px)',
-              fontWeight: 600,
-              letterSpacing: '-0.01em',
-              color: 'var(--text)',
-              lineHeight: 1,
-              userSelect: 'none',
-            }}
-          >
-            Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
-            <span
-              style={{
-                color: 'var(--text-secondary)',
-                opacity: 0.75,
-                fontSize: '0.72em',
-                fontWeight: 600,
-                letterSpacing: '0',
-                marginLeft: '1px',
-              }}
-            >
-              .uk
-            </span>
-          </span>
+          <Logo hideWordmarkOnMobile />
         </Link>
 
         {/* Nav links (desktop) */}
@@ -258,12 +233,14 @@ export default function Nav() {
                   fontFamily: 'var(--font-sans)',
                   fontWeight: 600,
                   fontSize: '16px',
-                  color: isActive ? 'var(--text)' : 'var(--text-secondary)',
+                  color: isActive ? 'var(--green)' : 'var(--text-secondary)',
+                  background: isActive ? 'var(--green-faint)' : 'transparent',
+                  borderRadius: '999px',
                   textDecoration: 'none',
                   transition: 'color 0.15s ease',
                   whiteSpace: 'nowrap',
                   letterSpacing: '-0.01em',
-                  padding: '0.5rem 0.75rem',
+                  padding: '0.5rem 1.1rem',
                   minHeight: '44px',
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -590,8 +567,8 @@ export default function Nav() {
                 className="nav-link-ghost"
                 style={{
                   fontFamily: 'var(--font-sans)',
-                  fontWeight: 500,
-                  fontSize: '14px',
+                  fontWeight: 600,
+                  fontSize: '16px',
                   color: 'var(--text-secondary)',
                   textDecoration: 'none',
                   transition: 'color 0.15s ease',
@@ -606,7 +583,7 @@ export default function Nav() {
                 Sign in
               </Link>
               <Link href="/auth/signup" style={{ textDecoration: 'none' }}>
-                <Button variant="primary" size="sm" style={{ borderRadius: 'var(--radius-full)', minHeight: '44px' }}>
+                <Button variant="brand" size="sm" style={{ borderRadius: 'var(--radius-full)', minHeight: '44px', padding: '0 1.4rem' }}>
                   Sign up
                 </Button>
               </Link>
@@ -692,24 +669,7 @@ export default function Nav() {
             gap: '5px',
           }}
         >
-          <span aria-hidden style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--green)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-            <img src="/logo.png" alt="" style={{ width: '56px', height: '56px', maxWidth: 'none', display: 'block' }} />
-          </span>
-          <span
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '18px',
-              fontWeight: 600,
-              letterSpacing: '-0.01em',
-              color: 'var(--text)',
-              lineHeight: 1,
-            }}
-          >
-            Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
-            <span style={{ color: 'var(--text-secondary)', opacity: 0.75, fontSize: '0.72em', fontWeight: 600, marginLeft: '1px' }}>
-              .uk
-            </span>
-          </span>
+          <Logo />
         </Link>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', flex: 1, justifyContent: 'center' }}>

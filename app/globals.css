@@ -1397,3 +1397,5 @@ button, [role="button"], input:not([type="checkbox"]):not([type="radio"]), selec
 }
 .bmp-btn:active { transform: scale(0.98) !important; }
 :focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+
+@media (max-width: 420px) { .logo-wordmark-hide-sm { display: none; } }

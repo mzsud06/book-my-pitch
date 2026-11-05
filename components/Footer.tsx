@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Logo } from '@/components/Logo'
 
 const linkStyle = {
   fontSize: '16px',
@@ -20,7 +21,7 @@ const columnStyle = { display: 'flex', flexDirection: 'column' as const }
 
 export function Footer() {
   return (
-    <footer style={{ borderTop: '1px solid var(--border)', marginTop: 'clamp(3rem, 8vh, 5rem)' }}>
+    <footer style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 'clamp(3rem, 8vh, 5rem)', background: '#FFFFFF' }}>
       <div
         style={{
           maxWidth: '1180px',
@@ -33,9 +34,7 @@ export function Footer() {
         }}
       >
         <div style={{ maxWidth: '300px' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 600, color: 'var(--text)', lineHeight: 1 }}>
-            Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
-          </div>
+          <Logo />
           <p style={{ fontSize: '16px', color: 'var(--text-secondary)', marginTop: '0.75rem', lineHeight: 1.5 }}>
             5-a-side and 7-a-side football pitches in East London. Run by Masud Rahman, Admin.
           </p>
