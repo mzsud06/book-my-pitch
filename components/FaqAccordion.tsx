@@ -190,7 +190,7 @@ export function FaqAccordion({
       <Container>
         {/* Section header */}
         <div
-          className="reveal-scroll"
+          
           style={{ marginBottom: '2.75rem' }}
         >
           <SectionHeading eyebrow={eyebrow} heading={heading} />
@@ -198,7 +198,7 @@ export function FaqAccordion({
 
         {/* Accordion card */}
         <div
-          className="reveal-scroll"
+          
           style={{
             maxWidth: '760px',
             background: 'var(--surface)',

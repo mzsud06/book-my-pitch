@@ -1399,3 +1399,38 @@ button, [role="button"], input:not([type="checkbox"]):not([type="radio"]), selec
 :focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
 
 @media (max-width: 420px) { .logo-wordmark-hide-sm { display: none; } }
+
+/* ===== v2 homepage ===== */
+.home-hero { padding: clamp(2rem, 7vw, 5rem) clamp(1.5rem, 6vw, 4.5rem); min-height: clamp(460px, 62vh, 600px); display: flex; align-items: center; }
+.home-section { padding-top: clamp(3.5rem, 9vw, 6rem); }
+.section-link { color: var(--green); font-weight: 700; font-size: 17px; text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; }
+.section-link:hover { text-decoration: underline; }
+
+.ticker { background: var(--acid); color: var(--ink); overflow: hidden; }
+.ticker-track { display: flex; width: max-content; animation: ticker 38s linear infinite; }
+.ticker-list { display: flex; list-style: none; margin: 0; padding: 0; }
+.ticker-list li { display: inline-flex; align-items: center; gap: 10px; padding: 16px 28px; font-weight: 800; font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .ticker-track { animation: none; } }
+
+.feature-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 2rem; }
+@media (min-width: 640px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .feature-grid { grid-template-columns: repeat(4, 1fr); } }
+.feature-card { display: flex; flex-direction: column; padding: 1.75rem 1.5rem; border-radius: var(--radius-xl); box-shadow: var(--shadow-card); min-height: 280px; transition: transform 150ms ease, box-shadow 150ms ease; }
+@media (hover: hover) { .feature-card:hover, .game-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card-hover); } }
+.game-card { transition: transform 150ms ease, box-shadow 150ms ease; }
+
+.card-grid { display: grid; grid-template-columns: 1fr; gap: 18px; margin-top: 2rem; }
+@media (min-width: 640px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .card-grid { grid-template-columns: repeat(4, 1fr); } }
+.empty-card { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; padding: 2rem 1.75rem; border: 2px dashed var(--border-strong); border-radius: var(--radius-xl); background: #FFFFFF; }
+
+.trust-card { display: grid; grid-template-columns: 1fr; gap: 1.75rem; background: #FFFFFF; border-radius: var(--radius-xl); box-shadow: var(--shadow-card); padding: clamp(1.5rem, 4vw, 2.25rem); }
+@media (min-width: 768px) { .trust-card { grid-template-columns: 1fr 1fr; gap: 3rem; } }
+.venue-cta { padding: clamp(2rem, 6vw, 4rem) clamp(1.5rem, 6vw, 4rem); }
+@media (max-width: 639px) {
+  .feature-card { min-height: 0; padding: 1.25rem; display: grid; grid-template-columns: 52px 1fr; column-gap: 1rem; align-items: start; }
+  .feature-card > span:first-child { grid-row: 1 / span 3; }
+  .feature-card h3 { margin: 0.1rem 0 0.3rem !important; }
+  .feature-card > span:last-child { padding-top: 0.6rem !important; }
+}

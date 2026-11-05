@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import { Card } from '@/components/ui/Card'
-import { formatPerPlayer } from '@/lib/slots'
-import { Photo } from '@/components/ui/Photo'
+import Image from 'next/image'
+import { PitchArt } from '@/components/PitchArt'
+import { Badge } from '@/components/ui/Badge'
 
 export interface VenueCardPitch {
   format: string
@@ -18,73 +18,44 @@ export interface VenueCardData {
   pitches: VenueCardPitch[]
 }
 
-function PinIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
-      <path d="M8 14.5s5-4.2 5-8.2A5 5 0 0 0 3 6.3c0 4 5 8.2 5 8.2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-      <circle cx="8" cy="6.3" r="1.8" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  )
-}
-
-export function VenueCard({ venue, index = 0 }: { venue: VenueCardData; index?: number }) {
+export function VenueCard({ venue }: { venue: VenueCardData; index?: number }) {
   const formats = Array.from(new Set(venue.pitches.map(p => p.format)))
-  const cheapestPitch = venue.pitches.reduce<VenueCardPitch | null>(
-    (min, p) => (!min || p.offpeak_price / p.max_players < min.offpeak_price / min.max_players ? p : min),
-    null
-  )
+  const cheapest = venue.pitches.reduce<number | null>((min, p) => (min === null || p.offpeak_price < min ? p.offpeak_price : min), null)
 
   return (
-    <Link
-      href={`/slots/${venue.id}`}
-      className="anim-fade-up"
-      style={{ textDecoration: 'none', display: 'block', animationDelay: `${index * 60}ms` }}
-    >
-      <Card hover style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
-        <Photo src={venue.photo_url} alt={venue.name} className="venue-card-photo" sizes="(max-width: 640px) 100vw, 380px" />
-        <div style={{ padding: '1.1rem 1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-          <h3
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '20px',
-              fontWeight: 600,
-              letterSpacing: '-0.015em',
-              color: 'var(--text)',
-              margin: '0 0 6px',
-              }}
-          >
-            {venue.name}
-          </h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', marginBottom: '8px', minWidth: 0 }}>
-            <PinIcon />
-            <p
-              style={{
-                fontSize: '14px',
-                margin: 0,
-                fontWeight: 400,
-                minWidth: 0,
-              }}
-            >
-              {venue.address}
-            </p>
+    <Link href={`/slots/${venue.id}`} className="venue-card-link" style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
+      <article className="game-card" style={{ background: '#FFFFFF', borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-card)', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ position: 'relative', aspectRatio: '16 / 10' }}>
+          {venue.photo_url ? (
+            <Image src={venue.photo_url} alt={venue.name} fill sizes="(max-width: 640px) 100vw, 320px" style={{ objectFit: 'cover' }} />
+          ) : (
+            <PitchArt label={`${venue.name}: photo coming soon`} />
+          )}
+        </div>
+        <div style={{ padding: '1.1rem 1.2rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+          <h3 style={{ fontSize: '1.3rem', margin: 0, lineHeight: 1.15, color: 'var(--text)' }}>{venue.name}</h3>
+          <div style={{ display: 'flex', gap: '8px', fontSize: '15px', color: 'var(--text-secondary)' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={{ flexShrink: 0, marginTop: '2px' }}>
+              <path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+            </svg>
+            <span>{venue.address}</span>
           </div>
-          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 400, marginBottom: '0.75rem' }}>
-            {formats.join(' · ')}
-          </div>
-
-          {cheapestPitch && (
-            <div style={{ marginTop: 'auto' }}>
-              <div style={{ fontSize: '14px', color: 'var(--text-tertiary)', fontWeight: 400, marginBottom: '2px' }}>
-                From
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: 'var(--green)' }}>
-                {formatPerPlayer(cheapestPitch.offpeak_price, cheapestPitch.max_players)}{' '}
-                <span style={{ fontSize: '14px', fontWeight: 400, color: 'var(--text-secondary)' }}>a player, plus fees</span>
+          {formats.length > 0 && (
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {formats.map(f => <Badge key={f} variant="neutral">{f}</Badge>)}
+            </div>
+          )}
+          {cheapest !== null && (
+            <div style={{ marginTop: 'auto', paddingTop: '0.5rem' }}>
+              <div style={{ fontSize: '14px', color: 'var(--text-tertiary)' }}>Starts from</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                <span className="wide" style={{ fontSize: '26px', fontWeight: 900, color: 'var(--green)' }}>£{cheapest % 1 === 0 ? cheapest : cheapest.toFixed(2)}</span>
+                <span style={{ fontSize: '15px', color: 'var(--text-secondary)' }}>an hour, split between players</span>
               </div>
             </div>
           )}
         </div>
-      </Card>
+      </article>
     </Link>
   )
 }
