@@ -50,12 +50,12 @@ export default function ResetPasswordPage() {
   }
 
   const labelStyle: React.CSSProperties = {
-    fontSize: '11px',
+    fontSize: '14px',
     color: 'var(--text-secondary)',
     marginBottom: '8px',
     display: 'block',
     fontWeight: 600,
-    textTransform: 'uppercase',
+    
     letterSpacing: '0.1em',
     fontFamily: 'var(--font-sans)',
   }
@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
 
         {/* Wordmark */}
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>
             <span
               style={{
                 fontFamily: 'var(--font-display)',
@@ -91,7 +91,7 @@ export default function ResetPasswordPage() {
               <span
                 style={{
                   color: 'var(--green)',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   verticalAlign: 'super',
                   marginLeft: '1px',
                   opacity: 0.75,
@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--radius-xl)',
             padding: 'clamp(1.5rem, 4vw, 2rem)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+            boxShadow: '0 24px 64px rgba(31,36,32,0.14), 0 0 0 1px rgba(31,36,32,0.05)',
           }}
         >
           <h1
@@ -176,11 +176,11 @@ export default function ResetPasswordPage() {
             {error && (
               <div
                 style={{
-                  background: 'rgba(255,68,68,0.07)',
-                  border: '1px solid rgba(255,68,68,0.18)',
+                  background: 'rgba(179,38,30,0.07)',
+                  border: '1px solid rgba(179,38,30,0.18)',
                   borderRadius: 'var(--radius-md)',
                   padding: '0.875rem 1rem',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   color: 'var(--red)',
                   fontWeight: 500,
                   lineHeight: 1.55,

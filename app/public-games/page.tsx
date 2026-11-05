@@ -2,9 +2,10 @@ import Link from 'next/link'
 import Nav from '@/components/Nav'
 import { Container } from '@/components/ui/Container'
 import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SectionHeading } from '@/components/ui/SectionHeading'
+import { StateMessage } from '@/components/ui/StateMessage'
+import { Footer } from '@/components/Footer'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSlotType, isSlotInPast, scheduleFromVenue, VenueSchedule } from '@/lib/slots'
 import { expireIfStale } from '@/lib/expireSessions'
@@ -17,10 +18,6 @@ const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'S
 function fmtSlotDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   return `${DAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`
-}
-
-function typeLabelFromVariant(variant: 'peak' | 'offpeak' | 'weekend'): string {
-  return variant === 'peak' ? 'Peak' : variant === 'offpeak' ? 'Off-peak' : 'Weekend'
 }
 
 function PeopleIcon() {
@@ -71,7 +68,7 @@ interface PublicGameRow {
 
 export default async function PublicGamesPage() {
   const today = new Date().toISOString().slice(0, 10)
-  const { data: rawGames } = await createServiceClient()
+  const { data: rawGames, error: gamesError } = await createServiceClient()
     .from('sessions')
     .select('id, organiser_name, status, slots!inner(date, start_time, end_time, price, pitches(max_players), venues(name, address, opening_time, closing_time, weekend_opening_time, weekend_closing_time, peak_start_time, daily_hours)), players(count)')
     .eq('game_type', 'open')
@@ -112,7 +109,8 @@ export default async function PublicGamesPage() {
         isFull: s.status === 'confirmed' || playerCount >= maxPlayers,
         venueName: venue?.name ?? 'your local pitch',
         venueAddress: venue?.address ?? '',
-        time: `${slot.start_time.slice(0, 5)} – ${slot.end_time.slice(0, 5)}`,
+        time: `${slot.start_time.slice(0, 5)} to ${slot.end_time.slice(0, 5)}`,
+        sortKey: `${slot.date} ${slot.start_time}`,
         date: fmtSlotDate(slot.date),
         price: `£${(slot.price / maxPlayers).toFixed(2)}`,
         playerCount,
@@ -121,171 +119,64 @@ export default async function PublicGamesPage() {
         badgeVariant: (type === 'peak' ? 'peak' : type === 'weekend' ? 'weekend' : 'offpeak') as 'peak' | 'offpeak' | 'weekend',
       }
     })
-    .sort((a, b) => Number(a.isFull) - Number(b.isFull) || b.playerCount - a.playerCount)
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
 
   return (
     <>
       <Nav />
-      <main style={{ position: 'relative', zIndex: 1 }}>
+      <main>
         <Container>
-          <div style={{ paddingTop: 'clamp(2.5rem, 6vh, 3.5rem)', paddingBottom: 'clamp(4rem, 8vh, 6rem)' }}>
-
-            {/* Page header */}
-            <div className="anim-fade-up" style={{ marginBottom: '2.5rem', maxWidth: '640px' }}>
-              <SectionHeading
-                eyebrow="Live now"
-                heading="Public games"
-                sub="Join a game that's already filling up, no organising needed."
-              />
+          <div style={{ paddingTop: 'clamp(2rem, 6vh, 3.5rem)' }}>
+            <div style={{ marginBottom: '2rem', maxWidth: '640px' }}>
+              <SectionHeading heading="Public games" sub="Games anyone can join, in date order. Join one and save a card. You are charged only when the game fills." />
             </div>
-
-            {games.length === 0 ? (
-              /* Empty state */
-              <Card
-                className="anim-fade-up d-100"
-                style={{ textAlign: 'center', padding: '4rem 1.5rem' }}
-              >
-                <div
-                  style={{
-                    width: '72px',
-                    height: '72px',
-                    background: 'rgba(198,241,53,0.08)',
-                    border: '1px solid rgba(198,241,53,0.15)',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 1.5rem',
-                    fontSize: '28px',
-                  }}
-                >
-                  ⚽
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '22px',
-                    letterSpacing: '-0.03em',
-                    marginBottom: '0.6rem',
-                    color: 'var(--text)',
-                  }}
-                >
-                  No public games right now
-                </div>
-                <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '2rem', fontWeight: 500, lineHeight: 1.6 }}>
-                  Check back soon or start your own.
-                </div>
-                <Link href="/slots" style={{ textDecoration: 'none' }}>
-                  <Button variant="primary" size="lg" arrow>Browse slots</Button>
-                </Link>
-              </Card>
+            {gamesError ? (
+              <StateMessage
+                tone="error"
+                title="We couldn't load the games"
+                body="That's on our side, not yours. Refresh the page in a moment."
+                action={<Link href="/public-games" style={{ textDecoration: 'none' }}><Button variant="secondary">Refresh</Button></Link>}
+              />
+            ) : games.length === 0 ? (
+              <StateMessage
+                title="No public games yet"
+                body="Be the first. Pick a pitch and a time, then choose to make your game public so others can join."
+                action={<Link href="/slots" style={{ textDecoration: 'none' }}><Button size="lg" arrow>Start a game</Button></Link>}
+              />
             ) : (
-              /* Game cards — same visual treatment as the homepage's "Live now" preview */
               <div className="public-games-grid">
-                {games.map((game, idx) => {
-                  const cardInner = (
-                    <Card
-                      hover={!game.isFull}
-                      style={{
-                        padding: 0,
-                        overflow: 'hidden',
-                        height: '100%',
-                        borderRadius: '16px',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        opacity: game.isFull ? 0.6 : 1,
-                      }}
-                    >
-                      {/* Top half — pitch photo */}
-                      <div
-                        style={{
-                          position: 'relative', height: '180px',
-                          backgroundImage: 'url(/example-pitch.jpg)',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                        }}
-                      >
-                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.4)' }} />
-                        <div
-                          style={{
-                            position: 'absolute', top: '10px', left: '10px',
-                            display: 'inline-flex', alignItems: 'center', gap: '5px',
-                            padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                            background: game.isFull ? 'var(--red)' : '#C6F135',
-                            color: game.isFull ? '#fff' : '#080808',
-                            fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
-                            letterSpacing: '0.02em',
-                          }}
-                        >
-                          <PeopleIcon /> {game.playerCount}/{game.maxPlayers} players
-                        </div>
+                {games.map(game => {
+                  const inner = (
+                    <Card hover={!game.isFull} style={{ padding: '1.25rem', height: '100%', opacity: game.isFull ? 0.65 : 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                        <ClockIcon /> {game.date}, {game.time}
                       </div>
-
-                      {/* Bottom half — game details */}
-                      <div style={{ background: '#0e0e0e', padding: '1rem 1.2rem' }}>
-                        <div style={{
-                          fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                          letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
-                        }}>
-                          {game.organiserName ? `${game.organiserName}'s game` : "Public game"}
-                        </div>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: '6px',
-                          fontFamily: 'var(--font-sans)', fontSize: '12px',
-                          color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
-                        }}>
-                          <ClockIcon /> {game.date} · {game.time}
-                        </div>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: '6px',
-                          fontFamily: 'var(--font-sans)', fontSize: '12px',
-                          color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
-                        }}>
-                          <PinIcon /> {game.venueName}{game.venueAddress ? ` · ${game.venueAddress}` : ''}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                          <Badge variant={game.badgeVariant}>{typeLabelFromVariant(game.badgeVariant)}</Badge>
-                          <div style={{
-                            display: 'inline-flex', alignItems: 'baseline', gap: '4px',
-                            padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
-                          }}>
-                            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
-                              {game.price}
-                            </span>
-                            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
-                              per player
-                            </span>
-                          </div>
-                        </div>
+                      <h3 style={{ fontSize: '1.25rem', margin: '0.4rem 0 0.2rem', lineHeight: 1.25 }}>
+                        {game.organiserName ? `${game.organiserName}'s game` : 'Public game'}
+                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                        <PinIcon /> {game.venueName}{game.venueAddress ? `, ${game.venueAddress}` : ''}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '1rem' }}>
+                          <PeopleIcon /> {game.isFull ? 'Full' : `${game.playerCount} of ${game.maxPlayers} joined`}
+                        </span>
+                        <span style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--green)' }}>{game.price} a player, plus fees</span>
                       </div>
                     </Card>
                   )
-
                   return game.isFull ? (
-                    <div
-                      key={game.id}
-                      className="anim-fade-up"
-                      style={{ animationDelay: `${idx * 60}ms`, cursor: 'default' }}
-                    >
-                      {cardInner}
-                    </div>
+                    <div key={game.id}>{inner}</div>
                   ) : (
-                    <Link
-                      key={game.id}
-                      href={`/session/${game.id}`}
-                      className="anim-fade-up"
-                      style={{ animationDelay: `${idx * 60}ms`, textDecoration: 'none', display: 'block' }}
-                    >
-                      {cardInner}
-                    </Link>
+                    <Link key={game.id} href={`/session/${game.id}`} style={{ textDecoration: 'none', display: 'block' }}>{inner}</Link>
                   )
                 })}
               </div>
             )}
-
           </div>
         </Container>
       </main>
+      <Footer />
     </>
   )
 }

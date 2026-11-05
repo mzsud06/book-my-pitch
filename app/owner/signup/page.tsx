@@ -415,20 +415,20 @@ export default function OwnerSignupPage() {
   }
 
   const labelStyle: React.CSSProperties = {
-    fontSize: '10px',
+    fontSize: '14px',
     color: 'var(--muted)',
     marginBottom: '7px',
     display: 'block',
     fontWeight: 700,
-    textTransform: 'uppercase',
+    
     letterSpacing: '0.12em',
   }
 
   const sectionLabelStyle: React.CSSProperties = {
-    fontSize: '11px',
+    fontSize: '14px',
     color: 'var(--green)',
-    fontWeight: 800,
-    textTransform: 'uppercase',
+    fontWeight: 700,
+    
     letterSpacing: '0.12em',
     marginBottom: '0.9rem',
     marginTop: '0.5rem',
@@ -464,7 +464,7 @@ export default function OwnerSignupPage() {
           transform: 'translateX(-50%)',
           width: '600px',
           height: '400px',
-          background: 'radial-gradient(ellipse at center, rgba(198,241,53,0.04) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at center, rgba(20,80,45,0.04) 0%, transparent 70%)',
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -472,10 +472,10 @@ export default function OwnerSignupPage() {
 
       <div style={{ width: '100%', maxWidth: '540px', position: 'relative', zIndex: 1 }}>
         <div className="anim-fade-up" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: '20px', letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1 }}>
               Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
-              <span style={{ color: 'var(--green)', fontSize: '13px', verticalAlign: 'super', marginLeft: '1px' }}>.uk</span>
+              <span style={{ color: 'var(--green)', fontSize: '14px', verticalAlign: 'super', marginLeft: '1px' }}>.uk</span>
             </span>
           </Link>
         </div>
@@ -483,18 +483,18 @@ export default function OwnerSignupPage() {
         <Card
           className="anim-fade-up d-80"
           style={{
-            border: '1px solid rgba(255,255,255,0.09)',
+            border: '1px solid rgba(31,36,32,0.09)',
             borderTop: '2px solid var(--green)',
             padding: '2rem',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
+            boxShadow: '0 8px 40px rgba(31,36,32,0.14), inset 0 1px 0 rgba(31,36,32,0.04)',
           }}
         >
           {stripeSetupPending ? (
             <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
               <div
                 style={{
-                  width: '64px', height: '64px', background: 'rgba(22,48,31,0.7)',
-                  border: '1px solid rgba(198,241,53,0.25)', borderRadius: '50%',
+                  width: '64px', height: '64px', background: 'rgba(20,80,45,0.08)',
+                  border: '1px solid rgba(20,80,45,0.25)', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '26px', margin: '0 auto 1.5rem', color: 'var(--green)',
                 }}
@@ -516,8 +516,8 @@ export default function OwnerSignupPage() {
             <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
               <div
                 style={{
-                  width: '64px', height: '64px', background: 'rgba(22,48,31,0.7)',
-                  border: '1px solid rgba(198,241,53,0.25)', borderRadius: '50%',
+                  width: '64px', height: '64px', background: 'rgba(20,80,45,0.08)',
+                  border: '1px solid rgba(20,80,45,0.25)', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '26px', margin: '0 auto 1.5rem', color: 'var(--green)',
                 }}
@@ -541,12 +541,12 @@ export default function OwnerSignupPage() {
                 <div
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '6px',
-                    background: 'rgba(198,241,53,0.08)', border: '1px solid rgba(198,241,53,0.16)',
+                    background: 'rgba(20,80,45,0.08)', border: '1px solid rgba(20,80,45,0.16)',
                     borderRadius: '6px', padding: '3px 10px', marginBottom: '1rem',
                   }}
                 >
                   <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />
-                  <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--green)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                  <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--green)', letterSpacing: '0.12em',  }}>
                     List your venue
                   </span>
                 </div>
@@ -563,7 +563,7 @@ export default function OwnerSignupPage() {
                           style={{
                             width: '22px', height: '22px', borderRadius: '50%',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '11px', fontWeight: 800,
+                            fontSize: '14px', fontWeight: 700,
                             background: i === 0 ? 'var(--green)' : 'var(--surface2)',
                             color: i === 0 ? 'var(--black)' : 'var(--muted)',
                             border: i === 0 ? 'none' : '1px solid var(--border)',
@@ -571,7 +571,7 @@ export default function OwnerSignupPage() {
                         >
                           {i + 1}
                         </div>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: i === 0 ? 'var(--text)' : 'var(--muted)', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: i === 0 ? 'var(--text)' : 'var(--muted)', whiteSpace: 'nowrap' }}>
                           {step}
                         </span>
                       </div>
@@ -594,13 +594,13 @@ export default function OwnerSignupPage() {
                       padding: '0.85rem 1rem',
                     }}
                   >
-                    <span style={{ fontSize: '13px', color: 'var(--text)', fontWeight: 600 }}>
+                    <span style={{ fontSize: '14px', color: 'var(--text)', fontWeight: 600 }}>
                       Signed in as {existingUserEmail}
                     </span>
                     <button
                       type="button"
                       onClick={handleSignOut}
-                      style={{ background: 'none', border: 'none', color: 'var(--green)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
+                      style={{ background: 'none', border: 'none', color: 'var(--green)', fontSize: '14px', fontWeight: 700, cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
                     >
                       Not you?
                     </button>
@@ -635,13 +635,13 @@ export default function OwnerSignupPage() {
                   />
                 ))}
                 {postcodeStatus === 'checking' && (
-                  <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '-6px' }}>Checking postcode…</div>
+                  <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '-6px' }}>Checking postcode…</div>
                 )}
                 {postcodeStatus === 'valid' && (
-                  <div style={{ fontSize: '12px', color: 'var(--green)', fontWeight: 600, marginTop: '-6px' }}>✓ {postcodeArea}</div>
+                  <div style={{ fontSize: '14px', color: 'var(--green)', fontWeight: 600, marginTop: '-6px' }}>✓ {postcodeArea}</div>
                 )}
                 {postcodeStatus === 'invalid' && (
-                  <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginTop: '-6px' }}>Postcode not recognised — double check it</div>
+                  <div style={{ fontSize: '14px', color: 'var(--red)', fontWeight: 600, marginTop: '-6px' }}>Postcode not recognised — double check it</div>
                 )}
                 {fieldWrap('Street address', (
                   <input type="text" value={addressLine} onChange={e => setAddressLine(e.target.value)} required maxLength={250} placeholder="Street and area" style={inputStyle} />
@@ -649,7 +649,7 @@ export default function OwnerSignupPage() {
                 {fieldWrap('Contact phone number', (
                   <input type="tel" value={contactPhone} onChange={e => setContactPhone(e.target.value)} required maxLength={20} placeholder="e.g. 07123 456789" style={inputStyle} />
                 ))}
-                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '-6px', fontWeight: 500 }}>
+                <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '-6px', fontWeight: 500 }}>
                   Used if there&apos;s an issue with a booking — never shown to players.
                 </div>
 
@@ -662,7 +662,7 @@ export default function OwnerSignupPage() {
                         <button
                           type="button"
                           onClick={() => setPhotoDataUrl(null)}
-                          style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                          style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: '14px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                         >
                           Remove photo
                         </button>
@@ -672,22 +672,22 @@ export default function OwnerSignupPage() {
                         style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           border: '1px dashed var(--border)', borderRadius: '10px',
-                          padding: '0.85rem', cursor: 'pointer', color: 'var(--muted)', fontSize: '13px', fontWeight: 600,
+                          padding: '0.85rem', cursor: 'pointer', color: 'var(--muted)', fontSize: '14px', fontWeight: 600,
                         }}
                       >
                         Upload a photo of your venue
                         <input type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
                       </label>
                     )}
-                    {photoError && <div style={{ color: 'var(--red)', fontSize: '12px', fontWeight: 600, marginTop: '6px' }}>{photoError}</div>}
+                    {photoError && <div style={{ color: 'var(--red)', fontSize: '14px', fontWeight: 600, marginTop: '6px' }}>{photoError}</div>}
                   </div>
                 ))}
-                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '-6px', fontWeight: 500 }}>
+                <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '-6px', fontWeight: 500 }}>
                   You can add more later — this just helps players see what they&apos;re booking.
                 </div>
 
                 <div style={sectionLabelStyle}>Opening hours</div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--muted)', fontWeight: 500, cursor: 'pointer', marginBottom: '2px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--muted)', fontWeight: 500, cursor: 'pointer', marginBottom: '2px' }}>
                   <input
                     type="checkbox"
                     checked={hoursDifferByDay}
@@ -701,11 +701,11 @@ export default function OwnerSignupPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {DAY_KEYS.map(day => (
                       <div key={day} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ width: '82px', fontSize: '12px', fontWeight: 700, color: 'var(--muted)', textTransform: 'capitalize', flexShrink: 0 }}>
+                        <span style={{ width: '82px', fontSize: '14px', fontWeight: 700, color: 'var(--muted)', textTransform: 'capitalize', flexShrink: 0 }}>
                           {day}
                         </span>
                         <input type="time" value={dayHours[day].opening} onChange={e => updateDayHours(day, { opening: e.target.value })} required style={{ ...inputStyle, padding: '0.6rem 0.75rem' }} />
-                        <span style={{ color: 'var(--muted)', fontSize: '13px' }}>–</span>
+                        <span style={{ color: 'var(--muted)', fontSize: '14px' }}>–</span>
                         <input type="time" value={dayHours[day].closing} onChange={e => updateDayHours(day, { closing: e.target.value })} required style={{ ...inputStyle, padding: '0.6rem 0.75rem' }} />
                       </div>
                     ))}
@@ -736,7 +736,7 @@ export default function OwnerSignupPage() {
                     {NOTICE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                   </select>
                 ))}
-                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '-6px', fontWeight: 500 }}>
+                <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '-6px', fontWeight: 500 }}>
                   How close to kickoff a game can still be booked.
                 </div>
 
@@ -745,7 +745,7 @@ export default function OwnerSignupPage() {
                     {fieldWrap('Peak pricing starts at', (
                       <input type="time" value={peakStartTime} onChange={e => setPeakStartTime(e.target.value)} required style={inputStyle} />
                     ))}
-                    <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '-6px', fontWeight: 500 }}>
+                    <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '-6px', fontWeight: 500 }}>
                       Every day, bookings from this time use the peak price set below.
                     </div>
                   </>
@@ -761,10 +761,10 @@ export default function OwnerSignupPage() {
                         key={a.key}
                         onClick={() => toggleAmenity(a.key)}
                         style={{
-                          fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                          fontSize: '14px', fontWeight: 600, cursor: 'pointer',
                           padding: '0.5rem 0.85rem', borderRadius: 'var(--radius-full)',
                           border: active ? '1px solid var(--green)' : '1px solid var(--border)',
-                          background: active ? 'rgba(198,241,53,0.1)' : 'var(--surface2)',
+                          background: active ? 'rgba(20,80,45,0.1)' : 'var(--surface2)',
                           color: active ? 'var(--green)' : 'var(--muted)',
                         }}
                       >
@@ -788,14 +788,14 @@ export default function OwnerSignupPage() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
                         {pitchDrafts.length > 1 ? `Pitch ${i + 1}` : 'Pitch details'}
                       </div>
                       {pitchDrafts.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removePitch(p.id)}
-                          style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: '12px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                          style={{ background: 'none', border: 'none', color: 'var(--red)', fontSize: '14px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                         >
                           Remove
                         </button>
@@ -822,7 +822,7 @@ export default function OwnerSignupPage() {
                       ))}
                     </div>
 
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--muted)', fontWeight: 500, cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--muted)', fontWeight: 500, cursor: 'pointer' }}>
                       <input
                         type="checkbox"
                         checked={p.samePrice}
@@ -863,7 +863,7 @@ export default function OwnerSignupPage() {
                   onClick={addPitch}
                   style={{
                     background: 'none', border: '1px dashed var(--border)', borderRadius: '10px',
-                    padding: '0.7rem', color: 'var(--green)', fontSize: '13px', fontWeight: 700,
+                    padding: '0.7rem', color: 'var(--green)', fontSize: '14px', fontWeight: 700,
                     cursor: 'pointer', letterSpacing: '-0.01em',
                   }}
                 >
@@ -871,7 +871,7 @@ export default function OwnerSignupPage() {
                 </button>
 
                 {error && (
-                  <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '10px', padding: '0.85rem 1rem', fontSize: '13px', color: 'var(--red)', fontWeight: 600, lineHeight: 1.5 }}>
+                  <div style={{ background: 'rgba(179,38,30,0.08)', border: '1px solid rgba(179,38,30,0.2)', borderRadius: '10px', padding: '0.85rem 1rem', fontSize: '14px', color: 'var(--red)', fontWeight: 600, lineHeight: 1.5 }}>
                     {error}
                   </div>
                 )}
@@ -885,14 +885,14 @@ export default function OwnerSignupPage() {
                     cursor: loading ? 'not-allowed' : 'pointer',
                     background: loading ? 'var(--surface2)' : 'var(--green)',
                     color: loading ? 'var(--muted)' : 'var(--black)',
-                    fontFamily: 'var(--font-display)', fontWeight: 900, letterSpacing: '-0.025em',
+                    fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.025em',
                     marginTop: '4px', lineHeight: 1,
                   }}
                 >
                   {loading ? 'Setting up…' : 'Continue to Stripe →'}
                 </button>
 
-                <div style={{ fontSize: '12px', color: 'var(--muted)', textAlign: 'center' }}>
+                <div style={{ fontSize: '14px', color: 'var(--muted)', textAlign: 'center' }}>
                   By continuing you agree to our{' '}
                   <Link href="/terms" style={{ color: 'var(--green)', textDecoration: 'none' }}>terms</Link>{' '}
                   and{' '}
@@ -904,13 +904,13 @@ export default function OwnerSignupPage() {
         </Card>
 
         <div className="anim-fade-up d-100" style={{ textAlign: 'center', marginTop: '1.5rem', display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '18px' }}>
-          <Link href="/owner/login" style={{ fontSize: '13px', color: 'var(--muted)', textDecoration: 'none', fontWeight: 500 }}>
+          <Link href="/owner/login" style={{ fontSize: '14px', color: 'var(--muted)', textDecoration: 'none', fontWeight: 500 }}>
             Already listed? Sign in
           </Link>
-          <a href="mailto:masud@bookmypitch.uk?subject=Stuck on venue signup" style={{ fontSize: '13px', color: 'var(--muted)', textDecoration: 'none', fontWeight: 500 }}>
+          <a href="mailto:masud@bookmypitch.uk?subject=Stuck on venue signup" style={{ fontSize: '14px', color: 'var(--muted)', textDecoration: 'none', fontWeight: 500 }}>
             Stuck? Get help
           </a>
-          <Link href="/" style={{ fontSize: '13px', color: 'var(--muted)', textDecoration: 'none', fontWeight: 500 }}>
+          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', minHeight: '44px', fontSize: '14px', color: 'var(--muted)', textDecoration: 'none', fontWeight: 500 }}>
             ← Back to site
           </Link>
         </div>

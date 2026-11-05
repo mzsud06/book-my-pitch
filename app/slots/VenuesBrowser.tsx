@@ -59,12 +59,12 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       style={{
         padding: '7px 14px',
         borderRadius: 'var(--radius-full)',
-        fontSize: '13px',
+        fontSize: '14px',
         fontWeight: 600,
         fontFamily: 'var(--font-sans)',
         cursor: 'pointer',
-        border: active ? '1px solid rgba(198,241,53,0.4)' : '1px solid var(--border)',
-        background: active ? 'rgba(198,241,53,0.1)' : 'var(--surface2)',
+        border: active ? '1px solid rgba(20,80,45,0.4)' : '1px solid var(--border)',
+        background: active ? 'rgba(20,80,45,0.1)' : 'var(--surface2)',
         color: active ? 'var(--green)' : 'var(--text-secondary)',
       }}
     >
@@ -82,7 +82,7 @@ const priceInputStyle: React.CSSProperties = {
   color: 'var(--text)',
   fontFamily: 'var(--font-sans)',
   fontWeight: 600,
-  fontSize: '13px',
+  fontSize: '14px',
 }
 
 export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
@@ -178,7 +178,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                 right: '-10%',
                 width: '520px',
                 height: '520px',
-                background: 'radial-gradient(circle, rgba(198,241,53,0.16) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(20,80,45,0.16) 0%, transparent 70%)',
                 pointerEvents: 'none',
               }}
             />
@@ -249,10 +249,10 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                 borderRadius: 'var(--radius-full)',
                 fontFamily: 'var(--font-sans)',
                 fontWeight: 600,
-                fontSize: '13px',
+                fontSize: '14px',
                 cursor: 'pointer',
-                border: filterOpen || hasActiveFilters ? '1px solid rgba(198,241,53,0.4)' : '1px solid var(--border)',
-                background: filterOpen || hasActiveFilters ? 'rgba(198,241,53,0.1)' : 'var(--surface2)',
+                border: filterOpen || hasActiveFilters ? '1px solid rgba(20,80,45,0.4)' : '1px solid var(--border)',
+                background: filterOpen || hasActiveFilters ? 'rgba(20,80,45,0.1)' : 'var(--surface2)',
                 color: filterOpen || hasActiveFilters ? 'var(--green)' : 'var(--text)',
               }}
             >
@@ -261,7 +261,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
             </button>
 
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, whiteSpace: 'nowrap' }}>
                 <strong style={{ color: 'var(--text)' }}>{results.length}</strong> {results.length === 1 ? 'venue' : 'venues'}
               </span>
 
@@ -280,7 +280,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                     color: 'var(--text)',
                     fontFamily: 'var(--font-sans)',
                     fontWeight: 600,
-                    fontSize: '13px',
+                    fontSize: '14px',
                     cursor: 'pointer',
                   }}
                 >
@@ -315,7 +315,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                       fontSize: '14px',
                       fontWeight: 700,
                       letterSpacing: '0.04em',
-                      textTransform: 'uppercase',
+                      
                       color: 'var(--text)',
                       margin: 0,
                     }}
@@ -330,7 +330,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                         background: 'none',
                         border: 'none',
                         color: 'var(--green)',
-                        fontSize: '13px',
+                        fontSize: '14px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         padding: 0,
@@ -343,7 +343,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
 
                 {/* Price */}
                 <div style={{ marginBottom: '1.5rem' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.06em',  color: 'var(--text-tertiary)', marginBottom: '10px' }}>
                     Max price per player
                   </div>
                   <input
@@ -360,7 +360,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                 {/* Format */}
                 {allFormats.length > 0 && (
                   <div style={{ marginBottom: '1.5rem' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.06em',  color: 'var(--text-tertiary)', marginBottom: '10px' }}>
                       Format
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -380,7 +380,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                 {/* Surface */}
                 {allSurfaces.length > 0 && (
                   <div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: '10px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.06em',  color: 'var(--text-tertiary)', marginBottom: '10px' }}>
                       Surface
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>

@@ -15,7 +15,7 @@ const base: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   gap: '6px',
-  fontFamily: 'var(--font-display)',
+  fontFamily: 'var(--font-sans)',
   fontWeight: 600,
   lineHeight: 1,
   whiteSpace: 'nowrap',
@@ -29,7 +29,7 @@ const base: React.CSSProperties = {
 const variants: Record<Variant, React.CSSProperties> = {
   primary: {
     background: 'var(--green)',
-    color: 'var(--black)',
+    color: '#FFFFFF',
   },
   secondary: {
     background: 'var(--surface2)',
@@ -44,9 +44,9 @@ const variants: Record<Variant, React.CSSProperties> = {
 }
 
 const sizes: Record<Size, React.CSSProperties> = {
-  sm: { fontSize: '13px', padding: '0.5rem 1rem' },
-  md: { fontSize: '14px', padding: '0.625rem 1.25rem' },
-  lg: { fontSize: '15px', padding: '0.75rem 1.5rem' },
+  sm: { fontSize: '15px', padding: '0.5rem 1rem', minHeight: '44px' },
+  md: { fontSize: '16px', padding: '0.625rem 1.25rem', minHeight: '44px' },
+  lg: { fontSize: '17px', padding: '0.8rem 1.6rem', minHeight: '52px' },
 }
 
 export function Button({

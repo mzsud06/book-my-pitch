@@ -184,7 +184,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           rowGap: '8px',
           borderBottom: '1px solid var(--border)',
           borderTop: '3px solid var(--green)',
-          background: 'rgba(8,8,8,0.97)',
+          background: 'rgba(246,241,231,0.97)',
           backdropFilter: 'blur(28px)',
           position: 'sticky',
           top: 0,
@@ -204,7 +204,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               }}
             >
               Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
-              <span style={{ color: 'var(--green)', fontSize: '12px', verticalAlign: 'super', marginLeft: '1px' }}>.uk</span>
+              <span style={{ color: 'var(--green)', fontSize: '14px', verticalAlign: 'super', marginLeft: '1px' }}>.uk</span>
             </span>
           </Link>
           <span
@@ -219,7 +219,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           <span
             className="owner-dash-nav-label"
             style={{
-              fontSize: '13px',
+              fontSize: '14px',
               color: 'var(--text-secondary)',
               fontWeight: 600,
               whiteSpace: 'nowrap',
@@ -234,11 +234,11 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               onClick={handleFinishOnboarding}
               disabled={onboardingLoading}
               style={{
-                background: 'rgba(255,68,68,0.08)',
-                border: '1px solid rgba(255,68,68,0.2)',
+                background: 'rgba(179,38,30,0.08)',
+                border: '1px solid rgba(179,38,30,0.2)',
                 borderRadius: '8px',
                 padding: '0.5rem 0.9rem',
-                fontSize: '12px',
+                fontSize: '14px',
                 color: 'var(--red)',
                 fontWeight: 700,
                 display: 'flex',
@@ -261,11 +261,11 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             // yet — nothing to click here, just set expectations.
             <div
               style={{
-                background: 'rgba(255,184,0,0.08)',
-                border: '1px solid rgba(255,184,0,0.2)',
+                background: 'rgba(138,90,0,0.08)',
+                border: '1px solid rgba(138,90,0,0.2)',
                 borderRadius: '8px',
                 padding: '0.5rem 0.9rem',
-                fontSize: '12px',
+                fontSize: '14px',
                 color: 'var(--amber)',
                 fontWeight: 700,
                 display: 'flex',
@@ -286,7 +286,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               color: 'var(--text-secondary)',
               fontFamily: 'var(--font-sans)',
               fontWeight: 600,
-              fontSize: '13px',
+              fontSize: '14px',
               cursor: 'pointer',
               transition: 'border-color 0.15s ease, color 0.15s ease',
               lineHeight: 1,
@@ -300,10 +300,10 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
       {onboardingError && (
         <div
           style={{
-            background: 'rgba(255,68,68,0.08)',
-            borderBottom: '1px solid rgba(255,68,68,0.2)',
+            background: 'rgba(179,38,30,0.08)',
+            borderBottom: '1px solid rgba(179,38,30,0.2)',
             padding: '0.6rem 2rem',
-            fontSize: '13px',
+            fontSize: '14px',
             color: 'var(--red)',
             fontWeight: 600,
             textAlign: 'center',
@@ -362,7 +362,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               >
                 {stat.n}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.02em' }}>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 600, letterSpacing: '0.02em' }}>
                 {stat.l}
               </div>
             </Card>
@@ -392,11 +392,11 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               </div>
               <span
                 style={{
-                  fontSize: '10px',
+                  fontSize: '14px',
                   color: 'var(--green)',
                   fontWeight: 700,
                   letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
+                  
                   display: 'flex',
                   alignItems: 'center',
                   gap: '5px',
@@ -408,7 +408,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             </div>
 
             {confirmed.length === 0 && (
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', padding: '1rem 0', fontWeight: 500 }}>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', padding: '1rem 0', fontWeight: 500 }}>
                 No confirmed bookings yet
               </div>
             )}
@@ -433,25 +433,25 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                       {' '}
                       <span
                         style={{
-                          fontSize: '10px',
+                          fontSize: '14px',
                           fontWeight: 700,
                           color: typeColors[s.slots.type] ?? 'var(--text-secondary)',
                           letterSpacing: '0.04em',
-                          textTransform: 'uppercase',
+                          
                         }}
                       >
                         {typeLabels[s.slots.type] ?? s.slots.type}
                       </span>
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                       {formatDate(s.slots.date)} · {totalPlayers(s)} players
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--green)', letterSpacing: '-0.02em' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--green)', letterSpacing: '-0.02em' }}>
                       £{s.slots.price}.00
                     </div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 500 }}>Paid ✓</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>Paid ✓</div>
                   </div>
                 </div>
               </Link>
@@ -477,11 +477,11 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               >
                 Slot occupancy
               </div>
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>This week</span>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>This week</span>
             </div>
 
             {occupancyData.length === 0 && (
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', padding: '1rem 0', fontWeight: 500 }}>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', padding: '1rem 0', fontWeight: 500 }}>
                 No data for this week
               </div>
             )}
@@ -502,7 +502,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                   <div style={{ minWidth: '96px' }}>
                     <div
                       style={{
-                        fontSize: '13px',
+                        fontSize: '14px',
                         fontWeight: 700,
                         letterSpacing: '-0.01em',
                         color: typeColors[occ.type] ?? 'var(--text)',
@@ -510,11 +510,11 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                     >
                       {occ.time.slice(0, 5)}
                       {' '}
-                      <span style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 600,  letterSpacing: '0.04em' }}>
                         {typeLabels[occ.type] ?? ''}
                       </span>
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '1px' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '1px' }}>
                       {occ.type === 'weekend' ? 'Weekend' : 'Mon–Fri'}
                     </div>
                   </div>
@@ -522,7 +522,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                     style={{
                       flex: 1,
                       height: '6px',
-                      background: 'rgba(255,255,255,0.06)',
+                      background: 'rgba(31,36,32,0.06)',
                       borderRadius: '100px',
                       overflow: 'hidden',
                     }}
@@ -534,13 +534,13 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                         background: fillPct >= 80 ? 'var(--green)' : fillPct >= 50 ? 'var(--amber)' : 'var(--muted)',
                         width: `${fillPct}%`,
                         transition: 'width 0.8s var(--ease-out)',
-                        boxShadow: fillPct >= 80 ? '0 0 8px rgba(198,241,53,0.4)' : 'none',
+                        boxShadow: fillPct >= 80 ? '0 0 8px rgba(20,80,45,0.4)' : 'none',
                       }}
                     />
                   </div>
                   <div
                     style={{
-                      fontSize: '12px',
+                      fontSize: '14px',
                       color: 'var(--text-secondary)',
                       whiteSpace: 'nowrap',
                       minWidth: '36px',
@@ -558,7 +558,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
 
         {/* Currently filling */}
         {filling.length > 0 && (
-          <Card style={{ padding: '1.4rem', border: '1px solid rgba(255,184,0,0.16)' }}>
+          <Card style={{ padding: '1.4rem', border: '1px solid rgba(138,90,0,0.16)' }}>
             <div
               style={{
                 display: 'flex',
@@ -578,11 +578,11 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               </div>
               <span
                 style={{
-                  fontSize: '10px',
+                  fontSize: '14px',
                   color: 'var(--amber)',
                   fontWeight: 700,
                   letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
+                  
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
@@ -608,7 +608,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                         padding: '0.85rem 1rem',
                         background: 'var(--surface2)',
                         borderRadius: '10px',
-                        border: '1px solid rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(31,36,32,0.06)',
                       }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -622,7 +622,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                               fontWeight: 700,
                               color: typeColors[s.slots.type] ?? 'var(--text-secondary)',
                               letterSpacing: '0.1em',
-                              textTransform: 'uppercase',
+                              
                             }}
                           >
                             {typeLabels[s.slots.type]}
@@ -633,7 +633,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                             style={{
                               flex: 1,
                               height: '4px',
-                              background: 'rgba(255,255,255,0.08)',
+                              background: 'rgba(31,36,32,0.08)',
                               borderRadius: '100px',
                               overflow: 'hidden',
                               maxWidth: '140px',
@@ -648,7 +648,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                               }}
                             />
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                             {formatDate(s.slots.date)}
                           </div>
                         </div>
@@ -657,7 +657,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                         <div style={{ fontSize: '17px', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--amber)', letterSpacing: '-0.03em' }}>
                           {count}/{s.slots.max_players}
                         </div>
-                        <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 500 }}>players</div>
+                        <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>players</div>
                       </div>
                     </div>
                   </Link>

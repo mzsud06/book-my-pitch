@@ -38,7 +38,7 @@ export function LegalPage({ title, updated, intro, children }: Props) {
             >
               {title}
             </h1>
-            <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', fontWeight: 600, marginBottom: '2rem' }}>
+            <div style={{ fontSize: '14px', color: 'var(--text-tertiary)', fontWeight: 600, marginBottom: '2rem' }}>
               Last updated {updated}
             </div>
 

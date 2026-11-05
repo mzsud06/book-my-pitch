@@ -633,9 +633,9 @@ export default function SessionClient({
           alignItems: 'center',
           justifyContent: 'center',
           gap: '4px',
-          background: player ? 'rgba(198,241,53,0.09)' : 'rgba(255,255,255,0.02)',
-          border: player ? '1px solid rgba(198,241,53,0.28)' : '1px dashed rgba(255,255,255,0.07)',
-          boxShadow: player ? '0 0 20px rgba(198,241,53,0.08)' : 'none',
+          background: player ? 'rgba(20,80,45,0.09)' : 'rgba(31,36,32,0.02)',
+          border: player ? '1px solid rgba(20,80,45,0.28)' : '1px dashed rgba(31,36,32,0.07)',
+          boxShadow: player ? '0 0 20px rgba(20,80,45,0.08)' : 'none',
           animationDelay: `${i * 40}ms`,
           transition: 'background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
         }}
@@ -648,7 +648,7 @@ export default function SessionClient({
             fontSize: '7px',
             fontWeight: 700,
             fontFamily: 'var(--font-display)',
-            color: player ? 'rgba(198,241,53,0.4)' : 'rgba(255,255,255,0.06)',
+            color: player ? 'rgba(20,80,45,0.4)' : 'rgba(31,36,32,0.06)',
             lineHeight: 1,
           }}
         >
@@ -662,7 +662,7 @@ export default function SessionClient({
               top: '3px',
               left: '4px',
               fontSize: '8px',
-              color: 'rgba(198,241,53,0.8)',
+              color: 'rgba(20,80,45,0.8)',
               lineHeight: 1,
             }}
           >
@@ -675,7 +675,7 @@ export default function SessionClient({
             width: '26px',
             height: '26px',
             borderRadius: '50%',
-            background: player ? 'var(--green)' : 'rgba(255,255,255,0.05)',
+            background: player ? 'var(--green)' : 'rgba(31,36,32,0.05)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -718,8 +718,8 @@ export default function SessionClient({
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
         <div
           style={{
-            background: 'rgba(255,68,68,0.05)',
-            border: '1px solid rgba(255,68,68,0.18)',
+            background: 'rgba(179,38,30,0.05)',
+            border: '1px solid rgba(179,38,30,0.18)',
             borderRadius: 'var(--radius-xl)',
             padding: '2.5rem 2rem',
             textAlign: 'center',
@@ -775,7 +775,7 @@ export default function SessionClient({
           <Link
             href="/slots"
             style={{
-              fontSize: '13px',
+              fontSize: '14px',
               color: 'var(--text-secondary)',
               textDecoration: 'none',
               fontWeight: 600,
@@ -818,7 +818,7 @@ export default function SessionClient({
           >
             ✓ Game Confirmed: {formatDate(slot.date)} · {sliceTime(slot.start_time)} · {slot.venues?.name ?? 'your local pitch'}
           </div>
-          <div style={{ fontSize: '13px', color: 'rgba(0,0,0,0.6)', fontWeight: 600 }}>
+          <div style={{ fontSize: '14px', color: 'rgba(31,36,32,0.14)', fontWeight: 600 }}>
             £{perPlayerPounds} was charged to your card
           </div>
         </div>
@@ -828,8 +828,8 @@ export default function SessionClient({
       {localAlreadyIn && !justJoined && !justCreated && !returningPlayer && (
         <div
           style={{
-            background: 'rgba(198,241,53,0.06)',
-            border: '1px solid rgba(198,241,53,0.22)',
+            background: 'rgba(20,80,45,0.06)',
+            border: '1px solid rgba(20,80,45,0.22)',
             borderRadius: 'var(--radius-lg)',
             padding: '1rem 1.2rem',
             marginBottom: '1.25rem',
@@ -851,7 +851,7 @@ export default function SessionClient({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '12px',
+              fontSize: '14px',
               fontWeight: 700,
               flexShrink: 0,
             }}
@@ -865,8 +865,8 @@ export default function SessionClient({
       {justCreated && isFilling && (
         <div
           style={{
-            background: 'linear-gradient(135deg, rgba(198,241,53,0.07) 0%, rgba(198,241,53,0.03) 100%)',
-            border: '1px solid rgba(198,241,53,0.25)',
+            background: 'linear-gradient(135deg, rgba(20,80,45,0.07) 0%, rgba(20,80,45,0.03) 100%)',
+            border: '1px solid rgba(20,80,45,0.25)',
             borderRadius: 'var(--radius-lg)',
             padding: '1.15rem 1.25rem',
             marginBottom: '1.25rem',
@@ -892,8 +892,8 @@ export default function SessionClient({
       {justJoined && isFilling && (
         <div
           style={{
-            background: 'rgba(198,241,53,0.06)',
-            border: '1px solid rgba(198,241,53,0.2)',
+            background: 'rgba(20,80,45,0.06)',
+            border: '1px solid rgba(20,80,45,0.2)',
             borderRadius: 'var(--radius-lg)',
             padding: '1rem 1.2rem',
             marginBottom: '1.25rem',
@@ -915,7 +915,7 @@ export default function SessionClient({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '12px',
+              fontSize: '14px',
               fontWeight: 700,
               flexShrink: 0,
             }}
@@ -932,8 +932,8 @@ export default function SessionClient({
       {returningPlayer && isLoggedIn === false && !justJoined && !justCreated && isFilling && (
         <div
           style={{
-            background: 'rgba(198,241,53,0.06)',
-            border: '1px solid rgba(198,241,53,0.25)',
+            background: 'rgba(20,80,45,0.06)',
+            border: '1px solid rgba(20,80,45,0.25)',
             borderRadius: 'var(--radius-lg)',
             padding: '1rem 1.2rem',
             marginBottom: '1.25rem',
@@ -950,12 +950,12 @@ export default function SessionClient({
                 style={{
                   padding: '0.55rem 1rem',
                   borderRadius: '8px',
-                  border: '1px solid rgba(255,68,68,0.35)',
-                  background: 'rgba(255,68,68,0.08)',
+                  border: '1px solid rgba(179,38,30,0.35)',
+                  background: 'rgba(179,38,30,0.08)',
                   color: 'rgba(255,100,100,0.9)',
                   fontFamily: 'var(--font-display)',
                   fontWeight: 700,
-                  fontSize: '12px',
+                  fontSize: '14px',
                   letterSpacing: '-0.01em',
                   cursor: 'pointer',
                   flexShrink: 0,
@@ -971,11 +971,11 @@ export default function SessionClient({
               <div style={{ fontSize: '14px', color: 'var(--text)', fontWeight: 700, marginBottom: '6px' }}>
                 Are you sure you want to leave?
               </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '12px' }}>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '12px' }}>
                 Your spot will be freed up for someone else. No charge has been made.
               </div>
               {bannerLeaveError && (
-                <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginBottom: '10px' }}>
+                <div style={{ fontSize: '14px', color: 'var(--red)', fontWeight: 600, marginBottom: '10px' }}>
                   {bannerLeaveError}
                 </div>
               )}
@@ -987,7 +987,7 @@ export default function SessionClient({
                     flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-lg)',
                     border: '1px solid var(--border)', background: 'transparent',
                     color: 'var(--text-secondary)', fontFamily: 'var(--font-display)',
-                    fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
+                    fontWeight: 700, fontSize: '14px', letterSpacing: '-0.015em',
                     cursor: 'pointer', lineHeight: 1,
                   }}
                 >
@@ -999,9 +999,9 @@ export default function SessionClient({
                   style={{
                     flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-lg)',
                     border: 'none',
-                    background: bannerLeaveLoading ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.85)',
+                    background: bannerLeaveLoading ? 'rgba(179,38,30,0.3)' : 'rgba(179,38,30,0.85)',
                     color: 'var(--text)', fontFamily: 'var(--font-display)',
-                    fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
+                    fontWeight: 700, fontSize: '14px', letterSpacing: '-0.015em',
                     cursor: bannerLeaveLoading ? 'not-allowed' : 'pointer', lineHeight: 1,
                     transition: 'background 0.15s ease',
                   }}
@@ -1035,22 +1035,22 @@ export default function SessionClient({
       <div
         className="anim-fade-up d-100"
         style={{
-          background: isConfirmed ? 'rgba(198,241,53,0.04)' : 'var(--surface)',
-          border: `1px solid ${isConfirmed ? 'rgba(198,241,53,0.28)' : isFilling ? 'rgba(198,241,53,0.15)' : 'var(--border-strong)'}`,
+          background: isConfirmed ? 'rgba(20,80,45,0.04)' : 'var(--surface)',
+          border: `1px solid ${isConfirmed ? 'rgba(20,80,45,0.28)' : isFilling ? 'rgba(20,80,45,0.15)' : 'var(--border-strong)'}`,
           borderRadius: 'var(--radius-xl)',
           padding: '1.5rem',
           marginBottom: '1.25rem',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
+          boxShadow: '0 4px 24px rgba(31,36,32,0.14), inset 0 1px 0 rgba(31,36,32,0.04)',
         }}
       >
         {/* Slot info */}
         <div
           style={{
-            fontSize: '10px',
+            fontSize: '14px',
             color: 'var(--text-tertiary)',
             marginBottom: '5px',
             fontWeight: 700,
-            textTransform: 'uppercase',
+            
             letterSpacing: '0.16em',
             fontFamily: 'var(--font-sans)',
           }}
@@ -1068,7 +1068,7 @@ export default function SessionClient({
         >
           {sliceTime(slot.start_time)} – {sliceTime(slot.end_time)}
         </div>
-        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
+        <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 500 }}>
           {formatDate(slot.date)} · {formatSlotType(getSlotType(slot.date, slot.start_time, scheduleFromVenue(slot.venues)))} · {slot.pitches.format}
         </div>
         {session.game_type === 'private' && (
@@ -1080,7 +1080,7 @@ export default function SessionClient({
           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(slot.venues?.address ?? slot.venues?.name ?? 'football pitch London')}`}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ display: 'inline-block', fontSize: '12px', color: 'rgba(198,241,53,0.65)', fontWeight: 600, textDecoration: 'underline', marginBottom: '1.5rem', textUnderlineOffset: '2px' }}
+          style={{ display: 'inline-block', fontSize: '14px', color: 'rgba(20,80,45,0.65)', fontWeight: 600, textDecoration: 'underline', marginBottom: '1.5rem', textUnderlineOffset: '2px' }}
         >
           Get directions →
         </a>
@@ -1091,11 +1091,11 @@ export default function SessionClient({
             {Array.from({ length: Math.ceil(maxPlayers / 2) }, (_, i) => renderPlayerToken(i))}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
-            <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(255,255,255,0.12)', letterSpacing: '0.14em', textTransform: 'uppercase', flexShrink: 0 }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(31,36,32,0.05)' }} />
+            <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(31,36,32,0.12)', letterSpacing: '0.14em',  flexShrink: 0 }}>
               {slot.pitches.format}
             </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'rgba(31,36,32,0.05)' }} />
           </div>
           <div style={{ display: 'flex', gap: '5px' }}>
             {Array.from({ length: Math.floor(maxPlayers / 2) }, (_, i) => renderPlayerToken(i + Math.ceil(maxPlayers / 2)))}
@@ -1105,10 +1105,10 @@ export default function SessionClient({
 
           <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 600 }}>
             {isConfirmed ? (
-              <strong style={{ color: 'var(--green)', fontWeight: 800 }}>Confirmed: all {maxPlayers} players ✓</strong>
+              <strong style={{ color: 'var(--green)', fontWeight: 700 }}>Confirmed: all {maxPlayers} players ✓</strong>
             ) : (
               <>
-                <strong style={{ color: 'var(--text)', fontWeight: 800 }}>{playerCount}/{maxPlayers} players</strong>
+                <strong style={{ color: 'var(--text)', fontWeight: 700 }}>{playerCount}/{maxPlayers} players</strong>
                 {', '}{remaining} more needed
               </>
             )}
@@ -1116,7 +1116,7 @@ export default function SessionClient({
         </div>
 
         {session.organiser_name && (
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 500, marginTop: '0.6rem', opacity: 0.7 }}>
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 500, marginTop: '0.6rem', opacity: 0.7 }}>
             Organiser: {session.organiser_name}{session.organiser_phone ? ` · ${session.organiser_phone}` : ''}
           </div>
         )}
@@ -1126,8 +1126,8 @@ export default function SessionClient({
       {hasRival && isFilling && (
         <div
           style={{
-            background: 'rgba(255,184,0,0.06)',
-            border: '1px solid rgba(255,184,0,0.22)',
+            background: 'rgba(138,90,0,0.06)',
+            border: '1px solid rgba(138,90,0,0.22)',
             borderRadius: 'var(--radius-lg)',
             padding: '0.9rem 1.1rem',
             marginBottom: '1.25rem',
@@ -1156,7 +1156,7 @@ export default function SessionClient({
             borderRadius: 'var(--radius-xl)',
             padding: '1.5rem',
             marginBottom: '1.5rem',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
+            boxShadow: '0 4px 24px rgba(31,36,32,0.14), inset 0 1px 0 rgba(31,36,32,0.04)',
           }}
         >
           <div
@@ -1191,7 +1191,7 @@ export default function SessionClient({
               <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{row.label}</span>
               <span
                 style={{
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color: row.label === 'Your cost' || row.label === 'Status' ? 'var(--green)' : 'var(--text)',
                   letterSpacing: '-0.01em',
                 }}
@@ -1219,7 +1219,7 @@ export default function SessionClient({
           <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>
             This game is already confirmed
           </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
             It&apos;s underway, no spots available.
           </div>
           <Link href="/slots" style={{ textDecoration: 'none' }}>
@@ -1254,8 +1254,8 @@ export default function SessionClient({
           <div
             className="anim-fade-up d-200"
             style={{
-              background: 'linear-gradient(145deg, rgba(198,241,53,0.07) 0%, rgba(198,241,53,0.03) 100%)',
-              border: '1px solid rgba(198,241,53,0.28)',
+              background: 'linear-gradient(145deg, rgba(20,80,45,0.07) 0%, rgba(20,80,45,0.03) 100%)',
+              border: '1px solid rgba(20,80,45,0.28)',
               borderRadius: 'var(--radius-xl)',
               padding: '1.5rem',
               marginBottom: '1rem',
@@ -1273,7 +1273,7 @@ export default function SessionClient({
             >
               Share with your team
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.6, fontWeight: 500, fontFamily: 'var(--font-sans)' }}>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: 1.6, fontWeight: 500, fontFamily: 'var(--font-sans)' }}>
               {remaining} spot{remaining !== 1 ? 's' : ''} left. Send this link to fill them.
             </div>
 
@@ -1286,7 +1286,7 @@ export default function SessionClient({
                   border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-lg)',
                   padding: '0 1rem',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   color: 'var(--text-secondary)',
                   fontFamily: 'var(--font-sans)',
                   overflow: 'hidden',
@@ -1307,11 +1307,11 @@ export default function SessionClient({
                   padding: '0 1.25rem',
                   borderRadius: 'var(--radius-lg)',
                   border: 'none',
-                  background: copied ? 'rgba(198,241,53,0.15)' : 'var(--green)',
+                  background: copied ? 'rgba(20,80,45,0.15)' : 'var(--green)',
                   color: copied ? 'var(--green)' : 'var(--black)',
                   fontFamily: 'var(--font-display)',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: '14px',
                   letterSpacing: '-0.015em',
                   cursor: 'pointer',
                   transition: 'background 160ms ease, color 160ms ease, transform 160ms var(--ease-out)',
@@ -1338,7 +1338,7 @@ export default function SessionClient({
                 color: 'var(--text)',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
-                fontSize: '13px',
+                fontSize: '14px',
                 letterSpacing: '-0.015em',
                 cursor: 'pointer',
                 transition: 'background 160ms ease, transform 160ms var(--ease-out), box-shadow 160ms ease',
@@ -1355,7 +1355,7 @@ export default function SessionClient({
               ============================================================ */}
           {isOrganiserUser && session.game_type === 'private' && (
             <div style={{ marginBottom: '1rem' }}>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.16em', fontFamily: 'var(--font-sans)', marginBottom: '8px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-tertiary)',  letterSpacing: '0.16em', fontFamily: 'var(--font-sans)', marginBottom: '8px' }}>
                 Game settings
               </div>
 
@@ -1371,11 +1371,11 @@ export default function SessionClient({
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
                     Make this public?
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
                     Anyone will be able to find and join this game publicly. Once public, the game can no longer be cancelled, though you can still leave it yourself.
                   </div>
                   {convertError && (
-                    <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
                       {convertError}
                     </div>
                   )}
@@ -1387,7 +1387,7 @@ export default function SessionClient({
                         flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                         border: '1px solid var(--border)', background: 'transparent',
                         color: 'var(--text-secondary)', fontFamily: 'var(--font-display)',
-                        fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
+                        fontWeight: 700, fontSize: '14px', letterSpacing: '-0.015em', cursor: 'pointer', lineHeight: 1,
                       }}
                     >
                       Cancel
@@ -1398,10 +1398,10 @@ export default function SessionClient({
                       style={{
                         flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                         border: 'none',
-                        background: converting ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.1)',
+                        background: converting ? 'rgba(31,36,32,0.06)' : 'rgba(31,36,32,0.1)',
                         color: converting ? 'var(--text-secondary)' : 'var(--text)',
                         fontFamily: 'var(--font-display)',
-                        fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
+                        fontWeight: 700, fontSize: '14px', letterSpacing: '-0.015em',
                         cursor: converting ? 'not-allowed' : 'pointer', lineHeight: 1,
                         transition: 'background 0.15s ease',
                       }}
@@ -1417,9 +1417,9 @@ export default function SessionClient({
                     onClick={() => { setConvertOpen('open'); setConvertError('') }}
                     style={{
                       width: '100%', padding: '0.8rem 1rem', borderRadius: 'var(--radius-lg)',
-                      border: '1px solid rgba(255,255,255,0.1)', background: 'var(--surface2)',
+                      border: '1px solid rgba(31,36,32,0.1)', background: 'var(--surface2)',
                       color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)',
-                      fontWeight: 600, fontSize: '13px', cursor: 'pointer',
+                      fontWeight: 600, fontSize: '14px', cursor: 'pointer',
                       textAlign: 'left', lineHeight: 1,
                     }}
                   >
@@ -1436,7 +1436,7 @@ export default function SessionClient({
               className="anim-fade-up d-280"
               style={{
                 textAlign: 'center',
-                fontSize: '13px',
+                fontSize: '14px',
                 fontWeight: 700,
                 color: 'var(--amber)',
                 marginBottom: '0.5rem',
@@ -1464,7 +1464,7 @@ export default function SessionClient({
                 <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>
                   This game is full
                 </div>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
                   All spots have been taken. Find another game time below.
                 </div>
                 <Link href="/slots" style={{ textDecoration: 'none' }}>
@@ -1500,7 +1500,7 @@ export default function SessionClient({
                     padding: '1.25rem',
                     fontSize: '18px',
                     borderRadius: 'var(--radius-lg)',
-                    border: '1px solid rgba(255,255,255,0.14)',
+                    border: '1px solid rgba(31,36,32,0.14)',
                     cursor: 'pointer',
                     background: 'transparent',
                     color: 'var(--text)',
@@ -1526,12 +1526,12 @@ export default function SessionClient({
                   <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '21px', color: 'var(--text)', letterSpacing: '-0.025em', lineHeight: 1.2, marginBottom: '6px' }}>
                     Join this game
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.1rem' }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.1rem' }}>
                     Nothing is charged now, your card is only saved once all {maxPlayers} players join.
                   </div>
                   <form onSubmit={handleJoinFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div>
-                      <label style={{ fontSize: '10px', color: 'var(--text-secondary)', marginBottom: '7px', display: 'block', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>
+                      <label style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '7px', display: 'block', fontWeight: 700, letterSpacing: '0.12em' }}>
                         Your name
                       </label>
                       <input
@@ -1552,11 +1552,11 @@ export default function SessionClient({
                         placeholder="Full name"
                         style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0.8rem 1rem', color: 'var(--text)', fontFamily: 'var(--font-sans)', fontSize: '15px', fontWeight: 600, outline: 'none', transition: 'border-color 0.15s ease', boxSizing: 'border-box' as const }}
                       />
-                      {joinNameError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{joinNameError}</div>}
+                      {joinNameError && <div style={{ color: 'var(--red)', fontSize: '14px', marginTop: '4px', fontWeight: 600 }}>{joinNameError}</div>}
                     </div>
 
                     <div>
-                      <label style={{ fontSize: '10px', color: 'var(--text-secondary)', marginBottom: '7px', display: 'block', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>
+                      <label style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '7px', display: 'block', fontWeight: 700, letterSpacing: '0.12em' }}>
                         Phone number
                       </label>
                       <PhoneInput
@@ -1566,10 +1566,10 @@ export default function SessionClient({
                           if (joinPhoneError) setJoinPhoneError('')
                         }}
                       />
-                      {joinPhoneError && <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{joinPhoneError}</div>}
+                      {joinPhoneError && <div style={{ color: 'var(--red)', fontSize: '14px', marginTop: '4px', fontWeight: 600 }}>{joinPhoneError}</div>}
                     </div>
 
-                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.55 }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.55 }}>
                       🔒 <strong style={{ color: 'var(--text)' }}>Nothing is charged now</strong>, your card is only taken when all {maxPlayers} players join.
                     </div>
 
@@ -1608,10 +1608,10 @@ export default function SessionClient({
               width: '100%',
               padding: '0.75rem 1rem',
               background: 'transparent',
-              border: '1px dashed rgba(255,255,255,0.12)',
+              border: '1px dashed rgba(31,36,32,0.12)',
               borderRadius: 'var(--radius-lg)',
               color: 'var(--text-secondary)',
-              fontSize: '13px',
+              fontSize: '14px',
               fontWeight: 600,
               cursor: 'pointer',
               fontFamily: 'var(--font-sans)',
@@ -1632,12 +1632,12 @@ export default function SessionClient({
                 border: '1px solid var(--border-strong)',
                 borderRadius: 'var(--radius-lg)',
                 padding: '1.25rem',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03)',
+                boxShadow: '0 4px 16px rgba(31,36,32,0.14), inset 0 1px 0 rgba(31,36,32,0.03)',
               }}
             >
               {!lookupDone ? (
                 <form onSubmit={handleLookup}>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.85rem', lineHeight: 1.6 }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.85rem', lineHeight: 1.6 }}>
                     Joined from a different device? Enter your number to find your spot.
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -1655,7 +1655,7 @@ export default function SessionClient({
                         color: lookupLoading || !parsePhone(lookupPhone).localNumber.trim() ? 'var(--text-secondary)' : 'var(--black)',
                         fontFamily: 'var(--font-display)',
                         fontWeight: 700,
-                        fontSize: '13px',
+                        fontSize: '14px',
                         letterSpacing: '-0.015em',
                         cursor: lookupLoading || !parsePhone(lookupPhone).localNumber.trim() ? 'not-allowed' : 'pointer',
                         whiteSpace: 'nowrap',
@@ -1702,7 +1702,7 @@ export default function SessionClient({
                       >
                         You&apos;re in, {foundPlayer.name.split(' ')[0]}!
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                      <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                         Your spot is highlighted in the grid above.
                       </div>
                     </div>
@@ -1713,7 +1713,7 @@ export default function SessionClient({
                       background: 'transparent',
                       border: 'none',
                       color: 'var(--text-secondary)',
-                      fontSize: '12px',
+                      fontSize: '14px',
                       cursor: 'pointer',
                       padding: 0,
                       fontFamily: 'var(--font-sans)',
@@ -1738,7 +1738,7 @@ export default function SessionClient({
                     >
                       Not in this game
                     </div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6 }}>
                       That number doesn&apos;t match anyone in this game yet.
                     </div>
                   </div>
@@ -1755,7 +1755,7 @@ export default function SessionClient({
                           color: 'var(--black)',
                           fontFamily: 'var(--font-display)',
                           fontWeight: 700,
-                          fontSize: '13px',
+                          fontSize: '14px',
                           letterSpacing: '-0.015em',
                           cursor: 'pointer',
                           lineHeight: 1,
@@ -1771,7 +1771,7 @@ export default function SessionClient({
                         background: 'transparent',
                         border: 'none',
                         color: 'var(--text-secondary)',
-                        fontSize: '12px',
+                        fontSize: '14px',
                         cursor: 'pointer',
                         padding: 0,
                         fontFamily: 'var(--font-sans)',
@@ -1802,10 +1802,10 @@ export default function SessionClient({
                 flex: 1,
                 padding: '0.65rem 0.75rem',
                 background: 'transparent',
-                border: '1px solid rgba(255,68,68,0.3)',
+                border: '1px solid rgba(179,38,30,0.3)',
                 borderRadius: 'var(--radius-lg)',
                 color: 'rgba(255,100,100,0.8)',
-                fontSize: '12px',
+                fontSize: '14px',
                 fontWeight: 700,
                 cursor: 'pointer',
                 fontFamily: 'var(--font-sans)',
@@ -1825,10 +1825,10 @@ export default function SessionClient({
                 flex: 1,
                 padding: '0.65rem 0.75rem',
                 background: 'transparent',
-                border: '1px solid rgba(255,68,68,0.3)',
+                border: '1px solid rgba(179,38,30,0.3)',
                 borderRadius: 'var(--radius-lg)',
                 color: 'rgba(255,100,100,0.8)',
-                fontSize: '12px',
+                fontSize: '14px',
                 fontWeight: 700,
                 cursor: 'pointer',
                 fontFamily: 'var(--font-sans)',
@@ -1847,8 +1847,8 @@ export default function SessionClient({
         <div className="anim-fade-up d-400" style={{ marginBottom: '1.25rem' }}>
           <div
             style={{
-              background: 'rgba(255,68,68,0.05)',
-              border: '1px solid rgba(255,68,68,0.2)',
+              background: 'rgba(179,38,30,0.05)',
+              border: '1px solid rgba(179,38,30,0.2)',
               borderRadius: 'var(--radius-lg)',
               padding: '1.25rem',
             }}
@@ -1864,13 +1864,13 @@ export default function SessionClient({
             >
               Are you sure you want to leave?
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
               {canOrganiserLeave
                 ? "The game will continue without you and someone else can take your spot."
                 : "Your spot will be gone and you won't be charged. This can't be undone."}
             </div>
             {leaveError && (
-              <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
+              <div style={{ fontSize: '14px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
                 {leaveError}
               </div>
             )}
@@ -1887,7 +1887,7 @@ export default function SessionClient({
                   color: 'var(--text-secondary)',
                   fontFamily: 'var(--font-display)',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: '14px',
                   letterSpacing: '-0.015em',
                   cursor: 'pointer',
                   lineHeight: 1,
@@ -1903,11 +1903,11 @@ export default function SessionClient({
                   padding: '0.8rem',
                   borderRadius: 'var(--radius-lg)',
                   border: 'none',
-                  background: leaveLoading ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.85)',
+                  background: leaveLoading ? 'rgba(179,38,30,0.3)' : 'rgba(179,38,30,0.85)',
                   color: 'var(--text)',
                   fontFamily: 'var(--font-display)',
                   fontWeight: 700,
-                  fontSize: '13px',
+                  fontSize: '14px',
                   letterSpacing: '-0.015em',
                   cursor: leaveLoading ? 'not-allowed' : 'pointer',
                   lineHeight: 1,
@@ -1928,8 +1928,8 @@ export default function SessionClient({
         <div className="anim-fade-up d-450" style={{ marginBottom: '1.25rem' }}>
           <div
             style={{
-              background: 'rgba(255,68,68,0.05)',
-              border: '1px solid rgba(255,68,68,0.2)',
+              background: 'rgba(179,38,30,0.05)',
+              border: '1px solid rgba(179,38,30,0.2)',
               borderRadius: 'var(--radius-lg)',
               padding: '1.25rem',
             }}
@@ -1937,11 +1937,11 @@ export default function SessionClient({
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '15px', letterSpacing: '-0.025em', color: 'var(--text)', marginBottom: '6px' }}>
               Are you sure you want to cancel this game?
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, lineHeight: 1.6, marginBottom: '1rem' }}>
               All players will lose their spot and the game time will open back up. No one will be charged.
             </div>
             {cancelError && (
-              <div style={{ fontSize: '12px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
+              <div style={{ fontSize: '14px', color: 'var(--red)', fontWeight: 600, marginBottom: '0.75rem' }}>
                 {cancelError}
               </div>
             )}
@@ -1953,7 +1953,7 @@ export default function SessionClient({
                   flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border)', background: 'transparent',
                   color: 'var(--text-secondary)', fontFamily: 'var(--font-display)',
-                  fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
+                  fontWeight: 700, fontSize: '14px', letterSpacing: '-0.015em',
                   cursor: 'pointer', lineHeight: 1,
                 }}
               >
@@ -1965,9 +1965,9 @@ export default function SessionClient({
                 style={{
                   flex: 1, padding: '0.8rem', borderRadius: 'var(--radius-lg)',
                   border: 'none',
-                  background: cancelLoading ? 'rgba(255,68,68,0.3)' : 'rgba(255,68,68,0.85)',
+                  background: cancelLoading ? 'rgba(179,38,30,0.3)' : 'rgba(179,38,30,0.85)',
                   color: 'var(--text)', fontFamily: 'var(--font-display)',
-                  fontWeight: 700, fontSize: '13px', letterSpacing: '-0.015em',
+                  fontWeight: 700, fontSize: '14px', letterSpacing: '-0.015em',
                   cursor: cancelLoading ? 'not-allowed' : 'pointer', lineHeight: 1,
                   transition: 'background 0.15s ease',
                 }}
@@ -2007,13 +2007,13 @@ export default function SessionClient({
               display: 'flex',
               flexDirection: 'column',
               gap: '6px',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
+              boxShadow: 'inset 0 1px 0 rgba(31,36,32,0.03)',
             }}
           >
             {messages.length === 0 ? (
               <div
                 style={{
-                  fontSize: '13px',
+                  fontSize: '14px',
                   color: 'var(--text-secondary)',
                   textAlign: 'center',
                   padding: '2rem',
@@ -2035,7 +2035,7 @@ export default function SessionClient({
                 const time = new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
                 return (
                   <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isOwn ? 'flex-end' : 'flex-start' }}>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '3px', fontWeight: 500 }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '3px', fontWeight: 500 }}>
                       {senderName}
                     </div>
                     <div
@@ -2043,7 +2043,7 @@ export default function SessionClient({
                         maxWidth: '82%',
                         padding: '0.55rem 0.85rem',
                         borderRadius: isOwn ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
-                        background: isOwn ? 'var(--green)' : 'rgba(255,255,255,0.07)',
+                        background: isOwn ? 'var(--green)' : 'rgba(31,36,32,0.07)',
                         color: isOwn ? 'var(--black)' : 'var(--text)',
                         fontSize: '14px',
                         fontWeight: 600,
@@ -2053,7 +2053,7 @@ export default function SessionClient({
                     >
                       {msg.content}
                     </div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-secondary)', marginTop: '3px' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '3px' }}>
                       {time}
                     </div>
                   </div>
@@ -2094,7 +2094,7 @@ export default function SessionClient({
                 color: 'var(--black)',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
-                fontSize: '13px',
+                fontSize: '14px',
                 letterSpacing: '-0.015em',
                 cursor: 'pointer',
                 minHeight: '44px',
@@ -2112,7 +2112,7 @@ export default function SessionClient({
         <Link
           href="/slots"
           style={{
-            fontSize: '13px',
+            fontSize: '14px',
             color: 'var(--text-secondary)',
             textDecoration: 'none',
             fontWeight: 600,
@@ -2134,7 +2134,7 @@ export default function SessionClient({
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.75)',
+            background: 'rgba(31,36,32,0.14)',
             zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
@@ -2160,8 +2160,8 @@ export default function SessionClient({
                     width: '56px',
                     height: '56px',
                     borderRadius: '50%',
-                    background: 'rgba(198,241,53,0.12)',
-                    border: '2px solid rgba(198,241,53,0.4)',
+                    background: 'rgba(20,80,45,0.12)',
+                    border: '2px solid rgba(20,80,45,0.4)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -2243,11 +2243,11 @@ export default function SessionClient({
                   <div>
                     <label
                       style={{
-                        fontSize: '11px',
+                        fontSize: '14px',
                         color: 'var(--text-secondary)',
                         display: 'block',
                         fontWeight: 600,
-                        textTransform: 'uppercase',
+                        
                         letterSpacing: '0.1em',
                         marginBottom: '8px',
                         fontFamily: 'var(--font-sans)',
@@ -2282,11 +2282,11 @@ export default function SessionClient({
                   <div>
                     <label
                       style={{
-                        fontSize: '11px',
+                        fontSize: '14px',
                         color: 'var(--text-secondary)',
                         display: 'block',
                         fontWeight: 600,
-                        textTransform: 'uppercase',
+                        
                         letterSpacing: '0.1em',
                         marginBottom: '8px',
                         fontFamily: 'var(--font-sans)',
@@ -2322,7 +2322,7 @@ export default function SessionClient({
                   {regError && (
                     <div
                       style={{
-                        fontSize: '13px',
+                        fontSize: '14px',
                         color: 'var(--red)',
                         fontWeight: 600,
                         lineHeight: 1.5,
@@ -2364,14 +2364,14 @@ export default function SessionClient({
                       background: 'none',
                       border: 'none',
                       color: 'var(--text-secondary)',
-                      fontSize: '13px',
+                      fontSize: '14px',
                       fontWeight: 600,
                       cursor: 'pointer',
                       fontFamily: 'var(--font-sans)',
                       letterSpacing: '-0.01em',
                       padding: 0,
                       textDecoration: 'underline',
-                      textDecorationColor: 'rgba(255,255,255,0.15)',
+                      textDecorationColor: 'rgba(31,36,32,0.15)',
                     }}
                   >
                     No thanks, I&apos;ll use my booking link

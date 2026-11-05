@@ -97,7 +97,7 @@ function FaqItem({ q, a, index, isLast }: { q: string; a: string; index: number;
         <span
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(14px, 2vw, 16px)',
+            fontSize: 'clamp(17px, 2vw, 19px)',
             fontWeight: 600,
             color: open ? 'var(--text)' : 'var(--text)',
             letterSpacing: '-0.01em',
@@ -119,7 +119,7 @@ function FaqItem({ q, a, index, isLast }: { q: string; a: string; index: number;
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: '50%',
-            background: open ? 'rgba(198,241,53,0.10)' : 'rgba(255,255,255,0.04)',
+            background: open ? 'rgba(20,80,45,0.10)' : 'rgba(31,36,32,0.04)',
             color: open ? 'var(--green)' : 'var(--text-tertiary)',
             transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
             transition: 'transform 300ms var(--ease-out), color 200ms ease, background 200ms ease',
@@ -144,7 +144,7 @@ function FaqItem({ q, a, index, isLast }: { q: string; a: string; index: number;
           <p
             style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: 'clamp(14px, 1.8vw, 15px)',
+              fontSize: '16px',
               lineHeight: 1.75,
               color: 'var(--text-secondary)',
               margin: '0 0 clamp(1.125rem, 2.5vw, 1.5rem)',

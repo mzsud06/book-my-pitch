@@ -87,12 +87,12 @@ function SignupForm() {
   }
 
   const labelStyle: React.CSSProperties = {
-    fontSize: '11px',
+    fontSize: '14px',
     color: 'var(--text-secondary)',
     marginBottom: '8px',
     display: 'block',
     fontWeight: 600,
-    textTransform: 'uppercase',
+    
     letterSpacing: '0.1em',
     fontFamily: 'var(--font-sans)',
   }
@@ -116,11 +116,11 @@ function SignupForm() {
   })
 
   const errorPanel: React.CSSProperties = {
-    background: 'rgba(255,68,68,0.07)',
-    border: '1px solid rgba(255,68,68,0.18)',
+    background: 'rgba(179,38,30,0.07)',
+    border: '1px solid rgba(179,38,30,0.18)',
     borderRadius: 'var(--radius-md)',
     padding: '0.875rem 1rem',
-    fontSize: '13px',
+    fontSize: '14px',
     color: 'var(--red)',
     fontWeight: 500,
     lineHeight: 1.55,
@@ -145,7 +145,7 @@ function SignupForm() {
 
         {/* Wordmark */}
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>
             <span
               style={{
                 fontFamily: 'var(--font-display)',
@@ -160,7 +160,7 @@ function SignupForm() {
               <span
                 style={{
                   color: 'var(--green)',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   verticalAlign: 'super',
                   marginLeft: '1px',
                   opacity: 0.75,
@@ -180,7 +180,7 @@ function SignupForm() {
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--radius-xl)',
             padding: 'clamp(1.5rem, 4vw, 2rem)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+            boxShadow: '0 24px 64px rgba(31,36,32,0.14), 0 0 0 1px rgba(31,36,32,0.05)',
           }}
         >
 
@@ -192,8 +192,8 @@ function SignupForm() {
                 style={{
                   width: '64px',
                   height: '64px',
-                  background: 'rgba(22,48,31,0.7)',
-                  border: '1px solid rgba(198,241,53,0.25)',
+                  background: 'rgba(20,80,45,0.08)',
+                  border: '1px solid rgba(20,80,45,0.25)',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
@@ -302,7 +302,7 @@ function SignupForm() {
                     style={inputStyle}
                   />
                   {nameError && (
-                    <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '6px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}>
+                    <div style={{ color: 'var(--red)', fontSize: '14px', marginTop: '6px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}>
                       {nameError}
                     </div>
                   )}
@@ -320,7 +320,7 @@ function SignupForm() {
                     style={inputStyle}
                   />
                   {emailError && (
-                    <div style={{ color: 'var(--red)', fontSize: '12px', marginTop: '6px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}>
+                    <div style={{ color: 'var(--red)', fontSize: '14px', marginTop: '6px', fontWeight: 600, fontFamily: 'var(--font-sans)' }}>
                       {emailError}
                     </div>
                   )}
@@ -351,7 +351,7 @@ function SignupForm() {
                   {loading ? 'Creating account…' : 'Create account →'}
                 </button>
 
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 400, fontFamily: 'var(--font-sans)' }}>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center', fontWeight: 400, fontFamily: 'var(--font-sans)' }}>
                   By signing up you agree to our{' '}
                   <Link href="/terms" style={{ color: 'var(--green)', textDecoration: 'none' }}>terms</Link>{' '}
                   and{' '}

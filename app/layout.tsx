@@ -1,17 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { GeistSans } from 'geist/font/sans';
+import '@fontsource-variable/fraunces';
+import '@fontsource-variable/figtree';
 import CookieNotice from '@/components/CookieNotice';
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BookMyPitch: Play football tonight in London",
-  description: "Find a game near you or start one in under a minute. No bank transfers, everyone pays automatically when the team is full.",
+  title: "BookMyPitch: Book a 5-a-side pitch in East London",
+  description: "Pick a pitch, share one link, and your mates join. Nobody is charged until the game is full.",
   icons: {
-    // favicon.png/.ico have a solid black background (matching --black) —
-    // logo.png itself stays transparent since it's also used inline on the
-    // nav bar, where transparency blends correctly; a transparent favicon
-    // instead composites to white in most browsers/search results, making
-    // the ball nearly invisible at small sizes.
     icon: [
       { url: '/favicon.ico' },
       { url: '/favicon.png', type: 'image/png' },
@@ -19,8 +15,8 @@ export const metadata: Metadata = {
     apple: '/favicon.png',
   },
   openGraph: {
-    title: "BookMyPitch: Play football tonight",
-    description: "Find a game near you or start one in under a minute. No bank transfers, everyone pays automatically when the team is full.",
+    title: "BookMyPitch: Book a 5-a-side pitch",
+    description: "Pick a pitch, share one link, and your mates join. Nobody is charged until the game is full.",
     url: "https://bookmypitch.uk",
     type: "website",
     images: [
@@ -36,8 +32,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-};
+  };
 
 export default function RootLayout({
   children,
@@ -45,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={GeistSans.variable}>
+    <html lang="en">
       <body>
         {children}
         <CookieNotice />

@@ -61,10 +61,10 @@ export default function AdminVenuesClient({ venues: initial, ownerEmails }: Prop
         <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '-0.02em', marginBottom: '2px' }}>
           {v.name}
         </div>
-        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
           {v.address}
         </div>
-        <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
+        <div style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
           Owner: {ownerEmails[v.owner_id ?? ''] ?? 'unknown'} · Signed up {formatDate(v.created_at)}
         </div>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -100,22 +100,22 @@ export default function AdminVenuesClient({ venues: initial, ownerEmails }: Prop
       </div>
 
       {error && (
-        <div style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.2)', borderRadius: '10px', padding: '0.85rem 1rem', fontSize: '13px', color: 'var(--red)', fontWeight: 600, marginBottom: '1.5rem' }}>
+        <div style={{ background: 'rgba(179,38,30,0.08)', border: '1px solid rgba(179,38,30,0.2)', borderRadius: '10px', padding: '0.85rem 1rem', fontSize: '14px', color: 'var(--red)', fontWeight: 600, marginBottom: '1.5rem' }}>
           {error}
         </div>
       )}
 
-      <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--amber)', marginBottom: '0.75rem' }}>
+      <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.1em',  color: 'var(--amber)', marginBottom: '0.75rem' }}>
         Pending ({pending.length})
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2.5rem' }}>
         {pending.length === 0 && (
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>No venues waiting on approval.</div>
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>No venues waiting on approval.</div>
         )}
         {pending.map(row)}
       </div>
 
-      <div style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--green)', marginBottom: '0.75rem' }}>
+      <div style={{ fontSize: '14px', fontWeight: 700, letterSpacing: '0.1em',  color: 'var(--green)', marginBottom: '0.75rem' }}>
         Approved ({approved.length})
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

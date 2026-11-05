@@ -52,12 +52,12 @@ export default function OwnerLoginPage() {
   }
 
   const labelStyle: React.CSSProperties = {
-    fontSize: '10px',
+    fontSize: '14px',
     color: 'var(--muted)',
     marginBottom: '7px',
     display: 'block',
     fontWeight: 700,
-    textTransform: 'uppercase',
+    
     letterSpacing: '0.12em',
   }
 
@@ -83,7 +83,7 @@ export default function OwnerLoginPage() {
           transform: 'translateX(-50%)',
           width: '600px',
           height: '400px',
-          background: 'radial-gradient(ellipse at center, rgba(198,241,53,0.04) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at center, rgba(20,80,45,0.04) 0%, transparent 70%)',
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -102,7 +102,7 @@ export default function OwnerLoginPage() {
           className="anim-fade-up"
           style={{ textAlign: 'center', marginBottom: '2.5rem' }}
         >
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>
             <span
               style={{
                 fontFamily: 'var(--font-display)',
@@ -113,7 +113,7 @@ export default function OwnerLoginPage() {
               }}
             >
               Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
-              <span style={{ color: 'var(--green)', fontSize: '13px', verticalAlign: 'super', marginLeft: '1px' }}>.uk</span>
+              <span style={{ color: 'var(--green)', fontSize: '14px', verticalAlign: 'super', marginLeft: '1px' }}>.uk</span>
             </span>
           </Link>
         </div>
@@ -122,10 +122,10 @@ export default function OwnerLoginPage() {
         <Card
           className="anim-fade-up d-80"
           style={{
-            border: '1px solid rgba(255,255,255,0.09)',
+            border: '1px solid rgba(31,36,32,0.09)',
             borderTop: '2px solid var(--green)',
             padding: '2rem',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
+            boxShadow: '0 8px 40px rgba(31,36,32,0.14), inset 0 1px 0 rgba(31,36,32,0.04)',
           }}
         >
           {/* Card header */}
@@ -135,8 +135,8 @@ export default function OwnerLoginPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                background: 'rgba(198,241,53,0.08)',
-                border: '1px solid rgba(198,241,53,0.16)',
+                background: 'rgba(20,80,45,0.08)',
+                border: '1px solid rgba(20,80,45,0.16)',
                 borderRadius: '6px',
                 padding: '3px 10px',
                 marginBottom: '1rem',
@@ -157,7 +157,7 @@ export default function OwnerLoginPage() {
                   fontWeight: 700,
                   color: 'var(--green)',
                   letterSpacing: '0.12em',
-                  textTransform: 'uppercase',
+                  
                 }}
               >
                 Owner portal
@@ -194,7 +194,7 @@ export default function OwnerLoginPage() {
                 className="field-input"
                 style={inputStyle}
               />
-              {emailError && <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>{emailError}</div>}
+              {emailError && <div style={{ color: '#ef4444', fontSize: '14px', marginTop: '4px', fontWeight: 600 }}>{emailError}</div>}
             </div>
             <div>
               <label style={labelStyle}>Password</label>
@@ -212,11 +212,11 @@ export default function OwnerLoginPage() {
             {error && (
               <div
                 style={{
-                  background: 'rgba(255,68,68,0.08)',
-                  border: '1px solid rgba(255,68,68,0.2)',
+                  background: 'rgba(179,38,30,0.08)',
+                  border: '1px solid rgba(179,38,30,0.2)',
                   borderRadius: '10px',
                   padding: '0.85rem 1rem',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   color: 'var(--red)',
                   fontWeight: 600,
                 }}
@@ -239,7 +239,7 @@ export default function OwnerLoginPage() {
                 background: loading || emailError ? 'var(--surface2)' : 'var(--green)',
                 color: loading || emailError ? 'var(--muted)' : 'var(--black)',
                 fontFamily: 'var(--font-display)',
-                fontWeight: 900,
+                fontWeight: 700,
                 letterSpacing: '-0.025em',
                 marginTop: '4px',
                 transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
@@ -259,10 +259,13 @@ export default function OwnerLoginPage() {
           <Link
             href="/owner/signup"
             style={{
-              fontSize: '13px',
+              fontSize: '14px',
               color: 'var(--muted)',
               textDecoration: 'none',
               fontWeight: 500,
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: '44px',
               transition: 'color 0.15s ease',
             }}
           >
@@ -271,10 +274,13 @@ export default function OwnerLoginPage() {
           <Link
             href="/"
             style={{
-              fontSize: '13px',
+              fontSize: '14px',
               color: 'var(--muted)',
               textDecoration: 'none',
               fontWeight: 500,
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: '44px',
               transition: 'color 0.15s ease',
             }}
           >

@@ -411,7 +411,7 @@ export default function PhoneInput({ value, onChange, placeholder = '7911 123456
                 padding: '0.55rem 0.7rem',
                 color: 'var(--text)',
                 fontFamily: 'var(--font-sans)',
-                fontSize: '13px',
+                fontSize: '14px',
                 fontWeight: 500,
                 outline: 'none',
                 boxSizing: 'border-box',
@@ -420,7 +420,7 @@ export default function PhoneInput({ value, onChange, placeholder = '7911 123456
           </div>
           <div style={{ overflowY: 'auto', flex: 1 }}>
             {filtered.length === 0 ? (
-              <div style={{ padding: '0.75rem', fontSize: '13px', color: 'var(--text-secondary)' }}>No matches</div>
+              <div style={{ padding: '0.75rem', fontSize: '14px', color: 'var(--text-secondary)' }}>No matches</div>
             ) : (
               filtered.map((c) => {
                 const isSelected = c.code === countryCode
@@ -442,7 +442,7 @@ export default function PhoneInput({ value, onChange, placeholder = '7911 123456
                       border: 'none',
                       color: 'var(--text)',
                       fontFamily: 'var(--font-sans)',
-                      fontSize: '13px',
+                      fontSize: '14px',
                       fontWeight: 500,
                       cursor: 'pointer',
                     }}
@@ -455,7 +455,7 @@ export default function PhoneInput({ value, onChange, placeholder = '7911 123456
                   >
                     <span aria-hidden="true">{c.flag}</span>
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{c.code}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{c.code}</span>
                   </button>
                 )
               })

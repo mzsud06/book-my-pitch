@@ -1,20 +1,22 @@
 import Link from 'next/link'
 
 const linkStyle = {
-  fontSize: '13px',
+  fontSize: '16px',
   color: 'var(--text-secondary)',
-  fontWeight: 500,
   textDecoration: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  minHeight: '44px',
 }
 
 const columnLabelStyle = {
-  fontSize: '11px',
-  fontWeight: 700,
-  letterSpacing: '0.1em',
-  textTransform: 'uppercase' as const,
-  color: 'var(--text-tertiary)',
-  marginBottom: '0.2rem',
+  fontSize: '14px',
+  fontWeight: 600,
+  color: 'var(--text)',
+  marginBottom: '0.1rem',
 }
+
+const columnStyle = { display: 'flex', flexDirection: 'column' as const }
 
 export function Footer() {
   return (
@@ -23,73 +25,48 @@ export function Footer() {
         style={{
           maxWidth: '1180px',
           margin: '0 auto',
-          padding: 'clamp(2.5rem, 6vh, 3.5rem) clamp(1.25rem, 4vw, 2rem) 2.5rem',
+          padding: 'clamp(2.5rem, 6vh, 3.5rem) clamp(1.25rem, 4vw, 2rem) 2rem',
           display: 'flex',
           flexWrap: 'wrap',
           justifyContent: 'space-between',
-          gap: '2.5rem',
+          gap: '2rem 3rem',
         }}
       >
-        {/* Left — logo + tagline */}
-        <div style={{ maxWidth: '260px' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'baseline',
-              fontFamily: 'var(--font-display)',
-              fontSize: '17px',
-              fontWeight: 700,
-              letterSpacing: '-0.03em',
-              lineHeight: 1,
-              color: 'var(--text)',
-            }}
-          >
+        <div style={{ maxWidth: '300px' }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 600, color: 'var(--text)', lineHeight: 1 }}>
             Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
-            <span style={{ color: 'var(--text-secondary)', fontSize: '11px', verticalAlign: 'super', marginLeft: '1px', opacity: 0.75, fontWeight: 600 }}>.uk</span>
           </div>
-          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '0.6rem', lineHeight: 1.5 }}>
-            Football booking for London.
+          <p style={{ fontSize: '16px', color: 'var(--text-secondary)', marginTop: '0.75rem', lineHeight: 1.5 }}>
+            5-a-side and 7-a-side football pitches in East London. Run by Masud Rahman, Admin.
           </p>
+          <a href="mailto:masud@bookmypitch.uk" style={{ ...linkStyle, color: 'var(--green)', fontWeight: 600 }}>masud@bookmypitch.uk</a>
         </div>
 
-        {/* Middle — explore links */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-          <div style={columnLabelStyle}>Explore</div>
-          <Link href="/public-games" style={linkStyle}>Find a game</Link>
-          <Link href="/slots" style={linkStyle}>Browse slots</Link>
-          <Link href="/#faq" style={linkStyle}>FAQ</Link>
+        <div style={columnStyle}>
+          <div style={columnLabelStyle}>Players</div>
+          <Link href="/slots" style={linkStyle}>Book a pitch</Link>
+          <Link href="/public-games" style={linkStyle}>Public games</Link>
+          <Link href="/#faq" style={linkStyle}>Questions</Link>
         </div>
 
-        {/* Venue owners */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-          <div style={columnLabelStyle}>Venue owners</div>
-          <Link href="/list-your-venue" style={linkStyle}>List your venue</Link>
-          <Link href="/owner/login" style={linkStyle}>Owner login</Link>
+        <div style={columnStyle}>
+          <div style={columnLabelStyle}>For venues</div>
+          <Link href="/list-your-venue" style={linkStyle}>List your pitch</Link>
+          <Link href="/owner/login" style={linkStyle}>Venue login</Link>
         </div>
 
-        {/* Right — support links */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-          <div style={columnLabelStyle}>Support</div>
+        <div style={columnStyle}>
+          <div style={columnLabelStyle}>Help</div>
           <a href="mailto:masud@bookmypitch.uk" style={linkStyle}>Get in touch</a>
           <a href="mailto:masud@bookmypitch.uk?subject=Bug Report" style={linkStyle}>Report a bug</a>
-          <Link href="/terms" style={linkStyle}>Terms of service</Link>
-          <Link href="/privacy" style={linkStyle}>Privacy policy</Link>
+          <Link href="/terms" style={linkStyle}>Terms</Link>
+          <Link href="/privacy" style={linkStyle}>Privacy</Link>
         </div>
       </div>
 
       <div style={{ borderTop: '1px solid var(--border)' }}>
-        <div
-          style={{
-            maxWidth: '1180px',
-            margin: '0 auto',
-            padding: '1.1rem clamp(1.25rem, 4vw, 2rem)',
-            fontSize: '12px',
-            color: 'var(--text-tertiary)',
-            fontWeight: 500,
-            textAlign: 'center',
-          }}
-        >
-          © 2026 BookMyPitch. All rights reserved.
+        <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '1rem clamp(1.25rem, 4vw, 2rem)', fontSize: '14px', color: 'var(--text-tertiary)' }}>
+          © {new Date().getFullYear()} BookMyPitch
         </div>
       </div>
     </footer>

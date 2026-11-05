@@ -131,8 +131,8 @@ function CardForm({
       {hasRival && (
         <div
           style={{
-            background: 'rgba(255,184,0,0.06)',
-            border: '1px solid rgba(255,184,0,0.22)',
+            background: 'rgba(138,90,0,0.06)',
+            border: '1px solid rgba(138,90,0,0.22)',
             borderRadius: '12px',
             padding: '0.9rem 1.1rem',
             marginBottom: '1.25rem',
@@ -154,13 +154,13 @@ function CardForm({
         style={{
           display: 'flex',
           gap: '10px',
-          background: 'rgba(198,241,53,0.05)',
-          border: '1px solid rgba(198,241,53,0.15)',
+          background: 'rgba(20,80,45,0.05)',
+          border: '1px solid rgba(20,80,45,0.15)',
           borderRadius: '12px',
           padding: '1rem 1.1rem',
           marginBottom: '1.25rem',
           fontSize: '14px',
-          color: 'rgba(198,241,53,0.7)',
+          color: 'rgba(20,80,45,0.7)',
           lineHeight: 1.6,
           alignItems: 'flex-start',
         }}
@@ -174,8 +174,8 @@ function CardForm({
 
       <div
         style={{
-          background: 'linear-gradient(145deg, rgba(198,241,53,0.04) 0%, #0f0f0f 100%)',
-          border: '1px solid rgba(198,241,53,0.12)',
+          background: 'linear-gradient(145deg, rgba(20,80,45,0.04) 0%, #0f0f0f 100%)',
+          border: '1px solid rgba(20,80,45,0.12)',
           borderRadius: '16px',
           padding: '1.4rem 1.5rem',
           marginBottom: '1.25rem',
@@ -191,7 +191,7 @@ function CardForm({
             style={{
               display: 'flex',
               justifyContent: 'space-between',
-              fontSize: '13px',
+              fontSize: '14px',
               color: 'var(--muted)',
               marginBottom: '8px',
               fontWeight: 500,
@@ -207,11 +207,11 @@ function CardForm({
             justifyContent: 'space-between',
             alignItems: 'baseline',
             color: 'var(--text)',
-            fontWeight: 800,
+            fontWeight: 700,
             fontSize: '14px',
             marginTop: '12px',
             paddingTop: '12px',
-            borderTop: '1px solid rgba(198,241,53,0.12)',
+            borderTop: '1px solid rgba(20,80,45,0.12)',
           }}
         >
           <span style={{ fontWeight: 600, color: 'var(--muted)' }}>Total if confirmed</span>
@@ -226,7 +226,7 @@ function CardForm({
             £{totalPerPlayer}
           </span>
         </div>
-        <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.6, fontWeight: 500 }}>
+        <div style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '0.5rem', lineHeight: 1.6, fontWeight: 500 }}>
           You&apos;ll get a text the moment it&apos;s confirmed. Less than a coffee.
         </div>
       </div>
@@ -234,12 +234,11 @@ function CardForm({
       <div style={{ marginBottom: '1.25rem' }}>
         <label
           style={{
-            fontSize: '10px',
+            fontSize: '14px',
             color: 'var(--muted)',
             marginBottom: '7px',
             display: 'block',
             fontWeight: 700,
-            textTransform: 'uppercase' as const,
             letterSpacing: '0.12em',
           }}
         >
@@ -256,12 +255,12 @@ function CardForm({
       {submitError && (
         <div
           style={{
-            background: 'rgba(255,68,68,0.08)',
-            border: '1px solid rgba(255,68,68,0.2)',
+            background: 'rgba(179,38,30,0.08)',
+            border: '1px solid rgba(179,38,30,0.2)',
             borderRadius: '10px',
             padding: '0.85rem 1rem',
             marginBottom: '1rem',
-            fontSize: '13px',
+            fontSize: '14px',
             color: 'var(--red)',
             fontWeight: 600,
           }}
@@ -284,7 +283,7 @@ function CardForm({
           background: isDisabled ? 'var(--surface2)' : 'var(--green)',
           color: isDisabled ? 'var(--muted)' : 'var(--black)',
           fontFamily: 'var(--font-display)',
-          fontWeight: 900,
+          fontWeight: 700,
           letterSpacing: '-0.025em',
           transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
           marginBottom: '8px',
@@ -297,7 +296,7 @@ function CardForm({
       <div
         style={{
           textAlign: 'center',
-          fontSize: '12px',
+          fontSize: '14px',
           color: 'var(--muted)',
           marginBottom: '1rem',
           fontWeight: 500,
@@ -427,14 +426,14 @@ export default function PlayerPaymentForm({ sessionId, slot, hasRival, isLoggedI
   }
 
   const appearance = {
-    theme: 'night' as const,
+    theme: 'stripe' as const,
     variables: {
-      colorPrimary: '#C6F135',
-      colorBackground: '#161616',
-      colorText: '#F7F4EE',
-      colorDanger: '#FF4444',
-      fontFamily: 'var(--font-sans)',
-      borderRadius: '10px',
+      colorPrimary: '#14502D',
+      colorBackground: '#FFFDF8',
+      colorText: '#1F2420',
+      colorDanger: '#B3261E',
+      fontFamily: 'Figtree Variable, system-ui, sans-serif',
+      borderRadius: '12px',
     },
   }
 
@@ -460,8 +459,8 @@ export default function PlayerPaymentForm({ sessionId, slot, hasRival, isLoggedI
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
         <div
           style={{
-            background: 'rgba(255,68,68,0.08)',
-            border: '1px solid rgba(255,68,68,0.2)',
+            background: 'rgba(179,38,30,0.08)',
+            border: '1px solid rgba(179,38,30,0.2)',
             borderRadius: '12px',
             padding: '1.25rem',
             marginBottom: '1.5rem',
@@ -525,12 +524,12 @@ export default function PlayerPaymentForm({ sessionId, slot, hasRival, isLoggedI
       {paymentError && (
         <div
           style={{
-            background: 'rgba(255,68,68,0.08)',
-            border: '1px solid rgba(255,68,68,0.2)',
+            background: 'rgba(179,38,30,0.08)',
+            border: '1px solid rgba(179,38,30,0.2)',
             borderRadius: '10px',
             padding: '0.85rem 1rem',
             marginBottom: '1rem',
-            fontSize: '13px',
+            fontSize: '14px',
             color: 'var(--red)',
             fontWeight: 600,
           }}

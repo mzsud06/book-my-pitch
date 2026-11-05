@@ -16,7 +16,7 @@ export default async function SlotsPage() {
 
   const { data: venues } = await supabase
     .from('venues')
-    .select('id, name, address, pitches(format, surface, offpeak_price, max_players)')
+    .select('id, name, address, photo_url, pitches(format, surface, offpeak_price, max_players)')
     // A venue whose Stripe Connect onboarding isn't verified yet can't
     // actually take payment (see lib/triggerPayments.ts), and a venue that
     // hasn't been manually approved hasn't been vetted as a real pitch —

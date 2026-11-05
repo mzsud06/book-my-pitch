@@ -32,9 +32,9 @@ export function SectionHeading({
         style={{
           fontFamily: 'var(--font-display)',
           fontSize: 'var(--text-h2)',
-          fontWeight: 700,
-          lineHeight: 1.1,
-          letterSpacing: '-0.015em',
+          fontWeight: 600,
+          lineHeight: 1.15,
+          letterSpacing: '-0.01em',
           color: 'var(--text)',
           margin: 0,
         }}
@@ -45,7 +45,7 @@ export function SectionHeading({
         <p
           style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: '1rem',
+            fontSize: '1.0625rem',
             lineHeight: 1.6,
             color: 'var(--text-secondary)',
             margin: 0,

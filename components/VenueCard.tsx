@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Card } from '@/components/ui/Card'
 import { formatPerPlayer } from '@/lib/slots'
+import { Photo } from '@/components/ui/Photo'
 
 export interface VenueCardPitch {
   format: string
@@ -13,6 +14,7 @@ export interface VenueCardData {
   id: string
   name: string
   address: string
+  photo_url?: string | null
   pitches: VenueCardPitch[]
 }
 
@@ -39,27 +41,17 @@ export function VenueCard({ venue, index = 0 }: { venue: VenueCardData; index?: 
       style={{ textDecoration: 'none', display: 'block', animationDelay: `${index * 60}ms` }}
     >
       <Card hover style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
-        <div
-          style={{
-            aspectRatio: '4 / 3',
-            backgroundImage: "url('/slot-card.jpg')",
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
+        <Photo src={venue.photo_url} alt={venue.name} className="venue-card-photo" sizes="(max-width: 640px) 100vw, 380px" />
         <div style={{ padding: '1.1rem 1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
           <h3
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: '18px',
-              fontWeight: 700,
+              fontSize: '20px',
+              fontWeight: 600,
               letterSpacing: '-0.015em',
               color: 'var(--text)',
               margin: '0 0 6px',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
+              }}
           >
             {venue.name}
           </h3>
@@ -67,30 +59,27 @@ export function VenueCard({ venue, index = 0 }: { venue: VenueCardData; index?: 
             <PinIcon />
             <p
               style={{
-                fontSize: '13px',
+                fontSize: '14px',
                 margin: 0,
-                fontWeight: 500,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                fontWeight: 400,
                 minWidth: 0,
               }}
             >
               {venue.address}
             </p>
           </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.75rem' }}>
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 400, marginBottom: '0.75rem' }}>
             {formats.join(' · ')}
           </div>
 
           {cheapestPitch && (
             <div style={{ marginTop: 'auto' }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: '2px' }}>
-                Starts from
+              <div style={{ fontSize: '14px', color: 'var(--text-tertiary)', fontWeight: 400, marginBottom: '2px' }}>
+                From
               </div>
               <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: 'var(--green)' }}>
                 {formatPerPlayer(cheapestPitch.offpeak_price, cheapestPitch.max_players)}{' '}
-                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>per player</span>
+                <span style={{ fontSize: '14px', fontWeight: 400, color: 'var(--text-secondary)' }}>a player, plus fees</span>
               </div>
             </div>
           )}

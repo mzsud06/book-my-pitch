@@ -34,40 +34,8 @@ function formatNotifTime(iso: string): string {
 }
 
 const NAV_LINKS = [
-  { href: '/', label: 'Home' },
   { href: '/slots', label: 'Book a pitch' },
-  { href: '/public-games', label: 'Public games' },
-  { href: '/list-your-venue', label: 'List your venue' },
-]
-
-const SOCIALS = [
-  {
-    label: 'Instagram',
-    icon: (
-      <>
-        <rect x="3" y="3" width="18" height="18" rx="5" />
-        <circle cx="12" cy="12" r="4" />
-        <circle cx="17.2" cy="6.8" r="0.6" fill="currentColor" stroke="none" />
-      </>
-    ),
-  },
-  {
-    label: 'X (Twitter)',
-    icon: <path d="M4.5 4.5l15 15M19.5 4.5l-15 15" />,
-  },
-  {
-    label: 'YouTube',
-    icon: (
-      <>
-        <rect x="2.5" y="5.5" width="19" height="13" rx="4" />
-        <path d="M10.2 9.3v5.4l4.8-2.7-4.8-2.7z" fill="currentColor" stroke="none" />
-      </>
-    ),
-  },
-  {
-    label: 'Facebook',
-    icon: <path d="M14.5 21v-7h2.3l.35-2.7H14.5V9.5c0-.78.22-1.3 1.33-1.3H17.3V5.8c-.24-.03-1.06-.1-2.02-.1-2 0-3.37 1.22-3.37 3.46v1.94H9.6v2.7h2.31V21h2.59z" fill="currentColor" stroke="none" />,
-  },
+  { href: '/list-your-venue', label: 'For venues' },
 ]
 
 export default function Nav() {
@@ -228,15 +196,11 @@ export default function Nav() {
         paddingLeft: 'clamp(0.75rem, 2vw, 1.25rem)',
         paddingRight: 'max(clamp(1.5rem, 5vw, 2rem), env(safe-area-inset-right, 0px) + 1rem)',
         height: '60px',
-        borderTop: '2px solid var(--green)',
-        borderBottom: '1px solid var(--border)',
+                borderBottom: '1px solid var(--border)',
         position: 'sticky',
         top: 0,
         zIndex: 300,
-        background: 'rgba(8,8,8,0.96)',
-        backdropFilter: 'blur(32px)',
-        WebkitBackdropFilter: 'blur(32px)',
-        boxShadow: '0 1px 0 rgba(255,255,255,0.03)',
+        background: 'var(--black)',
       }}
     >
         {/* Wordmark */}
@@ -250,20 +214,22 @@ export default function Nav() {
             minHeight: '44px',
           }}
         >
-          <img src="/logo.png" alt="BookMyPitch" style={{ height: '48px', width: 'auto', display: 'block' }} />
+          <span aria-hidden style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--green)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+            <img src="/logo.png" alt="" style={{ width: '56px', height: '56px', maxWidth: 'none', display: 'block' }} />
+          </span>
           <span
             className="nav-wordmark-text"
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: 'clamp(15px, 3.5vw, 18px)',
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
               color: 'var(--text)',
               lineHeight: 1,
               userSelect: 'none',
             }}
           >
-            Book<span style={{ color: '#C6F135' }}>My</span>Pitch
+            Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
             <span
               style={{
                 color: 'var(--text-secondary)',
@@ -291,7 +257,7 @@ export default function Nav() {
                 style={{
                   fontFamily: 'var(--font-sans)',
                   fontWeight: 600,
-                  fontSize: '14px',
+                  fontSize: '16px',
                   color: isActive ? 'var(--text)' : 'var(--text-secondary)',
                   textDecoration: 'none',
                   transition: 'color 0.15s ease',
@@ -347,7 +313,7 @@ export default function Nav() {
                         height: '15px',
                         padding: '0 3px',
                         borderRadius: '999px',
-                        background: '#FF4444',
+                        background: 'var(--red)',
                         color: '#fff',
                         fontSize: '9px',
                         fontWeight: 700,
@@ -356,7 +322,7 @@ export default function Nav() {
                         justifyContent: 'center',
                         fontFamily: 'var(--font-sans)',
                         lineHeight: 1,
-                        border: '2px solid rgba(8,8,8,0.96)',
+                        border: '2px solid rgba(246,241,231,0.96)',
                       }}
                     >
                       {unreadCount > 9 ? '9+' : unreadCount}
@@ -378,15 +344,15 @@ export default function Nav() {
                       maxHeight: '360px',
                       overflowY: 'auto',
                       zIndex: 400,
-                      boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+                      boxShadow: '0 16px 48px rgba(31,36,32,0.14), 0 0 0 1px rgba(31,36,32,0.04)',
                     }}
                   >
                     <div
                       style={{
                         padding: '8px 10px',
-                        fontSize: '11px',
+                        fontSize: '14px',
                         fontWeight: 700,
-                        textTransform: 'uppercase',
+                        
                         letterSpacing: '0.08em',
                         color: 'var(--text-secondary)',
                         fontFamily: 'var(--font-sans)',
@@ -398,7 +364,7 @@ export default function Nav() {
                       <div
                         style={{
                           padding: '20px 10px',
-                          fontSize: '13px',
+                          fontSize: '14px',
                           color: 'var(--text-secondary)',
                           textAlign: 'center',
                           fontWeight: 500,
@@ -417,12 +383,12 @@ export default function Nav() {
                             borderRadius: '10px',
                             cursor: 'pointer',
                             marginBottom: '2px',
-                            background: n.read ? 'transparent' : 'rgba(198,241,53,0.06)',
+                            background: n.read ? 'transparent' : 'rgba(20,80,45,0.06)',
                           }}
                         >
                           <div
                             style={{
-                              fontSize: '13px',
+                              fontSize: '14px',
                               color: 'var(--text)',
                               fontWeight: n.read ? 500 : 700,
                               lineHeight: 1.4,
@@ -433,7 +399,7 @@ export default function Nav() {
                           </div>
                           <div
                             style={{
-                              fontSize: '11px',
+                              fontSize: '14px',
                               color: 'var(--text-secondary)',
                               marginTop: '4px',
                               fontWeight: 500,
@@ -460,7 +426,7 @@ export default function Nav() {
                   gap: '8px',
                   fontFamily: 'var(--font-sans)',
                   fontWeight: 600,
-                  fontSize: '13px',
+                  fontSize: '14px',
                   padding: '5px 12px 5px 5px',
                   borderRadius: 'var(--radius-full)',
                   border: '1px solid transparent',
@@ -481,7 +447,7 @@ export default function Nav() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: 700,
                     fontFamily: 'var(--font-display)',
                     flexShrink: 0,
@@ -507,7 +473,7 @@ export default function Nav() {
                     padding: '6px',
                     minWidth: '236px',
                     zIndex: 400,
-                    boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+                    boxShadow: '0 16px 48px rgba(31,36,32,0.14), 0 0 0 1px rgba(31,36,32,0.04)',
                   }}
                 >
                   {/* Profile header */}
@@ -556,7 +522,7 @@ export default function Nav() {
                       </div>
                       <div
                         style={{
-                          fontSize: '12px',
+                          fontSize: '14px',
                           color: 'var(--text-secondary)',
                           marginTop: '2px',
                           whiteSpace: 'nowrap',
@@ -656,8 +622,8 @@ export default function Nav() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '34px',
-                height: '34px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
                 border: 'none',
                 background: 'transparent',
@@ -701,8 +667,8 @@ export default function Nav() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '38px',
-            height: '38px',
+            width: '44px',
+            height: '44px',
             borderRadius: '50%',
             border: '1px solid var(--border)',
             background: 'transparent',
@@ -726,18 +692,20 @@ export default function Nav() {
             gap: '5px',
           }}
         >
-          <img src="/logo.png" alt="BookMyPitch" style={{ height: '48px', width: 'auto', display: 'block' }} />
+          <span aria-hidden style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--green)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+            <img src="/logo.png" alt="" style={{ width: '56px', height: '56px', maxWidth: 'none', display: 'block' }} />
+          </span>
           <span
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: '18px',
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
               color: 'var(--text)',
               lineHeight: 1,
             }}
           >
-            Book<span style={{ color: '#C6F135' }}>My</span>Pitch
+            Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
             <span style={{ color: 'var(--text-secondary)', opacity: 0.75, fontSize: '0.72em', fontWeight: 600, marginLeft: '1px' }}>
               .uk
             </span>
@@ -775,35 +743,9 @@ export default function Nav() {
           })}
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-          {SOCIALS.map(s => (
-            <button
-              key={s.label}
-              type="button"
-              aria-label={s.label}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                border: '1px solid var(--border)',
-                background: 'transparent',
-                color: 'var(--text-secondary)',
-                cursor: 'pointer',
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                {s.icon}
-              </svg>
-            </button>
-          ))}
-        </div>
-
         <div
           style={{
-            fontSize: '12px',
+            fontSize: '14px',
             color: 'var(--text-tertiary)',
             fontWeight: 500,
             marginBottom: '28px',

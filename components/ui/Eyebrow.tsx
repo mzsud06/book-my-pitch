@@ -15,8 +15,7 @@ export function Eyebrow({ children, color = 'green', className = '' }: EyebrowPr
         fontFamily: 'var(--font-sans)',
         fontSize: 'var(--text-label)',
         fontWeight: 600,
-        letterSpacing: '0.12em',
-        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
         color: color === 'green' ? 'var(--green)' : 'var(--text-secondary)',
         lineHeight: 1.4,
       }}

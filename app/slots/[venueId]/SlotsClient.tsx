@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Footer } from '@/components/Footer'
 import { SectionHeading } from '@/components/ui/SectionHeading'
+import { Photo } from '@/components/ui/Photo'
+import { perPlayerBreakdown } from '@/lib/feeDisplay'
 
 export interface SessionData {
   id: string
@@ -115,7 +117,7 @@ const infoCardHeading: React.CSSProperties = {
   fontSize: '15px',
   fontWeight: 700,
   letterSpacing: '0.02em',
-  textTransform: 'uppercase',
+  
   color: 'var(--text)',
   margin: 0,
 }
@@ -128,7 +130,7 @@ const hoursRowStyle: React.CSSProperties = {
   background: 'var(--surface2)',
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius-md)',
-  fontSize: '13px',
+  fontSize: '14px',
   fontWeight: 600,
   color: 'var(--text)',
   marginBottom: '8px',
@@ -186,18 +188,72 @@ function CheckIcon() {
   )
 }
 
+
+// "15:30:00" -> "15:30"
+function hhmm(t: string): string {
+  return t.slice(0, 5)
+}
+
+// Say "artificial grass" wherever the raw surface code (e.g. "4G") first appears.
+function surfaceLabel(surface: string | undefined): string {
+  if (!surface) return '-'
+  return /^[34]g$/i.test(surface.trim()) ? `${surface.trim().toUpperCase()} artificial grass` : surface
+}
+
+// First of the next 14 days with at least one bookable game time for this
+// pitch: a slot row exists, it isn't locked by a confirmed game, it hasn't
+// started and it respects the venue's minimum booking notice.
+function findFirstAvailableDay(
+  sessions: SessionData[],
+  dbSlots: DbSlot[],
+  pitchId: string,
+  schedule: VenueSchedule,
+  noticeMinutes: number
+): Date | null {
+  const slotMap = new Map(dbSlots.map(s => [`${s.pitches.id}_${s.date}_${s.start_time.slice(0, 5)}`, s]))
+  const confirmed = new Set<string>()
+  sessions.forEach(s => {
+    if (s.status !== 'confirmed') return
+    const sl = Array.isArray(s.slots) ? (s.slots as unknown[])[0] as SessionData['slots'] : s.slots
+    if (sl?.pitches.id !== pitchId) return
+    const ids = s.slot_ids && s.slot_ids.length > 0 ? s.slot_ids : [s.slot_id]
+    ids.forEach(id => confirmed.add(id))
+  })
+  const now = new Date()
+  const cutoff = new Date(now.getTime() + noticeMinutes * 60000)
+  const base = startOfDay(now)
+  for (let i = 0; i < 14; i++) {
+    const day = addDays(base, i)
+    const dayKey = formatDate(day)
+    const ok = getSlotsForDay(day, schedule).some(t => {
+      const slot = slotMap.get(`${pitchId}_${dayKey}_${t.startTime}`)
+      if (!slot || confirmed.has(slot.id)) return false
+      const [h, m] = t.startTime.split(':').map(Number)
+      const start = new Date(day)
+      start.setHours(h, m, 0, 0)
+      return start > cutoff
+    })
+    if (ok) return day
+  }
+  return null
+}
+
 export default function SlotsClient({ initialSessions, dbSlots, venueId, venueName, venueAddress, pitches, userSessionIds, userId, schedule = DEFAULT_SCHEDULE, amenities = [], contactPhone, minBookingNoticeMinutes = 0, photoUrl }: Props) {
   const userSessionSet = new Set(userSessionIds)
   const router = useRouter()
   const supabase = createClient()
   const [sessions, setSessions] = useState<SessionData[]>(initialSessions)
-  const [selectedDate, setSelectedDate] = useState<Date>(startOfDay(new Date()))
+  // Open on the first day that actually has game times, not just today.
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    () => findFirstAvailableDay(initialSessions, dbSlots, pitches[0]?.id ?? '', schedule, minBookingNoticeMinutes) ?? startOfDay(new Date())
+  )
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [selectedDuration, setSelectedDuration] = useState(60)
   const [availableOnly, setAvailableOnly] = useState(false)
   const [selectedPitchId, setSelectedPitchId] = useState(() => pitches[0]?.id ?? '')
 
   const selectedPitch = pitches.find(p => p.id === selectedPitchId) ?? pitches[0]
+  const firstAvailableDay = findFirstAvailableDay(sessions, dbSlots, selectedPitchId, schedule, minBookingNoticeMinutes)
 
   // Slots are keyed by pitch+date+time — a venue with multiple pitches (e.g.
   // a 5-a-side and a 7-a-side) can have a slot at the same date/time per pitch.
@@ -409,11 +465,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
           <nav
             aria-label="Breadcrumb"
             className="anim-fade-up"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '1.5rem', fontSize: '13px', fontWeight: 500 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '1.5rem', fontSize: '14px', fontWeight: 500 }}
           >
             <Link href="/" style={{ color: 'var(--text-tertiary)', textDecoration: 'none' }}>Home</Link>
             <span style={{ color: 'var(--text-tertiary)' }}>/</span>
-            <Link href="/slots" style={{ color: 'var(--text-tertiary)', textDecoration: 'none' }}>Venues</Link>
+            <Link href="/slots" style={{ color: 'var(--text-tertiary)', textDecoration: 'none' }}>Book a pitch</Link>
             <span style={{ color: 'var(--text-tertiary)' }}>/</span>
             <span style={{ color: 'var(--text)' }}>{venueName}</span>
           </nav>
@@ -432,6 +488,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   marginBottom: '1.25rem',
                 }}
               >
+                <Photo src={photoUrl} alt={venueName} emptyLabel="Photo of this venue coming soon" priority className="venue-hero-photo" />
+                <div style={{ height: '1.25rem' }} />
                 <Badge variant="public"><BallIcon /> Football</Badge>
                 <h1
                   style={{
@@ -454,14 +512,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 <div className="venue-hero-stats">
                   <div className="venue-stat-tile">
                     <span className="venue-stat-label">Surface</span>
-                    <span className="venue-stat-value">{selectedPitch?.surface ?? '-'}</span>
+                    <span className="venue-stat-value">{surfaceLabel(selectedPitch?.surface)}</span>
                   </div>
                   <div className="venue-stat-tile">
                     <span className="venue-stat-label">Format</span>
                     <span className="venue-stat-value">{selectedPitch?.format ?? '-'}</span>
                   </div>
                   <div className="venue-stat-tile">
-                    <span className="venue-stat-label">From</span>
+                    <span className="venue-stat-label">From, plus fees</span>
                     <span className="venue-stat-value" style={{ color: 'var(--green)' }}>
                       {selectedPitch ? formatPerPlayer(selectedPitch.offpeak_price, selectedPitch.max_players) : '-'}
                     </span>
@@ -469,21 +527,13 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 </div>
               </div>
 
-              {/* Venue photo */}
-              {photoUrl && (
-                <div className="anim-fade-up venue-area-photo" style={{ ...infoCardStyle, padding: 0, overflow: 'hidden' }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photoUrl} alt={venueName} style={{ width: '100%', maxHeight: '280px', objectFit: 'cover', display: 'block' }} />
-                </div>
-              )}
-
               {/* Description — composed from real venue/pitch fields, no invented copy */}
               <div className="anim-fade-up d-80 venue-area-description" style={infoCardStyle}>
                 <h3 style={{ ...infoCardHeading, marginBottom: '0.875rem' }}>Description</h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
                   {pitches.length > 1
-                    ? `${venueName} has ${pitches.length} pitches available (${pitches.map(p => p.format).join(' and ')}) on ${Array.from(new Set(pitches.map(p => p.surface))).join('/')} surface, located at ${venueAddress}.`
-                    : `${venueName} features a ${selectedPitch?.format} football pitch on ${selectedPitch?.surface} surface, located at ${venueAddress}.`}
+                    ? `${venueName} has ${pitches.length} pitches available (${pitches.map(p => p.format).join(' and ')}) on ${Array.from(new Set(pitches.map(p => surfaceLabel(p.surface)))).join(' and ')}, located at ${venueAddress}.`
+                    : `${venueName} has a ${selectedPitch?.format} football pitch on ${surfaceLabel(selectedPitch?.surface)}, located at ${venueAddress}.`}
                 </p>
               </div>
 
@@ -491,29 +541,29 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
               <div className="anim-fade-up d-100 venue-area-hours" style={infoCardStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.875rem' }}>
                   <ClockIcon />
-                  <h3 style={infoCardHeading}>Opening Hours</h3>
+                  <h3 style={infoCardHeading}>Opening hours</h3>
                 </div>
                 {openingHours.perDay ? (
                   openingHours.perDay.map((d, i) => (
                     <div key={d.day} style={i === openingHours.perDay!.length - 1 ? { ...hoursRowStyle, marginBottom: 0 } : hoursRowStyle}>
                       <span style={{ textTransform: 'capitalize' }}>{d.day}</span>
-                      <span style={{ color: 'var(--green)', fontWeight: 700 }}>{d.start} – {d.end}</span>
+                      <span style={{ color: 'var(--green)', fontWeight: 700 }}>{hhmm(d.start)} to {hhmm(d.end)}</span>
                     </div>
                   ))
                 ) : (
                   <>
                     <div style={hoursRowStyle}>
                       <span>Weekdays</span>
-                      <span style={{ color: 'var(--green)', fontWeight: 700 }}>{openingHours.weekday.start} – {openingHours.weekday.end}</span>
+                      <span style={{ color: 'var(--green)', fontWeight: 700 }}>{hhmm(openingHours.weekday.start)} to {hhmm(openingHours.weekday.end)}</span>
                     </div>
                     <div style={{ ...hoursRowStyle, marginBottom: 0 }}>
                       <span>Weekends</span>
-                      <span style={{ color: 'var(--green)', fontWeight: 700 }}>{openingHours.weekend.start} – {openingHours.weekend.end}</span>
+                      <span style={{ color: 'var(--green)', fontWeight: 700 }}>{hhmm(openingHours.weekend.start)} to {hhmm(openingHours.weekend.end)}</span>
                     </div>
                   </>
                 )}
                 {minBookingNoticeMinutes > 0 && (
-                  <p style={{ color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: 500, margin: '0.75rem 0 0' }}>
+                  <p style={{ color: 'var(--text-tertiary)', fontSize: '14px', fontWeight: 500, margin: '0.75rem 0 0' }}>
                     Bookings must be made at least {formatNoticePeriod(minBookingNoticeMinutes)} before kickoff.
                   </p>
                 )}
@@ -522,13 +572,13 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
               {/* Amenities — free-form facility tags collected at signup */}
               {amenities.length > 0 && (
                 <div className="anim-fade-up d-110 venue-area-amenities" style={infoCardStyle}>
-                  <h3 style={{ ...infoCardHeading, marginBottom: '0.875rem' }}>Amenities</h3>
+                  <h3 style={{ ...infoCardHeading, marginBottom: '0.875rem' }}>Facilities</h3>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {amenities.map(a => (
                       <span
                         key={a}
                         style={{
-                          fontSize: '12px', fontWeight: 600, color: 'var(--text)',
+                          fontSize: '14px', fontWeight: 600, color: 'var(--text)',
                           background: 'var(--surface2)', border: '1px solid var(--border)',
                           borderRadius: 'var(--radius-full)', padding: '0.4rem 0.85rem',
                         }}
@@ -558,8 +608,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   rel="noopener noreferrer"
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    height: '200px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)',
-                    background: 'radial-gradient(circle at 50% 40%, var(--surface3), var(--surface2))',
+                    height: '120px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)',
+                    background: 'var(--surface2)',
                     textDecoration: 'none',
                   }}
                 >
@@ -568,7 +618,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       <path d="M8 14.5s5-4.2 5-8.2A5 5 0 0 0 3 6.3c0 4 5 8.2 5 8.2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
                       <circle cx="8" cy="6.3" r="1.8" stroke="currentColor" strokeWidth="1.2" />
                     </svg>
-                    <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 600 }}>Tap to view on Google Maps</span>
+                    <span style={{ fontSize: '14px', color: 'var(--text-tertiary)', fontWeight: 600 }}>Open in Google Maps</span>
                   </span>
                 </a>
               </div>
@@ -622,17 +672,15 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                           <div
                             style={{
                               position: 'relative',
-                              height: '180px',
-                              backgroundImage: "url('/slot-card.jpg')",
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
+                              height: '56px',
+                              background: 'var(--surface2)',
                             }}
                           >
                             <div
                               style={{
                                 position: 'absolute',
                                 inset: 0,
-                                background: 'rgba(8,8,8,0.45)',
+                                background: 'transparent',
                                 pointerEvents: 'none',
                               }}
                             />
@@ -642,7 +690,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                                 display: 'inline-flex', alignItems: 'center', gap: '5px',
                                 padding: '4px 10px', borderRadius: 'var(--radius-full)',
                                 background: s.isFull ? 'var(--red)' : 'var(--green)', color: s.isFull ? '#fff' : 'var(--black)',
-                                fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
+                                fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700,
                                 letterSpacing: '0.02em',
                               }}
                             >
@@ -663,14 +711,14 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                             </div>
                             <div style={{
                               display: 'flex', alignItems: 'center', gap: '6px',
-                              fontFamily: 'var(--font-sans)', fontSize: '12px',
+                              fontFamily: 'var(--font-sans)', fontSize: '14px',
                               color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
                             }}>
                               <ClockIcon /> {fmtCardDate(slot.date)} · {slot.start_time.slice(0, 5)} – {slot.end_time.slice(0, 5)}
                             </div>
                             <div style={{
                               display: 'flex', alignItems: 'center', gap: '6px',
-                              fontFamily: 'var(--font-sans)', fontSize: '12px',
+                              fontFamily: 'var(--font-sans)', fontSize: '14px',
                               color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
                             }}>
                               <PinIcon /> {venueName}{venueAddress ? ` · ${venueAddress}` : ''}
@@ -680,12 +728,12 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                               <div style={{
                                 display: 'inline-flex', alignItems: 'baseline', gap: '4px',
                                 padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
+                                background: 'rgba(31,36,32,0.05)', border: '1px solid rgba(31,36,32,0.06)',
                               }}>
-                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
+                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700, color: 'var(--green)' }}>
                                   £{perPlayer}
                                 </span>
-                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
+                                <span style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
                                   per player
                                 </span>
                               </div>
@@ -728,11 +776,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       style={{
                         display: 'block',
                         fontFamily: 'var(--font-sans)',
-                        fontSize: '11px',
+                        fontSize: '14px',
                         fontWeight: 700,
                         letterSpacing: '0.12em',
-                        textTransform: 'uppercase',
-                        color: 'rgba(8,8,8,0.55)',
+                        
+                        color: 'rgba(255,255,255,0.88)',
                         marginBottom: '6px',
                       }}
                     >
@@ -782,7 +830,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 </div>
                 <span
                   style={{
-                    fontSize: '12px',
+                    fontSize: '14px',
                     fontWeight: 600,
                     color: availableOnly ? 'var(--text)' : 'var(--text-tertiary)',
                     transition: 'color 160ms ease',
@@ -795,6 +843,19 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 </span>
               </button>
             </div>
+
+            {!firstAvailableDay && (
+              <div role="status" className="needs-state" style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '1rem 1.1rem', marginBottom: '1rem' }}>
+                <p style={{ margin: '0 0 0.75rem', fontSize: '16px', color: 'var(--text)', fontWeight: 600 }}>No game times in the next two weeks.</p>
+                <p style={{ margin: '0 0 0.9rem', fontSize: '16px', color: 'var(--text-secondary)' }}>Every time is taken or has already passed. Tell us and we&apos;ll let you know when more open.</p>
+                <a
+                  href={`mailto:masud@bookmypitch.uk?subject=${encodeURIComponent(`Tell me when times open at ${venueName}`)}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', minHeight: '44px', padding: '0 1.1rem', borderRadius: 'var(--radius-lg)', background: 'var(--green)', color: '#FFFFFF', fontWeight: 600, textDecoration: 'none' }}
+                >
+                  Tell me when times open
+                </a>
+              </div>
+            )}
 
             {/* Date row — horizontal scroll on mobile, arrow nav on desktop */}
             <div className="date-picker-wrap">
@@ -845,9 +906,9 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       style={{
                         fontSize: '9px',
                         fontWeight: 700,
-                        textTransform: 'uppercase',
+                        
                         letterSpacing: '0.1em',
-                        color: active ? 'rgba(8,8,8,0.5)' : 'var(--text-tertiary)',
+                        color: active ? 'rgba(255,255,255,0.88)' : 'var(--text-tertiary)',
                         lineHeight: 1,
                         fontFamily: 'var(--font-sans)',
                       }}
@@ -870,9 +931,9 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       style={{
                         fontSize: '9px',
                         fontWeight: 600,
-                        textTransform: 'uppercase',
+                        
                         letterSpacing: '0.08em',
-                        color: active ? 'rgba(8,8,8,0.4)' : 'var(--text-tertiary)',
+                        color: active ? 'rgba(255,255,255,0.88)' : 'var(--text-tertiary)',
                         lineHeight: 1,
                         fontFamily: 'var(--font-sans)',
                       }}
@@ -942,7 +1003,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       : isPeak ? 'Peak' : 'Off-peak'
 
                   const subtextColor = isSelected
-                    ? 'rgba(8,8,8,0.45)'
+                    ? 'rgba(255,255,255,0.88)'
                     : hasUserSession
                       ? 'var(--green)'
                       : booked
@@ -954,25 +1015,25 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   const pillBorderColor = isSelected
                     ? 'transparent'
                     : hasUserSession
-                      ? 'rgba(198,241,53,0.4)'
+                      ? 'rgba(20,80,45,0.4)'
                       : booked
                         ? 'var(--border-strong)'
                         : isPeak
-                          ? 'rgba(255,184,0,0.22)'
+                          ? 'rgba(138,90,0,0.22)'
                           : 'var(--border)'
 
                   const pillBg = isSelected
                     ? 'var(--green)'
                     : hasUserSession
-                      ? 'rgba(198,241,53,0.06)'
+                      ? 'rgba(20,80,45,0.06)'
                       : booked
-                        ? 'repeating-linear-gradient(135deg, var(--surface2), var(--surface2) 6px, rgba(255,255,255,0.035) 6px, rgba(255,255,255,0.035) 12px)'
+                        ? 'repeating-linear-gradient(135deg, var(--surface2), var(--surface2) 6px, rgba(31,36,32,0.035) 6px, rgba(31,36,32,0.035) 12px)'
                         : 'var(--surface)'
 
                   const pillShadow = isSelected
                     ? 'var(--shadow-glow)'
                     : hasUserSession
-                      ? '0 0 0 1.5px rgba(198,241,53,0.4), 0 4px 20px rgba(198,241,53,0.08)'
+                      ? '0 0 0 1.5px rgba(20,80,45,0.4), 0 4px 20px rgba(20,80,45,0.08)'
                       : 'var(--shadow-card)'
 
                   return (
@@ -1025,10 +1086,10 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       </span>
                       <span
                         style={{
-                          fontSize: '10px',
+                          fontSize: '14px',
                           fontWeight: 700,
                           letterSpacing: '0.06em',
-                          textTransform: 'uppercase',
+                          
                           lineHeight: 1,
                           color: subtextColor,
                           fontFamily: 'var(--font-sans)',
@@ -1067,7 +1128,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       background: isSelectedDuration ? 'var(--green)' : 'var(--surface3)',
                       color: inactive || !available ? 'var(--text-tertiary)' : isSelectedDuration ? 'var(--black)' : 'var(--text)',
                       fontFamily: 'var(--font-display)',
-                      fontSize: '13px',
+                      fontSize: '14px',
                       fontWeight: 700,
                       letterSpacing: '-0.01em',
                       lineHeight: 1.5,
@@ -1082,7 +1143,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
               })}
             </div>
             {!selectedTemplate && (
-              <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '6px' }}>
+              <div style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginTop: '6px' }}>
                 Select a start time first
               </div>
             )}
@@ -1095,7 +1156,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 style={{
                   background: 'var(--surface)',
                   border: '1px solid',
-                  borderColor: selectedTemplate.type === 'peak' ? 'rgba(255,184,0,0.22)' : 'var(--border)',
+                  borderColor: selectedTemplate.type === 'peak' ? 'rgba(138,90,0,0.22)' : 'var(--border)',
                   borderRadius: 'var(--radius-xl)',
                   overflow: 'hidden',
                   boxShadow: 'var(--shadow-card)',
@@ -1103,7 +1164,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
               >
                 {/* Slot header */}
                 <div style={{ padding: '20px 20px 16px', borderBottom: userSlotSessionsSelected.length > 0 ? '1px solid var(--border-subtle)' : 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                     <div>
                       <div
                         style={{
@@ -1125,12 +1186,12 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                         <Badge variant={selectedTemplate.type === 'peak' ? 'peak' : selectedTemplate.type === 'weekend' ? 'weekend' : 'offpeak'}>
                           {typeLabelSelected}
                         </Badge>
-                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 400 }}>
+                        <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 400 }}>
                           {venueName}
                         </span>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ textAlign: 'left' }}>
                       <div
                         style={{
                           fontFamily: 'var(--font-display)',
@@ -1142,11 +1203,22 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                           fontVariantNumeric: 'tabular-nums',
                         }}
                       >
-                        £{perPlayerPriceSelected}
+                        {perPlayerBreakdown(Number(perPlayerPriceSelected)).total}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 400, marginTop: '4px' }}>per player</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 400, marginTop: '4px' }}>a player, fees included</div>
                     </div>
                   </div>
+                </div>
+
+                {/* Full price per player, before the card step */}
+                <div
+                  data-testid="price-breakdown"
+                  style={{ padding: '0 20px 16px', fontSize: '16px', color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}
+                >
+                  {(() => {
+                    const b = perPlayerBreakdown(Number(perPlayerPriceSelected))
+                    return <>Pitch {b.pitch} + booking fee {b.platform} + payment fee {b.payment} = <strong style={{ color: 'var(--text)' }}>{b.total}</strong> a player</>
+                  })()}
                 </div>
 
                 {/* User's own sessions */}
@@ -1169,17 +1241,17 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1.25rem', borderBottom: showDivider ? '1px solid var(--border-subtle)' : 'none' }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
-                        <span style={{ fontSize: '13px', flexShrink: 0 }}>{icon}</span>
+                        <span style={{ fontSize: '14px', flexShrink: 0 }}>{icon}</span>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: isOrganiser ? 'var(--green)' : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: isOrganiser ? 'var(--green)' : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {nameLabel}
                           </div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 500 }}>{subtext}</div>
+                          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 500 }}>{subtext}</div>
                         </div>
                       </div>
                       <span onClick={e => e.stopPropagation()} style={{ flexShrink: 0, marginLeft: '12px' }}>
                         <Link href={`/session/${s.id}`} style={{ textDecoration: 'none' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--green)', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>View game →</span>
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--green)', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>View game →</span>
                         </Link>
                       </span>
                     </div>
@@ -1205,6 +1277,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                                 onClick={() => {
                                   if (!active) {
                                     setSelectedPitchId(pitch.id)
+                                    const firstDay = findFirstAvailableDay(sessions, dbSlots, pitch.id, schedule, minBookingNoticeMinutes)
+                                    if (firstDay) setSelectedDate(firstDay)
                                     setSelectedTime(null)
                                     setSelectedDuration(60)
                                   }
@@ -1214,11 +1288,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                   <span className={`court-radio${active ? ' court-radio-active' : ''}`} />
                                   <div style={{ textAlign: 'left' }}>
-                                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', textTransform: 'uppercase' }}>
+                                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)',  }}>
                                       {pitch.format}
                                     </div>
-                                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '2px' }}>
-                                      {pitch.surface}
+                                    <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '2px' }}>
+                                      {surfaceLabel(pitch.surface)}
                                     </div>
                                   </div>
                                 </div>
@@ -1233,7 +1307,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                          time + duration (+ court) combination is selected ── */}
                     <div style={{ marginBottom: '1.25rem' }}>
                       {fillingFastSelected && !!createHref && (
-                        <div style={{ fontSize: '11px', color: 'var(--amber)', fontWeight: 600, marginBottom: '8px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                        <div style={{ fontSize: '14px', color: 'var(--amber)', fontWeight: 600, marginBottom: '8px', letterSpacing: '0.04em',  }}>
                           Filling fast
                         </div>
                       )}
@@ -1291,16 +1365,18 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                         paddingTop: '1.25rem',
                       }}
                     >
-                      <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                         <CheckIcon /> Secure checkout via Stripe
                       </li>
-                      <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                      <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
                         <CheckIcon /> Only charged once your game is full
                       </li>
-                      <li style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                        <CheckIcon /> Refunded automatically if anything goes wrong
-                      </li>
                     </ul>
+                    <p style={{ margin: '1rem 0 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                      You save a card to hold your place and are charged only when the game fills. By continuing you agree to the{' '}
+                      <Link href="/terms" style={{ color: 'var(--green)', fontWeight: 600 }}>terms</Link>.
+                      Run by Masud Rahman, Admin. <a href="mailto:masud@bookmypitch.uk" style={{ color: 'var(--green)', fontWeight: 600 }}>masud@bookmypitch.uk</a>.
+                    </p>
 
                   </div>
                 </div>

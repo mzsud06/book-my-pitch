@@ -109,7 +109,7 @@ function pillStyle(color: string, bg: string, border: string): CSSProperties {
     alignItems: 'center',
     gap: '5px',
     fontFamily: 'var(--font-sans)',
-    fontSize: '11px',
+    fontSize: '14px',
     fontWeight: 700,
     padding: '4px 10px',
     borderRadius: 'var(--radius-full)',
@@ -125,12 +125,12 @@ function pillStyle(color: string, bg: string, border: string): CSSProperties {
 // Status badge — Filling (amber) / Confirmed (lime) / Cancelled (grey), driven directly by c.status
 function statusPillInfo(status: string): { label: string; color: string; bg: string; border: string } {
   if (status === 'confirmed') {
-    return { label: 'Confirmed', color: 'var(--green)', bg: 'rgba(198,241,53,0.1)', border: 'rgba(198,241,53,0.2)' }
+    return { label: 'Confirmed', color: 'var(--green)', bg: 'rgba(20,80,45,0.1)', border: 'rgba(20,80,45,0.2)' }
   }
   if (status === 'cancelled') {
-    return { label: 'Cancelled', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' }
+    return { label: 'Cancelled', color: 'var(--text-secondary)', bg: 'rgba(31,36,32,0.06)', border: 'rgba(31,36,32,0.12)' }
   }
-  return { label: 'Filling', color: 'var(--amber)', bg: 'rgba(255,184,0,0.1)', border: 'rgba(255,184,0,0.2)' }
+  return { label: 'Filling', color: 'var(--amber)', bg: 'rgba(138,90,0,0.1)', border: 'rgba(138,90,0,0.2)' }
 }
 
 // Slot type badge — Peak / Off-peak / Weekend
@@ -169,10 +169,10 @@ function SectionLabel({
   return (
     <div
       style={{
-        fontSize: '10px',
+        fontSize: '14px',
         fontWeight: 700,
         letterSpacing: '0.16em',
-        textTransform: 'uppercase',
+        
         fontFamily: 'var(--font-sans)',
         color,
         marginBottom: '1rem',
@@ -203,7 +203,7 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
         style={{
           background: 'var(--surface)',
           borderRadius: '16px',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(31,36,32,0.06)',
           padding: '1.2rem',
           cursor: 'pointer',
           opacity: dimmed ? 0.6 : 1,
@@ -219,7 +219,7 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
               display: 'inline-flex', alignItems: 'center', gap: '5px',
               padding: '4px 10px', borderRadius: 'var(--radius-full)',
               background: 'var(--green)', color: 'var(--black)',
-              fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
+              fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700,
               letterSpacing: '0.02em',
             }}
           >
@@ -237,14 +237,14 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
           {c.organiserName ? `${c.organiserName}'s game` : "Public game"}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px' }}>
           <ClockIcon /> {formatDate(c.date)} · {c.startTime}–{c.endTime}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: reason ? '4px' : '0.9rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: reason ? '4px' : '0.9rem' }}>
           <PinIcon /> {c.venueName}
         </div>
         {reason && (
-          <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: '0.9rem' }}>
+          <div style={{ fontSize: '14px', color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: '0.9rem' }}>
             {reason}
           </div>
         )}
@@ -254,8 +254,8 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
             <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>
             {gameTypeBadge && <Badge variant={gameTypeBadge.variant}>{gameTypeBadge.label}</Badge>}
           </div>
-          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
-            £{perPlayer} <span style={{ fontWeight: 600, opacity: 0.85, fontSize: '11px' }}>per player</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700, color: 'var(--green)' }}>
+            £{perPlayer} <span style={{ fontWeight: 600, opacity: 0.85, fontSize: '14px' }}>per player</span>
           </span>
         </div>
       </div>
@@ -368,7 +368,7 @@ export default function MyBookingsClient() {
               key={i}
               style={{
                 background: 'var(--surface)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(31,36,32,0.06)',
                 borderRadius: '16px',
                 padding: '1.2rem',
               }}
@@ -403,12 +403,12 @@ export default function MyBookingsClient() {
             display: 'flex',
             alignItems: 'flex-start',
             gap: '10px',
-            background: 'rgba(198,241,53,0.04)',
-            border: '1px solid rgba(198,241,53,0.12)',
+            background: 'rgba(20,80,45,0.04)',
+            border: '1px solid rgba(20,80,45,0.12)',
             borderRadius: '12px',
             padding: '0.9rem 1.1rem',
             marginBottom: '1.5rem',
-            fontSize: '13px',
+            fontSize: '14px',
             color: 'var(--text-secondary)',
             fontWeight: 500,
             lineHeight: 1.6,
@@ -435,8 +435,8 @@ export default function MyBookingsClient() {
             style={{
               width: '72px',
               height: '72px',
-              background: 'rgba(198,241,53,0.08)',
-              border: '1px solid rgba(198,241,53,0.15)',
+              background: 'rgba(20,80,45,0.08)',
+              border: '1px solid rgba(20,80,45,0.15)',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
