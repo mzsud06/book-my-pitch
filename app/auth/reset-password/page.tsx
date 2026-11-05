@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--radius-xl)',
             padding: 'clamp(1.5rem, 4vw, 2rem)',
-            boxShadow: '0 24px 64px rgba(31,36,32,0.14), 0 0 0 1px rgba(31,36,32,0.05)',
+            boxShadow: '0 24px 64px rgba(11,17,48,0.14), 0 0 0 1px rgba(11,17,48,0.05)',
           }}
         >
           <h1
@@ -176,8 +176,8 @@ export default function ResetPasswordPage() {
             {error && (
               <div
                 style={{
-                  background: 'rgba(179,38,30,0.07)',
-                  border: '1px solid rgba(179,38,30,0.18)',
+                  background: 'rgba(210,50,31,0.07)',
+                  border: '1px solid rgba(210,50,31,0.18)',
                   borderRadius: 'var(--radius-md)',
                   padding: '0.875rem 1rem',
                   fontSize: '14px',

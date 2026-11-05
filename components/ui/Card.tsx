@@ -15,7 +15,7 @@ export function Card({ children, hover = false, className = '', style, as: Tag =
       className={`bmp-card${hover ? ' bmp-card-hover' : ''} ${className}`}
       style={{
         background: 'var(--surface)',
-        border: '1px solid var(--border)',
+        border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--radius-xl)',
         boxShadow: 'var(--shadow-card)',
         ...style,

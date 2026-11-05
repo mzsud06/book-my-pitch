@@ -220,7 +220,7 @@ function CardStep({
             fontWeight: 700,
             color: 'var(--text)',
             paddingTop: '8px',
-            borderTop: '1px solid rgba(31,36,32,0.06)',
+            borderTop: '1px solid rgba(11,17,48,0.06)',
             marginTop: '2px',
           }}
         >
@@ -232,8 +232,8 @@ function CardStep({
       {/* Prominent "not charged today" banner — sits directly above the card form */}
       <div
         style={{
-          background: 'rgba(20,80,45,0.08)',
-          border: '1px solid rgba(20,80,45,0.25)',
+          background: 'rgba(31,59,255,0.08)',
+          border: '1px solid rgba(31,59,255,0.25)',
           borderRadius: 'var(--radius-lg)',
           padding: '1rem 1.2rem',
         }}
@@ -267,8 +267,8 @@ function CardStep({
       {submitError && (
         <div
           style={{
-            background: 'rgba(179,38,30,0.08)',
-            border: '1px solid rgba(179,38,30,0.2)',
+            background: 'rgba(210,50,31,0.08)',
+            border: '1px solid rgba(210,50,31,0.2)',
             borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1rem',
             fontSize: '14px',
@@ -409,10 +409,10 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
   const appearance = {
     theme: 'stripe' as const,
     variables: {
-      colorPrimary: '#14502D',
-      colorBackground: '#FFFDF8',
-      colorText: '#1F2420',
-      colorDanger: '#B3261E',
+      colorPrimary: '#1F3BFF',
+      colorBackground: '#FFFFFF',
+      colorText: '#0B1130',
+      colorDanger: '#D2321F',
       fontFamily: 'Figtree Variable, system-ui, sans-serif',
       borderRadius: '12px',
     },
@@ -423,8 +423,8 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
         <div
           style={{
-            background: 'rgba(179,38,30,0.08)',
-            border: '1px solid rgba(179,38,30,0.2)',
+            background: 'rgba(210,50,31,0.08)',
+            border: '1px solid rgba(210,50,31,0.2)',
             borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1rem',
             fontSize: '14px',
@@ -458,8 +458,8 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
         <div
           style={{
-            background: 'rgba(179,38,30,0.08)',
-            border: '1px solid rgba(179,38,30,0.2)',
+            background: 'rgba(210,50,31,0.08)',
+            border: '1px solid rgba(210,50,31,0.2)',
             borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1rem',
             fontSize: '14px',
@@ -555,8 +555,8 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
       {formError && (
         <div
           style={{
-            background: 'rgba(179,38,30,0.08)',
-            border: '1px solid rgba(179,38,30,0.2)',
+            background: 'rgba(210,50,31,0.08)',
+            border: '1px solid rgba(210,50,31,0.2)',
             borderRadius: 'var(--radius-md)',
             padding: '0.85rem 1rem',
             fontSize: '14px',

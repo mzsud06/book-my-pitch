@@ -63,8 +63,8 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
         fontWeight: 600,
         fontFamily: 'var(--font-sans)',
         cursor: 'pointer',
-        border: active ? '1px solid rgba(20,80,45,0.4)' : '1px solid var(--border)',
-        background: active ? 'rgba(20,80,45,0.1)' : 'var(--surface2)',
+        border: active ? '1px solid rgba(31,59,255,0.4)' : '1px solid var(--border)',
+        background: active ? 'rgba(31,59,255,0.1)' : 'var(--surface2)',
         color: active ? 'var(--green)' : 'var(--text-secondary)',
       }}
     >
@@ -178,7 +178,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                 right: '-10%',
                 width: '520px',
                 height: '520px',
-                background: 'radial-gradient(circle, rgba(20,80,45,0.16) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(31,59,255,0.16) 0%, transparent 70%)',
                 pointerEvents: 'none',
               }}
             />
@@ -251,8 +251,8 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                 fontWeight: 600,
                 fontSize: '14px',
                 cursor: 'pointer',
-                border: filterOpen || hasActiveFilters ? '1px solid rgba(20,80,45,0.4)' : '1px solid var(--border)',
-                background: filterOpen || hasActiveFilters ? 'rgba(20,80,45,0.1)' : 'var(--surface2)',
+                border: filterOpen || hasActiveFilters ? '1px solid rgba(31,59,255,0.4)' : '1px solid var(--border)',
+                background: filterOpen || hasActiveFilters ? 'rgba(31,59,255,0.1)' : 'var(--surface2)',
                 color: filterOpen || hasActiveFilters ? 'var(--green)' : 'var(--text)',
               }}
             >

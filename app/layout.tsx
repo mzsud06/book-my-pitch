@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import '@fontsource-variable/fraunces';
+import '@fontsource-variable/archivo/wdth.css';
 import '@fontsource-variable/figtree';
 import CookieNotice from '@/components/CookieNotice';
 import "./globals.css";

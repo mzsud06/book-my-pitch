@@ -1,12 +1,16 @@
 import type { ReactNode, ButtonHTMLAttributes } from 'react'
 
-type Variant = 'primary' | 'secondary' | 'ghost'
+// primary = chartreuse accent (main action, one per view)
+// brand   = cobalt (secondary strong actions: Join game, Sign up)
+// secondary = white outline, ghost = text only
+type Variant = 'primary' | 'brand' | 'secondary' | 'ghost'
 type Size = 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
   size?: Size
   arrow?: boolean
+  block?: boolean
   children: ReactNode
 }
 
@@ -14,58 +18,39 @@ const base: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  gap: '6px',
+  gap: '8px',
   fontFamily: 'var(--font-sans)',
-  fontWeight: 600,
+  fontWeight: 700,
   lineHeight: 1,
   whiteSpace: 'nowrap',
   cursor: 'pointer',
-  border: 'none',
+  border: '1px solid transparent',
   borderRadius: 'var(--radius-lg)',
-  transition: 'background 160ms ease-out, color 160ms ease-out, border-color 160ms ease-out, box-shadow 160ms ease-out, transform 160ms ease-out',
   userSelect: 'none',
 }
 
 const variants: Record<Variant, React.CSSProperties> = {
-  primary: {
-    background: 'var(--green)',
-    color: '#FFFFFF',
-  },
-  secondary: {
-    background: 'var(--surface2)',
-    color: 'var(--text)',
-    border: '1px solid var(--border)',
-  },
-  ghost: {
-    background: 'transparent',
-    color: 'var(--text-secondary)',
-    border: '1px solid transparent',
-  },
+  primary: { background: 'var(--acid)', color: 'var(--ink)' },
+  brand: { background: 'var(--green)', color: '#FFFFFF' },
+  secondary: { background: 'var(--surface)', color: 'var(--text)', borderColor: 'var(--border-strong)' },
+  ghost: { background: 'transparent', color: 'var(--text-secondary)' },
 }
 
 const sizes: Record<Size, React.CSSProperties> = {
-  sm: { fontSize: '15px', padding: '0.5rem 1rem', minHeight: '44px' },
-  md: { fontSize: '16px', padding: '0.625rem 1.25rem', minHeight: '44px' },
-  lg: { fontSize: '17px', padding: '0.8rem 1.6rem', minHeight: '52px' },
+  sm: { fontSize: '15px', padding: '0 1.1rem', minHeight: '44px' },
+  md: { fontSize: '16px', padding: '0 1.35rem', minHeight: '48px' },
+  lg: { fontSize: '17px', padding: '0 1.75rem', minHeight: '56px' },
 }
 
-export function Button({
-  variant = 'primary',
-  size = 'md',
-  arrow = false,
-  children,
-  style,
-  className,
-  ...props
-}: ButtonProps) {
+export function Button({ variant = 'primary', size = 'md', arrow = false, block = false, children, style, className, ...props }: ButtonProps) {
   return (
     <button
       className={`bmp-btn bmp-btn-${variant} ${className ?? ''}`}
-      style={{ ...base, ...variants[variant], ...sizes[size], ...style }}
+      style={{ ...base, ...variants[variant], ...sizes[size], ...(block ? { width: '100%' } : {}), ...style }}
       {...props}
     >
       {children}
-      {arrow && <span aria-hidden="true" style={{ marginLeft: '2px' }}>→</span>}
+      {arrow && <span aria-hidden="true">→</span>}
     </button>
   )
 }

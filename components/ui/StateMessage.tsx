@@ -15,7 +15,7 @@ export function StateMessage({ title, body, action, tone = 'neutral', role }: St
       role={role ?? (tone === 'error' ? 'alert' : 'status')}
       style={{
         background: 'var(--surface)',
-        border: `1px solid ${tone === 'error' ? 'rgba(179,38,30,0.35)' : 'var(--border)'}`,
+        border: `1px solid ${tone === 'error' ? 'rgba(210,50,31,0.35)' : 'var(--border)'}`,
         borderRadius: 'var(--radius-xl)',
         padding: 'clamp(1.75rem, 5vw, 3rem) 1.5rem',
         textAlign: 'center',

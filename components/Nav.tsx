@@ -322,7 +322,7 @@ export default function Nav() {
                         justifyContent: 'center',
                         fontFamily: 'var(--font-sans)',
                         lineHeight: 1,
-                        border: '2px solid rgba(246,241,231,0.96)',
+                        border: '2px solid rgba(245,247,255,0.96)',
                       }}
                     >
                       {unreadCount > 9 ? '9+' : unreadCount}
@@ -344,7 +344,7 @@ export default function Nav() {
                       maxHeight: '360px',
                       overflowY: 'auto',
                       zIndex: 400,
-                      boxShadow: '0 16px 48px rgba(31,36,32,0.14), 0 0 0 1px rgba(31,36,32,0.04)',
+                      boxShadow: '0 16px 48px rgba(11,17,48,0.14), 0 0 0 1px rgba(11,17,48,0.04)',
                     }}
                   >
                     <div
@@ -383,7 +383,7 @@ export default function Nav() {
                             borderRadius: '10px',
                             cursor: 'pointer',
                             marginBottom: '2px',
-                            background: n.read ? 'transparent' : 'rgba(20,80,45,0.06)',
+                            background: n.read ? 'transparent' : 'rgba(31,59,255,0.06)',
                           }}
                         >
                           <div
@@ -473,7 +473,7 @@ export default function Nav() {
                     padding: '6px',
                     minWidth: '236px',
                     zIndex: 400,
-                    boxShadow: '0 16px 48px rgba(31,36,32,0.14), 0 0 0 1px rgba(31,36,32,0.04)',
+                    boxShadow: '0 16px 48px rgba(11,17,48,0.14), 0 0 0 1px rgba(11,17,48,0.04)',
                   }}
                 >
                   {/* Profile header */}

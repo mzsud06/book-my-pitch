@@ -184,7 +184,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           rowGap: '8px',
           borderBottom: '1px solid var(--border)',
           borderTop: '3px solid var(--green)',
-          background: 'rgba(246,241,231,0.97)',
+          background: 'rgba(245,247,255,0.97)',
           backdropFilter: 'blur(28px)',
           position: 'sticky',
           top: 0,
@@ -234,8 +234,8 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
               onClick={handleFinishOnboarding}
               disabled={onboardingLoading}
               style={{
-                background: 'rgba(179,38,30,0.08)',
-                border: '1px solid rgba(179,38,30,0.2)',
+                background: 'rgba(210,50,31,0.08)',
+                border: '1px solid rgba(210,50,31,0.2)',
                 borderRadius: '8px',
                 padding: '0.5rem 0.9rem',
                 fontSize: '14px',
@@ -300,8 +300,8 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
       {onboardingError && (
         <div
           style={{
-            background: 'rgba(179,38,30,0.08)',
-            borderBottom: '1px solid rgba(179,38,30,0.2)',
+            background: 'rgba(210,50,31,0.08)',
+            borderBottom: '1px solid rgba(210,50,31,0.2)',
             padding: '0.6rem 2rem',
             fontSize: '14px',
             color: 'var(--red)',
@@ -522,7 +522,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                     style={{
                       flex: 1,
                       height: '6px',
-                      background: 'rgba(31,36,32,0.06)',
+                      background: 'rgba(11,17,48,0.06)',
                       borderRadius: '100px',
                       overflow: 'hidden',
                     }}
@@ -534,7 +534,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                         background: fillPct >= 80 ? 'var(--green)' : fillPct >= 50 ? 'var(--amber)' : 'var(--muted)',
                         width: `${fillPct}%`,
                         transition: 'width 0.8s var(--ease-out)',
-                        boxShadow: fillPct >= 80 ? '0 0 8px rgba(20,80,45,0.4)' : 'none',
+                        boxShadow: fillPct >= 80 ? '0 0 8px rgba(31,59,255,0.4)' : 'none',
                       }}
                     />
                   </div>
@@ -608,7 +608,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                         padding: '0.85rem 1rem',
                         background: 'var(--surface2)',
                         borderRadius: '10px',
-                        border: '1px solid rgba(31,36,32,0.06)',
+                        border: '1px solid rgba(11,17,48,0.06)',
                       }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -633,7 +633,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                             style={{
                               flex: 1,
                               height: '4px',
-                              background: 'rgba(31,36,32,0.08)',
+                              background: 'rgba(11,17,48,0.08)',
                               borderRadius: '100px',
                               overflow: 'hidden',
                               maxWidth: '140px',

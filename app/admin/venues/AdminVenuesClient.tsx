@@ -100,7 +100,7 @@ export default function AdminVenuesClient({ venues: initial, ownerEmails }: Prop
       </div>
 
       {error && (
-        <div style={{ background: 'rgba(179,38,30,0.08)', border: '1px solid rgba(179,38,30,0.2)', borderRadius: '10px', padding: '0.85rem 1rem', fontSize: '14px', color: 'var(--red)', fontWeight: 600, marginBottom: '1.5rem' }}>
+        <div style={{ background: 'rgba(210,50,31,0.08)', border: '1px solid rgba(210,50,31,0.2)', borderRadius: '10px', padding: '0.85rem 1rem', fontSize: '14px', color: 'var(--red)', fontWeight: 600, marginBottom: '1.5rem' }}>
           {error}
         </div>
       )}

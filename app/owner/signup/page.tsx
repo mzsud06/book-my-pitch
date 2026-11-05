@@ -464,7 +464,7 @@ export default function OwnerSignupPage() {
           transform: 'translateX(-50%)',
           width: '600px',
           height: '400px',
-          background: 'radial-gradient(ellipse at center, rgba(20,80,45,0.04) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at center, rgba(31,59,255,0.04) 0%, transparent 70%)',
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -483,18 +483,18 @@ export default function OwnerSignupPage() {
         <Card
           className="anim-fade-up d-80"
           style={{
-            border: '1px solid rgba(31,36,32,0.09)',
+            border: '1px solid rgba(11,17,48,0.09)',
             borderTop: '2px solid var(--green)',
             padding: '2rem',
-            boxShadow: '0 8px 40px rgba(31,36,32,0.14), inset 0 1px 0 rgba(31,36,32,0.04)',
+            boxShadow: '0 8px 40px rgba(11,17,48,0.14), inset 0 1px 0 rgba(11,17,48,0.04)',
           }}
         >
           {stripeSetupPending ? (
             <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
               <div
                 style={{
-                  width: '64px', height: '64px', background: 'rgba(20,80,45,0.08)',
-                  border: '1px solid rgba(20,80,45,0.25)', borderRadius: '50%',
+                  width: '64px', height: '64px', background: 'rgba(31,59,255,0.08)',
+                  border: '1px solid rgba(31,59,255,0.25)', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '26px', margin: '0 auto 1.5rem', color: 'var(--green)',
                 }}
@@ -516,8 +516,8 @@ export default function OwnerSignupPage() {
             <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
               <div
                 style={{
-                  width: '64px', height: '64px', background: 'rgba(20,80,45,0.08)',
-                  border: '1px solid rgba(20,80,45,0.25)', borderRadius: '50%',
+                  width: '64px', height: '64px', background: 'rgba(31,59,255,0.08)',
+                  border: '1px solid rgba(31,59,255,0.25)', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '26px', margin: '0 auto 1.5rem', color: 'var(--green)',
                 }}
@@ -541,7 +541,7 @@ export default function OwnerSignupPage() {
                 <div
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '6px',
-                    background: 'rgba(20,80,45,0.08)', border: '1px solid rgba(20,80,45,0.16)',
+                    background: 'rgba(31,59,255,0.08)', border: '1px solid rgba(31,59,255,0.16)',
                     borderRadius: '6px', padding: '3px 10px', marginBottom: '1rem',
                   }}
                 >
@@ -764,7 +764,7 @@ export default function OwnerSignupPage() {
                           fontSize: '14px', fontWeight: 600, cursor: 'pointer',
                           padding: '0.5rem 0.85rem', borderRadius: 'var(--radius-full)',
                           border: active ? '1px solid var(--green)' : '1px solid var(--border)',
-                          background: active ? 'rgba(20,80,45,0.1)' : 'var(--surface2)',
+                          background: active ? 'rgba(31,59,255,0.1)' : 'var(--surface2)',
                           color: active ? 'var(--green)' : 'var(--muted)',
                         }}
                       >
@@ -871,7 +871,7 @@ export default function OwnerSignupPage() {
                 </button>
 
                 {error && (
-                  <div style={{ background: 'rgba(179,38,30,0.08)', border: '1px solid rgba(179,38,30,0.2)', borderRadius: '10px', padding: '0.85rem 1rem', fontSize: '14px', color: 'var(--red)', fontWeight: 600, lineHeight: 1.5 }}>
+                  <div style={{ background: 'rgba(210,50,31,0.08)', border: '1px solid rgba(210,50,31,0.2)', borderRadius: '10px', padding: '0.85rem 1rem', fontSize: '14px', color: 'var(--red)', fontWeight: 600, lineHeight: 1.5 }}>
                     {error}
                   </div>
                 )}

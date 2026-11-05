@@ -17,7 +17,7 @@ Headings: wide heavy all-caps (Archivo Expanded Black via @fontsource-variable/a
 White page, big rounded cards (20px), soft shadows, photo-top cards, pill nav links, pill badges. Real photos only; neutral placeholder when a venue has none.
 
 ## Steps
-- [ ] 1. Tokens in app/globals.css (keep legacy var names, remap values), fonts, Button (chartreuse primary, cobalt secondary), Badge, Card radius/shadow
+- [x] 1. Tokens in app/globals.css (keep legacy var names, remap values), fonts, Button (chartreuse primary, cobalt secondary), Badge, Card radius/shadow
 - [ ] 2. New logo: chartreuse ball mark on cobalt rounded square + "BOOKMYPITCH" wordmark (SVG in components/Logo.tsx, also favicon). Nav: logo left, pill links centre (Home, Games, Book a pitch, For venues), Sign in + Sign up pill right
 - [ ] 3. Homepage: cobalt hero panel with contour lines, pill badge, "READY TO PLAY?" with chartreuse word, one chartreuse button. Ticker strip (true lines only: Nobody pays till it's full, Share one link, Split the cost automatically, Floodlit pitches). Four feature cards (Book a pitch filled cobalt, Start a game, Join a game, For venues). Open games row (game cards, empty state card if none). Book a pitch row (venue cards, "From £X an hour"). For venues block, FAQ, footer. Screenshot at 375 and 1280 and send to Masud for OK before step 4
 - [ ] 4. GameCard component (photo top + price overlay + players pill, badges, title, date/time, venue, spots-remaining bar, Join button / greyed "Game full") used on homepage and /public-games (rename label to "Games")

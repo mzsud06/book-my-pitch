@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-type BadgeVariant = 'peak' | 'offpeak' | 'weekend' | 'neutral' | 'public'
+type BadgeVariant = 'peak' | 'offpeak' | 'weekend' | 'neutral' | 'public' | 'hot' | 'solid'
 
 interface BadgeProps {
   variant?: BadgeVariant
@@ -9,29 +9,31 @@ interface BadgeProps {
 }
 
 const styles: Record<BadgeVariant, React.CSSProperties> = {
+  hot: { background: 'var(--coral)', border: '1px solid var(--coral)', color: '#FFFFFF' },
+  solid: { background: 'var(--green)', border: '1px solid var(--green)', color: '#FFFFFF' },
   peak: {
     background: 'rgba(138,90,0,0.10)',
     border: '1px solid rgba(138,90,0,0.30)',
     color: 'var(--amber)',
   },
   offpeak: {
-    background: 'rgba(20,80,45,0.08)',
-    border: '1px solid rgba(20,80,45,0.30)',
+    background: 'rgba(31,59,255,0.08)',
+    border: '1px solid rgba(31,59,255,0.30)',
     color: 'var(--green)',
   },
   weekend: {
-    background: 'rgba(31,36,32,0.06)',
+    background: 'rgba(11,17,48,0.06)',
     border: '1px solid var(--border-strong)',
     color: 'var(--text)',
   },
   neutral: {
-    background: 'rgba(31,36,32,0.06)',
+    background: 'rgba(11,17,48,0.06)',
     border: '1px solid var(--border)',
     color: 'var(--text-secondary)',
   },
   public: {
-    background: 'rgba(20,80,45,0.12)',
-    border: '1px solid rgba(20,80,45,0.3)',
+    background: 'rgba(31,59,255,0.12)',
+    border: '1px solid rgba(31,59,255,0.3)',
     color: 'var(--green)',
   },
 }
@@ -40,11 +42,11 @@ const base: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '5px',
-  padding: '3px 10px',
+  padding: '4px 11px',
   borderRadius: 'var(--radius-full)',
   fontSize: '14px',
-  fontWeight: 600,
-  letterSpacing: '0.02em',
+  fontWeight: 700,
+  letterSpacing: '0',
   lineHeight: 1.5,
   fontFamily: 'var(--font-sans)',
 }

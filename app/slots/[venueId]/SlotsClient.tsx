@@ -728,7 +728,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                               <div style={{
                                 display: 'inline-flex', alignItems: 'baseline', gap: '4px',
                                 padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                                background: 'rgba(31,36,32,0.05)', border: '1px solid rgba(31,36,32,0.06)',
+                                background: 'rgba(11,17,48,0.05)', border: '1px solid rgba(11,17,48,0.06)',
                               }}>
                                 <span style={{ fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 700, color: 'var(--green)' }}>
                                   £{perPlayer}
@@ -1015,7 +1015,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   const pillBorderColor = isSelected
                     ? 'transparent'
                     : hasUserSession
-                      ? 'rgba(20,80,45,0.4)'
+                      ? 'rgba(31,59,255,0.4)'
                       : booked
                         ? 'var(--border-strong)'
                         : isPeak
@@ -1025,15 +1025,15 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   const pillBg = isSelected
                     ? 'var(--green)'
                     : hasUserSession
-                      ? 'rgba(20,80,45,0.06)'
+                      ? 'rgba(31,59,255,0.06)'
                       : booked
-                        ? 'repeating-linear-gradient(135deg, var(--surface2), var(--surface2) 6px, rgba(31,36,32,0.035) 6px, rgba(31,36,32,0.035) 12px)'
+                        ? 'repeating-linear-gradient(135deg, var(--surface2), var(--surface2) 6px, rgba(11,17,48,0.035) 6px, rgba(11,17,48,0.035) 12px)'
                         : 'var(--surface)'
 
                   const pillShadow = isSelected
                     ? 'var(--shadow-glow)'
                     : hasUserSession
-                      ? '0 0 0 1.5px rgba(20,80,45,0.4), 0 4px 20px rgba(20,80,45,0.08)'
+                      ? '0 0 0 1.5px rgba(31,59,255,0.4), 0 4px 20px rgba(31,59,255,0.08)'
                       : 'var(--shadow-card)'
 
                   return (

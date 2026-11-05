@@ -119,7 +119,7 @@ function FaqItem({ q, a, index, isLast }: { q: string; a: string; index: number;
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: '50%',
-            background: open ? 'rgba(20,80,45,0.10)' : 'rgba(31,36,32,0.04)',
+            background: open ? 'rgba(31,59,255,0.10)' : 'rgba(11,17,48,0.04)',
             color: open ? 'var(--green)' : 'var(--text-tertiary)',
             transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
             transition: 'transform 300ms var(--ease-out), color 200ms ease, background 200ms ease',

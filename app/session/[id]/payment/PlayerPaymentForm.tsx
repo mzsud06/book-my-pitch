@@ -154,13 +154,13 @@ function CardForm({
         style={{
           display: 'flex',
           gap: '10px',
-          background: 'rgba(20,80,45,0.05)',
-          border: '1px solid rgba(20,80,45,0.15)',
+          background: 'rgba(31,59,255,0.05)',
+          border: '1px solid rgba(31,59,255,0.15)',
           borderRadius: '12px',
           padding: '1rem 1.1rem',
           marginBottom: '1.25rem',
           fontSize: '14px',
-          color: 'rgba(20,80,45,0.7)',
+          color: 'rgba(31,59,255,0.7)',
           lineHeight: 1.6,
           alignItems: 'flex-start',
         }}
@@ -174,8 +174,8 @@ function CardForm({
 
       <div
         style={{
-          background: 'linear-gradient(145deg, rgba(20,80,45,0.04) 0%, #0f0f0f 100%)',
-          border: '1px solid rgba(20,80,45,0.12)',
+          background: 'linear-gradient(145deg, rgba(31,59,255,0.04) 0%, #0f0f0f 100%)',
+          border: '1px solid rgba(31,59,255,0.12)',
           borderRadius: '16px',
           padding: '1.4rem 1.5rem',
           marginBottom: '1.25rem',
@@ -211,7 +211,7 @@ function CardForm({
             fontSize: '14px',
             marginTop: '12px',
             paddingTop: '12px',
-            borderTop: '1px solid rgba(20,80,45,0.12)',
+            borderTop: '1px solid rgba(31,59,255,0.12)',
           }}
         >
           <span style={{ fontWeight: 600, color: 'var(--muted)' }}>Total if confirmed</span>
@@ -255,8 +255,8 @@ function CardForm({
       {submitError && (
         <div
           style={{
-            background: 'rgba(179,38,30,0.08)',
-            border: '1px solid rgba(179,38,30,0.2)',
+            background: 'rgba(210,50,31,0.08)',
+            border: '1px solid rgba(210,50,31,0.2)',
             borderRadius: '10px',
             padding: '0.85rem 1rem',
             marginBottom: '1rem',
@@ -428,10 +428,10 @@ export default function PlayerPaymentForm({ sessionId, slot, hasRival, isLoggedI
   const appearance = {
     theme: 'stripe' as const,
     variables: {
-      colorPrimary: '#14502D',
-      colorBackground: '#FFFDF8',
-      colorText: '#1F2420',
-      colorDanger: '#B3261E',
+      colorPrimary: '#1F3BFF',
+      colorBackground: '#FFFFFF',
+      colorText: '#0B1130',
+      colorDanger: '#D2321F',
       fontFamily: 'Figtree Variable, system-ui, sans-serif',
       borderRadius: '12px',
     },
@@ -459,8 +459,8 @@ export default function PlayerPaymentForm({ sessionId, slot, hasRival, isLoggedI
       <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem' }}>
         <div
           style={{
-            background: 'rgba(179,38,30,0.08)',
-            border: '1px solid rgba(179,38,30,0.2)',
+            background: 'rgba(210,50,31,0.08)',
+            border: '1px solid rgba(210,50,31,0.2)',
             borderRadius: '12px',
             padding: '1.25rem',
             marginBottom: '1.5rem',
@@ -524,8 +524,8 @@ export default function PlayerPaymentForm({ sessionId, slot, hasRival, isLoggedI
       {paymentError && (
         <div
           style={{
-            background: 'rgba(179,38,30,0.08)',
-            border: '1px solid rgba(179,38,30,0.2)',
+            background: 'rgba(210,50,31,0.08)',
+            border: '1px solid rgba(210,50,31,0.2)',
             borderRadius: '10px',
             padding: '0.85rem 1rem',
             marginBottom: '1rem',

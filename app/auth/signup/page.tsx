@@ -116,8 +116,8 @@ function SignupForm() {
   })
 
   const errorPanel: React.CSSProperties = {
-    background: 'rgba(179,38,30,0.07)',
-    border: '1px solid rgba(179,38,30,0.18)',
+    background: 'rgba(210,50,31,0.07)',
+    border: '1px solid rgba(210,50,31,0.18)',
     borderRadius: 'var(--radius-md)',
     padding: '0.875rem 1rem',
     fontSize: '14px',
@@ -180,7 +180,7 @@ function SignupForm() {
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--radius-xl)',
             padding: 'clamp(1.5rem, 4vw, 2rem)',
-            boxShadow: '0 24px 64px rgba(31,36,32,0.14), 0 0 0 1px rgba(31,36,32,0.05)',
+            boxShadow: '0 24px 64px rgba(11,17,48,0.14), 0 0 0 1px rgba(11,17,48,0.05)',
           }}
         >
 
@@ -192,8 +192,8 @@ function SignupForm() {
                 style={{
                   width: '64px',
                   height: '64px',
-                  background: 'rgba(20,80,45,0.08)',
-                  border: '1px solid rgba(20,80,45,0.25)',
+                  background: 'rgba(31,59,255,0.08)',
+                  border: '1px solid rgba(31,59,255,0.25)',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
