@@ -44,7 +44,7 @@ export function Footer() {
         <div style={columnStyle}>
           <div style={columnLabelStyle}>Players</div>
           <Link href="/slots" style={linkStyle}>Book a pitch</Link>
-          <Link href="/public-games" style={linkStyle}>Public games</Link>
+          <Link href="/public-games" style={linkStyle}>Games</Link>
           <Link href="/#faq" style={linkStyle}>Questions</Link>
         </div>
 
