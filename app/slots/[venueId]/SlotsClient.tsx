@@ -465,11 +465,11 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
           <nav
             aria-label="Breadcrumb"
             className="anim-fade-up"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '1.5rem', fontSize: '14px', fontWeight: 500 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.5rem', fontSize: '16px', fontWeight: 500 }}
           >
-            <Link href="/" style={{ color: 'var(--text-tertiary)', textDecoration: 'none' }}>Home</Link>
+            <Link href="/" style={{ color: 'var(--text-tertiary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>Home</Link>
             <span style={{ color: 'var(--text-tertiary)' }}>/</span>
-            <Link href="/slots" style={{ color: 'var(--text-tertiary)', textDecoration: 'none' }}>Book a pitch</Link>
+            <Link href="/slots" style={{ color: 'var(--text-tertiary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', minHeight: '44px' }}>Book a pitch</Link>
             <span style={{ color: 'var(--text-tertiary)' }}>/</span>
             <span style={{ color: 'var(--text)' }}>{venueName}</span>
           </nav>
@@ -599,7 +599,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '0 0 1rem' }}>{venueAddress}</p>
                 {contactPhone && (
                   <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: '-0.5rem 0 1rem' }}>
-                    <a href={`tel:${contactPhone}`} style={{ color: 'var(--green)', fontWeight: 700, textDecoration: 'none' }}>{contactPhone}</a>
+                    <a href={`tel:${contactPhone}`} style={{ color: 'var(--green)', fontWeight: 700, textDecoration: 'none', display: 'inline-block', padding: '0.7rem 0' }}>{contactPhone}</a>
                   </p>
                 )}
                 <a
@@ -784,10 +784,10 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                         marginBottom: '6px',
                       }}
                     >
-                      Reserve your spot
+                      Pick a time
                     </span>
                     <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--black)' }}>
-                      Book a slot
+                      Book this pitch
                     </div>
                   </div>
 
@@ -887,7 +887,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                     disabled={isPast}
                     aria-pressed={active}
                     style={{
-                      padding: '10px 4px',
+                      padding: '10px 2px', minWidth: '44px',
                       borderRadius: 'var(--radius-lg)',
                       border: '1px solid',
                       borderColor: active ? 'transparent' : 'var(--border)',
@@ -899,12 +899,12 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '3px',
-                      minHeight: '76px',
+                      minHeight: '84px',
                     }}
                   >
                     <span
                       style={{
-                        fontSize: '9px',
+                        fontSize: '11px',
                         fontWeight: 700,
                         
                         letterSpacing: '0.1em',
@@ -929,7 +929,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                     </span>
                     <span
                       style={{
-                        fontSize: '9px',
+                        fontSize: '11px',
                         fontWeight: 600,
                         
                         letterSpacing: '0.08em',
@@ -1374,8 +1374,8 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                     </ul>
                     <p style={{ margin: '1rem 0 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
                       You save a card to hold your place and are charged only when the game fills. By continuing you agree to the{' '}
-                      <Link href="/terms" style={{ color: 'var(--green)', fontWeight: 600 }}>terms</Link>.
-                      Run by Masud Rahman, Admin. <a href="mailto:masud@bookmypitch.uk" style={{ color: 'var(--green)', fontWeight: 600 }}>masud@bookmypitch.uk</a>.
+                      <Link href="/terms" style={{ color: 'var(--green)', fontWeight: 700, display: 'inline-block', padding: '0.65rem 0.1rem', margin: '-0.65rem 0' }}>terms</Link>.
+                      Run by Masud Rahman, Admin. <a href="mailto:masud@bookmypitch.uk" style={{ color: 'var(--green)', fontWeight: 700, display: 'inline-block', padding: '0.65rem 0.1rem', margin: '-0.65rem 0' }}>masud@bookmypitch.uk</a>.
                     </p>
 
                   </div>

@@ -1186,8 +1186,8 @@ h1, h2 { text-transform: uppercase; font-weight: 900; line-height: 0.98; }
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--surface);
@@ -1208,7 +1208,7 @@ h1, h2 { text-transform: uppercase; font-weight: 900; line-height: 0.98; }
 
 @media (min-width: 768px) {
   .date-picker-row > button {
-    flex: 0 0 calc((100% - 6px * 6) / 7);
+    flex: 0 0 calc((100% - 6px * 4) / 5);
   }
   .date-arrow {
     display: flex;
