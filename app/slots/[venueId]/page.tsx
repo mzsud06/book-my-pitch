@@ -58,7 +58,7 @@ export default async function VenueSlotsPage({ params }: Props) {
                 margin: 'clamp(2.5rem, 6vh, 3.5rem) 0',
               }}
             >
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', letterSpacing: '-0.03em', marginBottom: '0.6rem', color: 'var(--text)' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '22px', letterSpacing: '-0.03em', marginBottom: '0.6rem', color: 'var(--text)' }}>
                 {venue.name} isn&apos;t accepting bookings yet
               </div>
               <div style={{ fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '2rem', fontWeight: 500, lineHeight: 1.6 }}>

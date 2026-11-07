@@ -125,10 +125,10 @@ function pillStyle(color: string, bg: string, border: string): CSSProperties {
 // Status badge — Filling (amber) / Confirmed (lime) / Cancelled (grey), driven directly by c.status
 function statusPillInfo(status: string): { label: string; color: string; bg: string; border: string } {
   if (status === 'confirmed') {
-    return { label: 'Confirmed', color: 'var(--green)', bg: 'rgba(198,241,53,0.1)', border: 'rgba(198,241,53,0.2)' }
+    return { label: 'Confirmed', color: 'var(--green)', bg: 'rgba(255,79,26,0.1)', border: 'rgba(255,79,26,0.2)' }
   }
   if (status === 'cancelled') {
-    return { label: 'Cancelled', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)' }
+    return { label: 'Cancelled', color: 'var(--text-secondary)', bg: 'rgba(16,20,24,0.06)', border: 'rgba(16,20,24,0.12)' }
   }
   return { label: 'Filling', color: 'var(--amber)', bg: 'rgba(255,184,0,0.1)', border: 'rgba(255,184,0,0.2)' }
 }
@@ -203,7 +203,7 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
         style={{
           background: 'var(--surface)',
           borderRadius: '16px',
-          border: '1px solid rgba(255,255,255,0.06)',
+          border: '1px solid rgba(16,20,24,0.06)',
           padding: '1.2rem',
           cursor: 'pointer',
           opacity: dimmed ? 0.6 : 1,
@@ -229,7 +229,7 @@ function BookingCardTile({ c, dimmed = false, animationDelay }: { c: BookingCard
 
         <div
           style={{
-            fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
+            fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '20px', fontWeight: 700,
             letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1.2, marginBottom: '8px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}
@@ -368,7 +368,7 @@ export default function MyBookingsClient() {
               key={i}
               style={{
                 background: 'var(--surface)',
-                border: '1px solid rgba(255,255,255,0.06)',
+                border: '1px solid rgba(16,20,24,0.06)',
                 borderRadius: '16px',
                 padding: '1.2rem',
               }}
@@ -403,8 +403,8 @@ export default function MyBookingsClient() {
             display: 'flex',
             alignItems: 'flex-start',
             gap: '10px',
-            background: 'rgba(198,241,53,0.04)',
-            border: '1px solid rgba(198,241,53,0.12)',
+            background: 'rgba(255,79,26,0.04)',
+            border: '1px solid rgba(255,79,26,0.12)',
             borderRadius: '12px',
             padding: '0.9rem 1.1rem',
             marginBottom: '1.5rem',
@@ -435,8 +435,8 @@ export default function MyBookingsClient() {
             style={{
               width: '72px',
               height: '72px',
-              background: 'rgba(198,241,53,0.08)',
-              border: '1px solid rgba(198,241,53,0.15)',
+              background: 'rgba(255,79,26,0.08)',
+              border: '1px solid rgba(255,79,26,0.15)',
               borderRadius: '50%',
               display: 'flex',
               alignItems: 'center',
@@ -449,7 +449,7 @@ export default function MyBookingsClient() {
           </div>
           <div
             style={{
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-display)', fontStretch: '75%',
               fontSize: '22px',
               letterSpacing: '-0.03em',
               marginBottom: '0.6rem',

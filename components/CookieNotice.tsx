@@ -38,7 +38,7 @@ export default function CookieNotice() {
         border: '1px solid var(--border)',
         borderRadius: '14px',
         padding: '1rem 1.25rem',
-        boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+        boxShadow: '0 16px 48px rgba(16,20,24,0.10)',
         display: 'flex',
         alignItems: 'center',
         gap: '1rem',
@@ -63,7 +63,7 @@ export default function CookieNotice() {
           background: 'var(--green)',
           color: 'var(--black)',
           cursor: 'pointer',
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-display)', fontStretch: '75%',
         }}
       >
         Got it

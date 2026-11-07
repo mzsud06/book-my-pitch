@@ -155,7 +155,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
     <div style={{ maxWidth: '480px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
       <div
         style={{
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-display)', fontStretch: '75%',
           fontSize: 'clamp(22px, 4vw, 30px)',
           letterSpacing: '-0.04em',
           lineHeight: 1,
@@ -172,7 +172,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
             border: 'none',
             background: 'var(--green)',
             color: 'var(--black)',
-            fontFamily: 'var(--font-display)',
+            fontFamily: 'var(--font-display)', fontStretch: '75%',
             fontWeight: 700,
             fontSize: '15px',
             letterSpacing: '-0.015em',
@@ -221,7 +221,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
       <div
         className="anim-fade-up d-80"
         style={{
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-display)', fontStretch: '75%',
           fontSize: 'clamp(28px, 5vw, 38px)',
           letterSpacing: '-0.04em',
           lineHeight: 0.9,
@@ -246,7 +246,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
           borderRadius: 'var(--radius-xl)',
           padding: '1.5rem',
           marginBottom: '1.5rem',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)',
+          boxShadow: '0 4px 24px rgba(16,20,24,0.10), inset 0 1px 0 rgba(16,20,24,0.04)',
         }}
       >
         <div
@@ -283,7 +283,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
           <div style={{ textAlign: 'right' }}>
             <div
               style={{
-                fontFamily: 'var(--font-display)',
+                fontFamily: 'var(--font-display)', fontStretch: '75%',
                 fontSize: '30px',
                 color: 'var(--green)',
                 letterSpacing: '-0.04em',
@@ -312,9 +312,9 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '4px',
-                  background: i === 0 ? 'var(--green)' : 'rgba(255,255,255,0.02)',
-                  border: i === 0 ? 'none' : '1px dashed rgba(255,255,255,0.07)',
-                  boxShadow: i === 0 ? '0 0 24px rgba(198,241,53,0.22)' : 'none',
+                  background: i === 0 ? 'var(--green)' : 'rgba(16,20,24,0.02)',
+                  border: i === 0 ? 'none' : '1px dashed rgba(16,20,24,0.07)',
+                  boxShadow: i === 0 ? '0 0 24px rgba(255,79,26,0.22)' : 'none',
                 }}
               >
                 <div
@@ -324,8 +324,8 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
                     right: '6px',
                     fontSize: '7px',
                     fontWeight: 700,
-                    fontFamily: 'var(--font-display)',
-                    color: i === 0 ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.06)',
+                    fontFamily: 'var(--font-display)', fontStretch: '75%',
+                    color: i === 0 ? 'rgba(0,0,0,0.3)' : 'rgba(16,20,24,0.06)',
                     lineHeight: 1,
                   }}
                 >
@@ -336,14 +336,14 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
                     width: '24px',
                     height: '24px',
                     borderRadius: '50%',
-                    background: i === 0 ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.04)',
+                    background: i === 0 ? 'rgba(0,0,0,0.2)' : 'rgba(16,20,24,0.04)',
                   }}
                 />
                 <div
                   style={{
                     fontSize: '7px',
                     fontWeight: 700,
-                    color: i === 0 ? 'var(--black)' : 'rgba(255,255,255,0.1)',
+                    color: i === 0 ? 'var(--black)' : 'rgba(16,20,24,0.1)',
                   }}
                 >
                   {i === 0 ? 'You' : `+${i + 1}`}
@@ -353,12 +353,12 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '8px 0' }}>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'rgba(16,20,24,0.05)' }} />
             <div
               style={{
                 fontSize: '7px',
                 fontWeight: 700,
-                color: 'rgba(255,255,255,0.12)',
+                color: 'rgba(16,20,24,0.12)',
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 flexShrink: 0,
@@ -366,7 +366,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
             >
               {slot.pitches.format}
             </div>
-            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.05)' }} />
+            <div style={{ flex: 1, height: '1px', background: 'rgba(16,20,24,0.05)' }} />
           </div>
 
           <div style={{ display: 'flex', gap: '5px' }}>
@@ -383,8 +383,8 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '4px',
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px dashed rgba(255,255,255,0.07)',
+                  background: 'rgba(16,20,24,0.02)',
+                  border: '1px dashed rgba(16,20,24,0.07)',
                 }}
               >
                 <div
@@ -394,8 +394,8 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
                     right: '6px',
                     fontSize: '7px',
                     fontWeight: 700,
-                    fontFamily: 'var(--font-display)',
-                    color: 'rgba(255,255,255,0.06)',
+                    fontFamily: 'var(--font-display)', fontStretch: '75%',
+                    color: 'rgba(16,20,24,0.06)',
                     lineHeight: 1,
                   }}
                 >
@@ -406,10 +406,10 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
                     width: '24px',
                     height: '24px',
                     borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.04)',
+                    background: 'rgba(16,20,24,0.04)',
                   }}
                 />
-                <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(255,255,255,0.1)' }}>
+                <div style={{ fontSize: '7px', fontWeight: 700, color: 'rgba(16,20,24,0.1)' }}>
                   +{i + 6}
                 </div>
               </div>
@@ -484,7 +484,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
                   padding: '0.65rem 0.3rem',
                   minHeight: '44px',
                   borderRadius: 'var(--radius-sm)',
-                  border: gameType === value ? 'none' : '1px solid rgba(255,255,255,0.12)',
+                  border: gameType === value ? 'none' : '1px solid rgba(16,20,24,0.12)',
                   background: gameType === value ? 'var(--green)' : 'var(--surface2)',
                   color: gameType === value ? 'var(--black)' : 'var(--text-secondary)',
                   fontFamily: 'var(--font-sans)',
@@ -512,7 +512,7 @@ export default function CreateSessionForm({ slot, slotIds }: Props) {
             cursor: !isReady ? 'not-allowed' : 'pointer',
             background: !isReady ? 'var(--surface2)' : 'var(--green)',
             color: !isReady ? 'var(--text-secondary)' : 'var(--black)',
-            fontFamily: 'var(--font-display)',
+            fontFamily: 'var(--font-display)', fontStretch: '75%',
             fontWeight: 700,
             fontSize: '15px',
             letterSpacing: '-0.015em',

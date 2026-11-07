@@ -30,11 +30,12 @@ export function SectionHeading({
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       <h2
         style={{
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-display)', fontStretch: '75%',
           fontSize: 'var(--text-h2)',
-          fontWeight: 700,
-          lineHeight: 1.1,
-          letterSpacing: '-0.015em',
+          fontWeight: 800,
+          lineHeight: 1.0,
+          letterSpacing: '-0.005em',
+          textTransform: 'uppercase',
           color: 'var(--text)',
           margin: 0,
         }}

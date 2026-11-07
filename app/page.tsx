@@ -11,25 +11,19 @@ import { Badge } from '@/components/ui/Badge'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { FaqAccordion } from '@/components/FaqAccordion'
 import { Footer } from '@/components/Footer'
+import { GameCard } from '@/components/GameCard'
+import MoneyHeldDemo from '@/components/MoneyHeldDemo'
+import { SquadStrip, ConfirmedStamp, LockIcon } from '@/components/SquadStrip'
 
 export const revalidate = 0
 
-// ─── Image swap — edit these two spots when photos are ready ─────────
-//
-//  HERO BACKGROUND
-//  Line 14 below. Set to a path, e.g. '/images/hero.jpg', to replace
-//  the gradient glow with a full-bleed photo + dark overlay.
-const HERO_IMAGE: string | null = '/hero-pitch.jpg'
-
-//  PLACEHOLDER CARDS
-//  Hardcoded stand-ins shown when there are fewer than 3 real public games.
-//  These are not real sessions (no id, not clickable) — always 0/10 players.
+// Hardcoded stand-ins shown when there are fewer than 3 real public games.
+// Not real sessions: no id, not clickable, always 0/10 players.
 const PLACEHOLDER_CARDS = [
   { badge: 'peak' as const, time: '18:30 – 19:30', price: '£5.00', dayOfWeek: 1 },
   { badge: 'offpeak' as const, time: '16:30 – 17:30', price: '£3.00', dayOfWeek: 3 },
   { badge: 'weekend' as const, time: '10:30 – 11:30', price: '£4.00', dayOfWeek: 6 },
 ]
-// ─────────────────────────────────────────────────────────────────────
 
 const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -49,49 +43,6 @@ function nextWeekdayDate(dayOfWeek: number): string {
 function typeLabelFromVariant(variant: 'peak' | 'offpeak' | 'weekend'): string {
   return variant === 'peak' ? 'Peak' : variant === 'offpeak' ? 'Off-peak' : 'Weekend'
 }
-
-function PeopleIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="6" cy="5" r="2.2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M2 13c0-2.2 1.8-3.6 4-3.6s4 1.4 4 3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="11.5" cy="5.5" r="1.7" stroke="currentColor" strokeWidth="1.3" opacity="0.75" />
-      <path d="M9.8 9.6c1.8.2 3.2 1.5 3.2 3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.75" />
-    </svg>
-  )
-}
-
-function ClockIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M8 4.6V8l2.6 1.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function PinIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M8 14.5s5-4.2 5-8.2A5 5 0 0 0 3 6.3c0 4 5 8.2 5 8.2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-      <circle cx="8" cy="6.3" r="1.8" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  )
-}
-
-const STATS = [
-  { n: '10',  l: 'players needed' },
-  { n: '£0',  l: 'charged until full' },
-  { n: '4G',  l: 'all-weather pitch' },
-]
-
-const MARQUEE_ITEMS = [
-  'No bank transfers',
-  "Nobody pays till it's full",
-  'Grass, 4G & indoor pitches',
-  'Share one link',
-  "£0 until the team's full",
-]
 
 export default async function HomePage() {
   // ── Fetch real public games (future dates only) ──────────────────────────
@@ -151,6 +102,7 @@ export default async function HomePage() {
   }))
   // ──────────────────────────────────────────────────────────────────────
 
+
   return (
     <PageReveal>
       <Nav />
@@ -159,579 +111,226 @@ export default async function HomePage() {
         {/* ============================================================
             HERO
             ============================================================ */}
-        <section
-          style={{
-            position: 'relative',
-            overflow: 'hidden',
-            paddingTop: 'clamp(4.5rem, 12vh, 7.5rem)',
-            paddingBottom: 'clamp(3.5rem, 8vh, 5.5rem)',
-          }}
-        >
-          {/* ── Background: gradient glow (null) or photo ── */}
-          {/* Hero photo + layered overlay */}
-          <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-            <Image
-              src={HERO_IMAGE!}
-              alt=""
-              fill
-              priority
-              quality={85}
-              sizes="100vw"
-              style={{ objectFit: 'cover', objectPosition: 'center 30%' }}
-            />
-            {/* Base layer — uniform dark so text is readable on mobile at any crop */}
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.42)' }} />
-            {/* Directional layer — heavier at bottom (stats/CTA) and top (sky), lighter in centre (pitch/lights) */}
-            <div style={{
-              position: 'absolute', inset: 0,
-              background: 'linear-gradient(to top, rgba(8,8,8,0.55) 0%, rgba(8,8,8,0.08) 45%, rgba(8,8,8,0.28) 100%)',
-            }} />
-          </div>
-
-          {/* ── Hero content ── */}
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <Container>
-              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-
-                {/* Pill badge */}
-                <div className="anim-fade-up d-0" style={{ marginBottom: '1.75rem' }}>
+        <section style={{ paddingTop: 'clamp(2.5rem, 7vh, 4.5rem)', paddingBottom: 'clamp(2.5rem, 6vh, 4rem)' }}>
+          <Container>
+            <div className="hero-split hero-split-2">
+              <div>
+                <div className="anim-fade-up d-0" style={{ marginBottom: '1.25rem' }}>
                   <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '7px',
-                    padding: '6px 14px 6px 10px',
-                    borderRadius: 'var(--radius-full)',
-                    background: 'rgba(22,48,31,0.5)',
-                    border: '1px solid rgba(198,241,53,0.2)',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text-secondary)',
-                    fontFamily: 'var(--font-sans)',
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    padding: '6px 12px', borderRadius: 'var(--radius-full)',
+                    background: 'var(--surface2)', border: '1px solid var(--border)',
+                    fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                    color: 'var(--text)',
                   }}>
-                    <span aria-hidden="true" style={{
-                      width: '6px', height: '6px',
-                      borderRadius: '50%',
-                      background: 'var(--green)',
-                      flexShrink: 0,
-                      boxShadow: '0 0 6px rgba(198,241,53,0.65)',
-                    }} />
-                    Live in London
+                    <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--brand)' }} />
+                    5-a-side &amp; 7-a-side · East London
                   </span>
                 </div>
 
-                {/* Headline */}
                 <h1
                   className="anim-fade-up d-80"
                   style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: 'var(--text-hero)',
-                    lineHeight: 0.95,
-                    letterSpacing: '-0.015em',
-                    fontWeight: 700,
-                    margin: '0 0 1.75rem',
-                    color: 'var(--text)',
+                    fontFamily: 'var(--font-display)', fontStretch: '75%',
+                    fontSize: 'var(--text-hero)', lineHeight: 0.92, letterSpacing: '-0.01em',
+                    fontWeight: 900, textTransform: 'uppercase', margin: '0 0 1.25rem', color: 'var(--text)',
                   }}
                 >
-                  Play football tonight.
+                  Pay only if<br />the game&apos;s <span style={{ color: 'var(--brand)' }}>on.</span>
                 </h1>
 
-                {/* Subcopy */}
                 <p
-                  className="anim-fade-up d-220"
-                  style={{
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: '17px',
-                    color: 'var(--text-secondary)',
-                    lineHeight: 1.7,
-                    maxWidth: '52ch',
-                    margin: '0 0 2.25rem',
-                    fontWeight: 400,
-                  }}
+                  className="anim-fade-up d-200"
+                  style={{ fontSize: '18px', color: 'var(--text-secondary)', lineHeight: 1.55, maxWidth: '46ch', margin: '0 0 1.75rem', fontWeight: 500 }}
                 >
-                  Find a game near you or start one in under a minute.
+                  Join a game with your card. It&apos;s held, not taken. Once the squad is full, everyone is charged and the pitch is yours. If it doesn&apos;t fill, nobody pays and nobody chases anyone.
                 </p>
 
-                {/* Primary CTA */}
-                <div className="anim-fade-up d-300" style={{ marginBottom: '3.5rem' }}>
+                <div className="anim-fade-up d-300" style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   <Link href="/slots" style={{ textDecoration: 'none' }}>
                     <Button size="lg" arrow>Find a game</Button>
                   </Link>
+                  <Link href="/list-your-venue" style={{ textDecoration: 'none' }}>
+                    <Button size="lg" variant="secondary">I run a pitch</Button>
+                  </Link>
                 </div>
-
-                {/* Stat row */}
-                <div
-                  className="anim-fade-up d-380 hero-stats"
-                  style={{
-                    display: 'flex',
-                    gap: 0,
-                    borderTop: '1px solid var(--border)',
-                    paddingTop: '2rem',
-                    width: '100%',
-                    maxWidth: '480px',
-                  }}
-                >
-                  {STATS.map((item, idx) => (
-                    <div
-                      key={item.l}
-                      style={{
-                        flex: 1,
-                        paddingLeft: idx > 0 ? '1.5rem' : 0,
-                        paddingRight: idx < 2 ? '1.5rem' : 0,
-                        borderLeft: idx > 0 ? '1px solid var(--border)' : 'none',
-                        textAlign: 'center',
-                      }}
-                    >
-                      <div
-                        className="tabular"
-                        style={{
-                          fontFamily: 'var(--font-display)',
-                          fontSize: 'clamp(28px, 4vw, 40px)',
-                          color: 'var(--green)',
-                          lineHeight: 1,
-                          letterSpacing: '-0.015em',
-                          fontWeight: 700,
-                        }}
-                      >
-                        {item.n}
-                      </div>
-                      <div
-                        style={{
-                          fontFamily: 'var(--font-sans)',
-                          fontSize: '9px',
-                          color: 'var(--text-tertiary)',
-                          marginTop: '6px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.1em',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {item.l}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
               </div>
-            </Container>
-          </div>
+
+              {/* Photo with a live-looking squad strip pinned on it */}
+              <div className="anim-fade-up d-200 hero-photo-wrap">
+                <Image
+                  src="/hero-pitch.jpg"
+                  alt="A 5-a-side pitch under floodlights"
+                  fill
+                  priority
+                  quality={85}
+                  sizes="(max-width: 900px) 100vw, 520px"
+                  style={{ objectFit: 'cover', objectPosition: 'center 35%' }}
+                />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(16,20,24,0.45), rgba(16,20,24,0) 55%)' }} />
+                <div style={{
+                  position: 'absolute', left: 14, right: 14, bottom: 14,
+                  background: 'var(--surface)', borderRadius: 16, padding: '12px 14px 12px',
+                  boxShadow: '0 10px 30px rgba(16,20,24,0.25)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontWeight: 800, fontSize: 17 }}>Tonight · 5-a-side</span>
+                    <span className="tabular" style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontWeight: 800, fontSize: 17 }}>£6 <span style={{ fontSize: 12, color: 'var(--text-tertiary)', letterSpacing: '0.06em' }}>EACH</span></span>
+                  </div>
+                  <SquadStrip filled={7} total={10} size="sm" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                    <span style={{ color: 'var(--brand)', display: 'inline-flex' }}><LockIcon size={12} /></span>
+                    7/10 · £42 held · 3 spots left
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Container>
         </section>
 
         {/* ============================================================
-            VALUE MARQUEE
+            MONEY HELD, NOT TAKEN
             ============================================================ */}
-        <div
-          className="marquee-strip"
-          role="marquee"
-          aria-label="Key features"
-          style={{
-            borderTop: '1px solid var(--border)',
-            borderBottom: '1px solid var(--border)',
-            background: 'rgba(255,255,255,0.015)',
-          }}
-        >
-          <div className="marquee-track">
-
-            {/* First copy — visible to screen readers */}
-            <div style={{ display: 'flex', alignItems: 'center', padding: '0.875rem 0' }}>
-              {MARQUEE_ITEMS.map((item, i) => (
-                <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
-                  <span style={{
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text-secondary)',
-                    padding: '0 1.5rem',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {item}
-                  </span>
-                  <span aria-hidden="true" style={{
-                    color: 'var(--amber)',
-                    fontSize: '10px',
-                    lineHeight: 1,
-                    opacity: 0.75,
-                    flexShrink: 0,
-                  }}>
-                    •
-                  </span>
-                </span>
-              ))}
+        <section style={{ background: 'var(--surface2)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', padding: 'clamp(3rem, 7vh, 5rem) 0' }}>
+          <Container>
+            <div className="reveal-scroll" style={{ marginBottom: '2rem', maxWidth: 680 }}>
+              <SectionHeading
+                eyebrow="How the money works"
+                heading={<>Held, not taken.<br /><span style={{ color: 'var(--brand)' }}>Charged when it&apos;s full.</span></>}
+                sub="Everyone pays when they join, so there are no promises to chase. Full squad: everyone is charged at once. Not full: every hold is released."
+              />
             </div>
+            <MoneyHeldDemo />
+          </Container>
+        </section>
 
-            {/* Duplicate — aria-hidden, creates seamless loop */}
-            <div className="marquee-dupe" aria-hidden="true" style={{ display: 'flex', alignItems: 'center', padding: '0.875rem 0' }}>
-              {MARQUEE_ITEMS.map((item, i) => (
-                <span key={i} style={{ display: 'inline-flex', alignItems: 'center' }}>
-                  <span style={{
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    letterSpacing: '0.12em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text-secondary)',
-                    padding: '0 1.5rem',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {item}
-                  </span>
-                  <span aria-hidden="true" style={{
-                    color: 'var(--amber)',
-                    fontSize: '10px',
-                    lineHeight: 1,
-                    opacity: 0.75,
-                    flexShrink: 0,
-                  }}>
-                    •
-                  </span>
-                </span>
-              ))}
+        {/* ============================================================
+            GAMES FILLING NOW
+            ============================================================ */}
+        <section style={{ paddingTop: 'clamp(3rem, 7vh, 5rem)', paddingBottom: 'clamp(2.5rem, 5vh, 3.5rem)' }}>
+          <Container>
+            <div className="reveal-scroll" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+              <SectionHeading eyebrow="Open games" heading="Squads filling now" />
+              <Link href="/public-games" style={{ textDecoration: 'none', fontWeight: 700, fontSize: 15, color: 'var(--text)', borderBottom: '2px solid var(--brand)', paddingBottom: 2 }}>
+                See all games →
+              </Link>
             </div>
+          </Container>
+          <div className="preview-cards-scroller">
+            {liveGames.map((game, idx) => (
+              <div key={game.id} className="preview-card-link anim-fade-up" style={{ animationDelay: `${idx * 80}ms` }}>
+                <GameCard
+                  href={`/session/${game.id}`}
+                  photo={idx % 2 === 0 ? '/example-pitch.jpg' : '/game-card.jpg'}
+                  title={game.organiserName ? `${game.organiserName}'s game` : 'Public game'}
+                  venue={game.venueName}
+                  area={game.venueAddress}
+                  date={game.date}
+                  time={game.time.split(' – ')[0]}
+                  price={game.price}
+                  filled={game.playerCount}
+                  total={game.maxPlayers}
+                  format={`${game.maxPlayers / 2}-a-side`}
+                  isFull={game.isFull}
+                  badge={<Badge variant={game.badgeVariant}>{typeLabelFromVariant(game.badgeVariant)}</Badge>}
+                  priority={idx === 0}
+                />
+              </div>
+            ))}
 
+            {/* Example cards fill the row to 3 until there are enough real games */}
+            {exampleCards.map((card, i) => {
+              const idx = liveGames.length + i
+              return (
+                <div key={card.time} className="preview-card-link anim-fade-up" style={{ animationDelay: `${idx * 80}ms` }}>
+                  <GameCard
+                    photo="/game-card.jpg"
+                    title={`${typeLabelFromVariant(card.badge)} game`}
+                    venue="Your local pitch"
+                    date={card.date}
+                    time={card.time.split(' – ')[0]}
+                    price={card.price}
+                    filled={0}
+                    total={10}
+                    format="5-a-side"
+                    badge={<Badge variant={card.badge}>{typeLabelFromVariant(card.badge)}</Badge>}
+                  />
+                </div>
+              )
+            })}
           </div>
-        </div>
+        </section>
 
         {/* ============================================================
             HOW IT WORKS
             ============================================================ */}
-        <section style={{ paddingTop: 'clamp(4rem, 8vh, 6rem)', paddingBottom: 'clamp(4rem, 8vh, 6rem)' }}>
+        <section style={{ paddingTop: 'clamp(2.5rem, 6vh, 4rem)', paddingBottom: 'clamp(3rem, 7vh, 5rem)' }}>
           <Container>
-            {/* Section header */}
-            <div className="reveal-scroll" style={{ marginBottom: '3rem' }}>
-              <SectionHeading
-                eyebrow="How it works"
-                heading={
-                  <>
-                    Four steps<br />
-                    <span style={{ color: 'var(--green)' }}>to kickoff.</span>
-                  </>
-                }
-              />
+            <div className="reveal-scroll" style={{ marginBottom: '2rem' }}>
+              <SectionHeading eyebrow="Start your own" heading="Four steps to kickoff" />
             </div>
-
-            {/* Step cards */}
             <div className="steps-grid-new">
               {[
-                { n: '01', t: 'Find an open game time', d: 'Browse available times at your local pitch and pick one that works for you.' },
-                { n: '02', t: 'Share the link', d: 'You get a unique link for your game. Drop it in the group chat in seconds.' },
-                { n: '03', t: 'Mates join', d: "Friends click the link and add their card. Nobody is charged yet. Zero commitment." },
-                { n: '04', t: '10 players = booked', d: 'The moment the 10th player joins, everyone pays their share. Pitch confirmed.' },
-              ].map((step, idx) => {
-                const isPayoff = step.n === '04'
-                return (
-                  <Card
-                    key={step.n}
-                    hover
-                    className={`reveal-scroll${step.n !== '04' ? ' step-connector-arrow' : ''}${isPayoff ? ' step-card-payoff' : ''}`}
-                    style={{
-                      padding: '1.75rem 1.5rem 1.6rem',
-                      position: 'relative',
-                      animationDelay: `${idx * 60}ms`,
-                      ...(isPayoff ? {
-                        background: 'rgba(22,48,31,0.40)',
-                        border: '1px solid rgba(198,241,53,0.28)',
-                        boxShadow: '0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(198,241,53,0.14), 0 0 28px -6px rgba(198,241,53,0.20)',
-                      } : {}),
-                    }}
-                  >
-                    {/* Outline stroke numeral — intentional graphic element */}
-                    <div
-                      aria-hidden="true"
-                      style={{
-                        position: 'absolute',
-                        bottom: '0.5rem',
-                        right: '0.75rem',
-                        fontFamily: 'var(--font-display)',
-                        fontSize: 'clamp(3.5rem, 5.5vw, 5rem)',
-                        fontWeight: 700,
-                        lineHeight: 1,
-                        letterSpacing: '-0.04em',
-                        color: 'transparent',
-                        WebkitTextStroke: '1.5px rgba(198,241,53,0.20)',
-                        userSelect: 'none',
-                        pointerEvents: 'none',
-                      }}
-                    >
-                      {step.n}
-                    </div>
-
-                    {/* Content */}
-                    <div style={{ position: 'relative', zIndex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '0.65rem' }}>
-                        <span
-                          aria-hidden="true"
-                          style={{
-                            width: '5px',
-                            height: '5px',
-                            borderRadius: '50%',
-                            background: 'var(--green)',
-                            flexShrink: 0,
-                            opacity: isPayoff ? 1 : 0.7,
-                          }}
-                        />
-                        <h3
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            fontSize: 'clamp(14px, 1.8vw, 16px)',
-                            fontWeight: 600,
-                            letterSpacing: '-0.01em',
-                            lineHeight: 1.2,
-                            color: 'var(--text)',
-                            margin: 0,
-                          }}
-                        >
-                          {isPayoff ? (
-                            <>10 players = <span style={{ color: 'var(--green)' }}>booked</span></>
-                          ) : step.t}
-                        </h3>
-                      </div>
-                      <p
-                        style={{
-                          fontSize: '13px',
-                          color: 'var(--text-secondary)',
-                          lineHeight: 1.7,
-                          fontWeight: 400,
-                          margin: 0,
-                        }}
-                      >
-                        {step.d}
-                      </p>
-                    </div>
-                  </Card>
-                )
-              })}
+                { n: '1', t: 'Pick a time', d: 'Browse open times at your local pitch and choose one that works.' },
+                { n: '2', t: 'Share the link', d: 'You get one link for your game. Drop it in the group chat.' },
+                { n: '3', t: 'Mates join', d: 'Each player adds a card. Nothing is charged yet, so there is no commitment.' },
+                { n: '4', t: 'Squad full, pitch booked', d: 'The moment the last spot goes, everyone pays their share and the game is confirmed.' },
+              ].map((step, idx) => (
+                <div key={step.n} className="reveal-scroll step-tile" style={{ animationDelay: `${idx * 60}ms` }}>
+                  <div className={`step-num${step.n === '4' ? ' is-volt' : ''}`} aria-hidden="true">{step.n}</div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: 22, fontWeight: 800, lineHeight: 1.1, margin: '0 0 6px', color: 'var(--text)' }}>
+                    {step.t}
+                  </h3>
+                  <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, fontWeight: 500, margin: 0 }}>{step.d}</p>
+                </div>
+              ))}
             </div>
           </Container>
         </section>
 
         {/* ============================================================
-            SLOT PREVIEW CARDS
+            FOR VENUES BAND
             ============================================================ */}
-        <section style={{ paddingTop: 'clamp(2.5rem, 5vh, 3.5rem)', paddingBottom: 'clamp(2.5rem, 5vh, 3.5rem)' }}>
+        <section style={{ background: 'var(--ink)', color: '#fff', padding: 'clamp(3rem, 7vh, 5rem) 0' }}>
           <Container>
-            <div className="reveal-scroll" style={{ marginBottom: '1.75rem' }}>
-              <SectionHeading
-                eyebrow="Live now"
-                heading="Public games"
-              />
-            </div>
-          </Container>
-          <div className="preview-cards-scroller">
-            {/* ── Real public games ── */}
-            {liveGames.map((game, idx) => {
-              const cardInner = (
-                <Card
-                  hover={!game.isFull}
-                  style={{
-                    padding: 0,
-                    overflow: 'hidden',
-                    height: '100%',
-                    borderRadius: '16px',
-                    border: '1px solid rgba(255,255,255,0.06)',
-                    opacity: game.isFull ? 0.6 : 1,
-                  }}
-                >
-                  {/* Top half — pitch photo */}
-                  <div
-                    style={{
-                      position: 'relative', height: '180px',
-                      backgroundImage: 'url(/example-pitch.jpg)',
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  >
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.4)' }} />
-                    <div
-                      style={{
-                        position: 'absolute', top: '10px', left: '10px',
-                        display: 'inline-flex', alignItems: 'center', gap: '5px',
-                        padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                        background: game.isFull ? 'var(--red)' : '#C6F135',
-                        color: game.isFull ? '#fff' : '#080808',
-                        fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
-                        letterSpacing: '0.02em',
-                      }}
-                    >
-                      <PeopleIcon /> {game.playerCount}/{game.maxPlayers} players
-                    </div>
-                  </div>
-
-                  {/* Bottom half — game details */}
-                  <div style={{ background: '#0e0e0e', padding: '1rem 1.2rem' }}>
-                    <div style={{
-                      fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                      letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
-                    }}>
-                      {game.organiserName ? `${game.organiserName}'s game` : "Public game"}
-                    </div>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: '6px',
-                      fontFamily: 'var(--font-sans)', fontSize: '12px',
-                      color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
-                    }}>
-                      <ClockIcon /> {game.date} · {game.time}
-                    </div>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: '6px',
-                      fontFamily: 'var(--font-sans)', fontSize: '12px',
-                      color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
-                    }}>
-                      <PinIcon /> {game.venueName}{game.venueAddress ? ` · ${game.venueAddress}` : ''}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                      <Badge variant={game.badgeVariant}>{typeLabelFromVariant(game.badgeVariant)}</Badge>
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'baseline', gap: '4px',
-                        padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
-                      }}>
-                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
-                          {game.price}
-                        </span>
-                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
-                          per player
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              )
-
-              return game.isFull ? (
-                <div
-                  key={game.id}
-                  className="preview-card-link anim-fade-up"
-                  style={{ animationDelay: `${idx * 80}ms`, cursor: 'default' }}
-                >
-                  {cardInner}
-                </div>
-              ) : (
-                <Link
-                  key={game.id}
-                  href={`/session/${game.id}`}
-                  className="preview-card-link anim-fade-up"
-                  style={{ animationDelay: `${idx * 80}ms`, cursor: 'pointer' }}
-                >
-                  {cardInner}
-                </Link>
-              )
-            })}
-
-            {/* ── Example / illustrative cards (fills remaining slots to 3) ── */}
-            {exampleCards.map((card, i) => {
-              const idx = liveGames.length + i
-              return (
-                <div
-                  key={card.time}
-                  className="preview-card-link anim-fade-up"
-                  style={{ animationDelay: `${idx * 80}ms`, cursor: 'default' }}
-                >
-                  <Card
-                    style={{
-                      padding: 0,
-                      overflow: 'hidden',
-                      height: '100%',
-                      borderRadius: '16px',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                    }}
-                  >
-                    {/* Top half — pitch photo */}
-                    <div
-                      style={{
-                        position: 'relative', height: '180px',
-                        backgroundImage: 'url(/game-card.jpg)',
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                      }}
-                    >
-                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.4)' }} />
-                      <div
-                        style={{
-                          position: 'absolute', top: '10px', left: '10px',
-                          display: 'inline-flex', alignItems: 'center', gap: '5px',
-                          padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                          background: '#C6F135',
-                          color: '#080808',
-                          fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
-                          letterSpacing: '0.02em',
-                        }}
-                      >
-                        <PeopleIcon /> 0/10 players
-                      </div>
-                    </div>
-
-                    {/* Bottom half — game details */}
-                    <div style={{ background: '#0e0e0e', padding: '1rem 1.2rem' }}>
-                      <div style={{
-                        fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                        letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
-                      }}>
-                        {typeLabelFromVariant(card.badge)} · {card.time}
-                      </div>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: '6px',
-                        fontFamily: 'var(--font-sans)', fontSize: '12px',
-                        color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
-                      }}>
-                        <ClockIcon /> {card.date} · {card.time}
-                      </div>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: '6px',
-                        fontFamily: 'var(--font-sans)', fontSize: '12px',
-                        color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
-                      }}>
-                        <PinIcon /> your local pitch
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                        <Badge variant={card.badge}>{typeLabelFromVariant(card.badge)}</Badge>
-                        <div style={{
-                          display: 'inline-flex', alignItems: 'baseline', gap: '4px',
-                          padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                          background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
-                        }}>
-                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
-                            {card.price}
-                          </span>
-                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
-                            per player
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              )
-            })}
-          </div>
-          {allPublicGames.length > 3 && (
-            <Container>
-              <div className="anim-fade-up" style={{ marginTop: '2rem', textAlign: 'center' }}>
-                <Link href="/public-games" style={{ textDecoration: 'none' }}>
-                  <Button arrow>See all public games</Button>
+            <div className="venue-band">
+              <div>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)' }}>
+                  <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--volt)' }} /> For pitch owners
+                </span>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: 'var(--text-h2)', fontWeight: 900, lineHeight: 0.98, textTransform: 'uppercase', color: '#fff', margin: '0.75rem 0 1rem' }}>
+                  Full payment before kick-off.<br />
+                  <span style={{ color: 'var(--volt)' }}>No chasing.</span>
+                </h2>
+                <p style={{ fontSize: 17, lineHeight: 1.55, color: 'rgba(255,255,255,0.8)', maxWidth: '44ch', margin: '0 0 1.5rem', fontWeight: 500 }}>
+                  No more WhatsApp threads, cash on the night or empty slots from people who flaked. Every booking is paid in full by the time it confirms.
+                </p>
+                <Link href="/list-your-venue" style={{ textDecoration: 'none' }}>
+                  <Button size="lg" arrow>See how it works for venues</Button>
                 </Link>
               </div>
-            </Container>
-          )}
+              <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 18, padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontWeight: 800, fontSize: 18, color: '#fff' }}>Thu 19:00 · 5-a-side</span>
+                  <ConfirmedStamp />
+                </div>
+                <SquadStrip filled={10} total={10} status="confirmed" size="md" />
+                <div className="tabular" style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontWeight: 800, fontSize: 34, color: 'var(--volt)', marginTop: 14, lineHeight: 1 }}>
+                  £60 secured
+                </div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: 600, marginTop: 4 }}>Paid before anyone touched a ball.</div>
+              </div>
+            </div>
+          </Container>
         </section>
 
         {/* ============================================================
             TESTIMONIALS
             ============================================================ */}
-        <section style={{ paddingTop: 'clamp(4rem, 8vh, 6rem)', paddingBottom: 'clamp(4rem, 8vh, 6rem)' }}>
+        <section style={{ paddingTop: 'clamp(3rem, 7vh, 5rem)', paddingBottom: 'clamp(3rem, 7vh, 5rem)' }}>
           <Container>
-            <div className="reveal-scroll" style={{ marginBottom: '3rem' }}>
-              <SectionHeading
-                eyebrow="Testimonials"
-                heading={
-                  <>
-                    What players<br />
-                    <span style={{ color: 'var(--green)' }}>are saying.</span>
-                  </>
-                }
-              />
+            <div className="reveal-scroll" style={{ marginBottom: '2rem' }}>
+              <SectionHeading eyebrow="From the pitch" heading="What players are saying" />
             </div>
 
             <div className="testimonials-grid">
@@ -740,98 +339,21 @@ export default async function HomePage() {
                 { quote: "Joined a public game last week with people I didn't know. Worked perfectly, good bunch.", name: 'Raheem', location: 'Tower Hamlets' },
                 { quote: "Our group's been using it for three weeks. No complaints.", name: 'Liam', location: 'Mile End' },
               ].map((t, idx) => (
-                <Card
-                  key={t.name}
-                  hover
-                  className="reveal-scroll testimonial-card"
-                  style={{
-                    padding: '2rem 1.75rem 1.75rem',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    borderTop: '2px solid rgba(198,241,53,0.35)',
-                    animationDelay: `${idx * 60}ms`,
-                  }}
-                >
-                  {/* Sheen overlay — premium depth cue */}
-                  <div
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'linear-gradient(160deg, rgba(198,241,53,0.05), transparent 45%)',
-                      pointerEvents: 'none',
-                    }}
-                  />
-
-                  <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <p
-                      style={{
-                        fontSize: '15px',
-                        color: 'var(--text)',
-                        lineHeight: 1.7,
-                        fontWeight: 500,
-                        letterSpacing: '-0.005em',
-                        margin: '0 0 1.75rem',
-                        flex: 1,
-                      }}
-                    >
-                      &ldquo;{t.quote}&rdquo;
-                    </p>
-
-                    <div
-                      style={{
-                        height: '1px',
-                        background: 'var(--border)',
-                        margin: '0 0 1.25rem',
-                      }}
-                    />
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          width: '38px',
-                          height: '38px',
-                          borderRadius: '50%',
-                          background: 'var(--green)',
-                          color: 'var(--black)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '14px',
-                          fontWeight: 700,
-                          fontFamily: 'var(--font-display)',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {t.name[0]}
-                      </span>
-                      <div style={{ minWidth: 0 }}>
-                        <div
-                          style={{
-                            fontFamily: 'var(--font-display)',
-                            fontWeight: 600,
-                            fontSize: '14px',
-                            color: 'var(--text)',
-                            letterSpacing: '-0.01em',
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          {t.name}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '11px',
-                            color: 'var(--text-tertiary)',
-                            fontWeight: 600,
-                            letterSpacing: '0.04em',
-                            textTransform: 'uppercase',
-                            marginTop: '2px',
-                          }}
-                        >
-                          {t.location}
-                        </div>
-                      </div>
+                <Card key={t.name} className="reveal-scroll" style={{ padding: '1.5rem', animationDelay: `${idx * 60}ms`, display: 'flex', flexDirection: 'column' }}>
+                  <p style={{ fontSize: 16, color: 'var(--text)', lineHeight: 1.6, fontWeight: 500, margin: '0 0 1.25rem', flex: 1 }}>
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span aria-hidden="true" style={{
+                      width: 36, height: 36, borderRadius: 8, background: 'var(--ink)', color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontFamily: 'var(--font-display)', fontStretch: '75%', fontWeight: 800, fontSize: 18, flexShrink: 0,
+                    }}>
+                      {t.name[0]}
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', lineHeight: 1.3 }}>{t.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 2 }}>{t.location}</div>
                     </div>
                   </div>
                 </Card>
@@ -840,16 +362,8 @@ export default async function HomePage() {
           </Container>
         </section>
 
-        {/* ============================================================
-            FAQ
-            ============================================================ */}
         <FaqAccordion />
-
-        {/* ============================================================
-            FOOTER
-            ============================================================ */}
         <Footer />
-
       </main>
     </PageReveal>
   )

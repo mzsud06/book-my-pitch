@@ -392,7 +392,7 @@ export default function PhoneInput({ value, onChange, placeholder = '7911 123456
             background: 'var(--surface2)',
             border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
-            boxShadow: '0 12px 32px rgba(0,0,0,0.55)',
+            boxShadow: '0 12px 32px rgba(16,20,24,0.10)',
             overflow: 'hidden',
           }}
         >

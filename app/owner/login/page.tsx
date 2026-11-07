@@ -83,7 +83,7 @@ export default function OwnerLoginPage() {
           transform: 'translateX(-50%)',
           width: '600px',
           height: '400px',
-          background: 'radial-gradient(ellipse at center, rgba(198,241,53,0.04) 0%, transparent 70%)',
+          background: 'transparent',
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -105,7 +105,7 @@ export default function OwnerLoginPage() {
           <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <span
               style={{
-                fontFamily: 'var(--font-display)',
+                fontFamily: 'var(--font-display)', fontStretch: '75%',
                 fontSize: '20px',
                 letterSpacing: '-0.04em',
                 color: 'var(--text)',
@@ -122,10 +122,10 @@ export default function OwnerLoginPage() {
         <Card
           className="anim-fade-up d-80"
           style={{
-            border: '1px solid rgba(255,255,255,0.09)',
+            border: '1px solid rgba(16,20,24,0.09)',
             borderTop: '2px solid var(--green)',
             padding: '2rem',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
+            boxShadow: '0 8px 40px rgba(16,20,24,0.10), inset 0 1px 0 rgba(16,20,24,0.04)',
           }}
         >
           {/* Card header */}
@@ -135,8 +135,8 @@ export default function OwnerLoginPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                background: 'rgba(198,241,53,0.08)',
-                border: '1px solid rgba(198,241,53,0.16)',
+                background: 'rgba(255,79,26,0.08)',
+                border: '1px solid rgba(255,79,26,0.16)',
                 borderRadius: '6px',
                 padding: '3px 10px',
                 marginBottom: '1rem',
@@ -165,7 +165,7 @@ export default function OwnerLoginPage() {
             </div>
             <div
               style={{
-                fontFamily: 'var(--font-display)',
+                fontFamily: 'var(--font-display)', fontStretch: '75%',
                 fontSize: '26px',
                 letterSpacing: '-0.04em',
                 lineHeight: 0.95,
@@ -238,7 +238,7 @@ export default function OwnerLoginPage() {
                 cursor: loading || emailError ? 'not-allowed' : 'pointer',
                 background: loading || emailError ? 'var(--surface2)' : 'var(--green)',
                 color: loading || emailError ? 'var(--muted)' : 'var(--black)',
-                fontFamily: 'var(--font-display)',
+                fontFamily: 'var(--font-display)', fontStretch: '75%',
                 fontWeight: 900,
                 letterSpacing: '-0.025em',
                 marginTop: '4px',

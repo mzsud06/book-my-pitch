@@ -63,8 +63,8 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
         fontWeight: 600,
         fontFamily: 'var(--font-sans)',
         cursor: 'pointer',
-        border: active ? '1px solid rgba(198,241,53,0.4)' : '1px solid var(--border)',
-        background: active ? 'rgba(198,241,53,0.1)' : 'var(--surface2)',
+        border: active ? '1px solid rgba(255,79,26,0.4)' : '1px solid var(--border)',
+        background: active ? 'rgba(255,79,26,0.1)' : 'var(--surface2)',
         color: active ? 'var(--green)' : 'var(--text-secondary)',
       }}
     >
@@ -178,7 +178,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                 right: '-10%',
                 width: '520px',
                 height: '520px',
-                background: 'radial-gradient(circle, rgba(198,241,53,0.16) 0%, transparent 70%)',
+                background: 'transparent',
                 pointerEvents: 'none',
               }}
             />
@@ -186,7 +186,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
               <Eyebrow>Venues</Eyebrow>
               <h1
                 style={{
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: 'var(--font-display)', fontStretch: '75%',
                   fontSize: 'clamp(2rem, 5vw, 2.75rem)',
                   fontWeight: 700,
                   letterSpacing: '-0.02em',
@@ -251,8 +251,8 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                 fontWeight: 600,
                 fontSize: '13px',
                 cursor: 'pointer',
-                border: filterOpen || hasActiveFilters ? '1px solid rgba(198,241,53,0.4)' : '1px solid var(--border)',
-                background: filterOpen || hasActiveFilters ? 'rgba(198,241,53,0.1)' : 'var(--surface2)',
+                border: filterOpen || hasActiveFilters ? '1px solid rgba(255,79,26,0.4)' : '1px solid var(--border)',
+                background: filterOpen || hasActiveFilters ? 'rgba(255,79,26,0.1)' : 'var(--surface2)',
                 color: filterOpen || hasActiveFilters ? 'var(--green)' : 'var(--text)',
               }}
             >
@@ -311,7 +311,7 @@ export function VenuesBrowser({ venues }: { venues: VenueCardData[] }) {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
                   <h2
                     style={{
-                      fontFamily: 'var(--font-display)',
+                      fontFamily: 'var(--font-display)', fontStretch: '75%',
                       fontSize: '14px',
                       fontWeight: 700,
                       letterSpacing: '0.04em',

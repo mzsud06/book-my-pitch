@@ -111,7 +111,7 @@ const infoCardStyle: React.CSSProperties = {
 }
 
 const infoCardHeading: React.CSSProperties = {
-  fontFamily: 'var(--font-display)',
+  fontFamily: 'var(--font-display)', fontStretch: '75%',
   fontSize: '15px',
   fontWeight: 700,
   letterSpacing: '0.02em',
@@ -435,7 +435,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                 <Badge variant="public"><BallIcon /> Football</Badge>
                 <h1
                   style={{
-                    fontFamily: 'var(--font-display)',
+                    fontFamily: 'var(--font-display)', fontStretch: '75%',
                     fontSize: 'clamp(1.75rem, 5vw, 2.5rem)',
                     fontWeight: 700,
                     letterSpacing: '-0.02em',
@@ -654,7 +654,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                           <div style={{ background: 'var(--surface)', padding: '1rem 1.2rem' }}>
                             <div
                               style={{
-                                fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
+                                fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '20px', fontWeight: 700,
                                 letterSpacing: '-0.01em', color: 'var(--text)', lineHeight: 1.2, marginBottom: '6px',
                                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                               }}
@@ -680,7 +680,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                               <div style={{
                                 display: 'inline-flex', alignItems: 'baseline', gap: '4px',
                                 padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
+                                background: 'rgba(16,20,24,0.05)', border: '1px solid rgba(16,20,24,0.06)',
                               }}>
                                 <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
                                   £{perPlayer}
@@ -732,13 +732,13 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                         fontWeight: 700,
                         letterSpacing: '0.12em',
                         textTransform: 'uppercase',
-                        color: 'rgba(8,8,8,0.55)',
+                        color: 'rgba(255,255,255,0.9)',
                         marginBottom: '6px',
                       }}
                     >
                       Reserve your spot
                     </span>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--black)' }}>
+                    <div style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--black)' }}>
                       Book a slot
                     </div>
                   </div>
@@ -847,7 +847,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                         fontWeight: 700,
                         textTransform: 'uppercase',
                         letterSpacing: '0.1em',
-                        color: active ? 'rgba(8,8,8,0.5)' : 'var(--text-tertiary)',
+                        color: active ? 'rgba(255,255,255,0.85)' : 'var(--text-tertiary)',
                         lineHeight: 1,
                         fontFamily: 'var(--font-sans)',
                       }}
@@ -856,7 +856,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                     </span>
                     <span
                       style={{
-                        fontFamily: 'var(--font-display)',
+                        fontFamily: 'var(--font-display)', fontStretch: '75%',
                         fontSize: '22px',
                         fontWeight: 700,
                         letterSpacing: '-0.03em',
@@ -872,7 +872,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                         fontWeight: 600,
                         textTransform: 'uppercase',
                         letterSpacing: '0.08em',
-                        color: active ? 'rgba(8,8,8,0.4)' : 'var(--text-tertiary)',
+                        color: active ? 'rgba(255,255,255,0.8)' : 'var(--text-tertiary)',
                         lineHeight: 1,
                         fontFamily: 'var(--font-sans)',
                       }}
@@ -942,7 +942,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       : isPeak ? 'Peak' : 'Off-peak'
 
                   const subtextColor = isSelected
-                    ? 'rgba(8,8,8,0.45)'
+                    ? 'rgba(255,255,255,0.85)'
                     : hasUserSession
                       ? 'var(--green)'
                       : booked
@@ -954,7 +954,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   const pillBorderColor = isSelected
                     ? 'transparent'
                     : hasUserSession
-                      ? 'rgba(198,241,53,0.4)'
+                      ? 'rgba(255,79,26,0.4)'
                       : booked
                         ? 'var(--border-strong)'
                         : isPeak
@@ -964,15 +964,15 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                   const pillBg = isSelected
                     ? 'var(--green)'
                     : hasUserSession
-                      ? 'rgba(198,241,53,0.06)'
+                      ? 'rgba(255,79,26,0.06)'
                       : booked
-                        ? 'repeating-linear-gradient(135deg, var(--surface2), var(--surface2) 6px, rgba(255,255,255,0.035) 6px, rgba(255,255,255,0.035) 12px)'
+                        ? 'repeating-linear-gradient(135deg, var(--surface2), var(--surface2) 6px, rgba(16,20,24,0.035) 6px, rgba(16,20,24,0.035) 12px)'
                         : 'var(--surface)'
 
                   const pillShadow = isSelected
                     ? 'var(--shadow-glow)'
                     : hasUserSession
-                      ? '0 0 0 1.5px rgba(198,241,53,0.4), 0 4px 20px rgba(198,241,53,0.08)'
+                      ? '0 0 0 1.5px rgba(255,79,26,0.4), 0 4px 20px rgba(255,79,26,0.08)'
                       : 'var(--shadow-card)'
 
                   return (
@@ -1011,7 +1011,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                     >
                       <span
                         style={{
-                          fontFamily: 'var(--font-display)',
+                          fontFamily: 'var(--font-display)', fontStretch: '75%',
                           fontSize: '18px',
                           fontWeight: 700,
                           letterSpacing: '-0.025em',
@@ -1066,7 +1066,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                       border: `1px solid ${isSelectedDuration ? 'transparent' : 'var(--border)'}`,
                       background: isSelectedDuration ? 'var(--green)' : 'var(--surface3)',
                       color: inactive || !available ? 'var(--text-tertiary)' : isSelectedDuration ? 'var(--black)' : 'var(--text)',
-                      fontFamily: 'var(--font-display)',
+                      fontFamily: 'var(--font-display)', fontStretch: '75%',
                       fontSize: '13px',
                       fontWeight: 700,
                       letterSpacing: '-0.01em',
@@ -1107,7 +1107,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                     <div>
                       <div
                         style={{
-                          fontFamily: 'var(--font-display)',
+                          fontFamily: 'var(--font-display)', fontStretch: '75%',
                           fontSize: 'clamp(20px, 5vw, 26px)',
                           fontWeight: 700,
                           letterSpacing: '-0.025em',
@@ -1133,7 +1133,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div
                         style={{
-                          fontFamily: 'var(--font-display)',
+                          fontFamily: 'var(--font-display)', fontStretch: '75%',
                           fontSize: '28px',
                           fontWeight: 700,
                           color: 'var(--green)',
@@ -1214,7 +1214,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                   <span className={`court-radio${active ? ' court-radio-active' : ''}`} />
                                   <div style={{ textAlign: 'left' }}>
-                                    <div style={{ fontFamily: 'var(--font-display)', fontSize: '14px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', textTransform: 'uppercase' }}>
+                                    <div style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '14px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--text)', textTransform: 'uppercase' }}>
                                       {pitch.format}
                                     </div>
                                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '2px' }}>
@@ -1257,7 +1257,7 @@ export default function SlotsClient({ initialSessions, dbSlots, venueId, venueNa
                               color: disabled ? 'var(--text-tertiary)' : 'var(--black)',
                               border: 'none',
                               borderRadius: 'var(--radius-lg)',
-                              fontFamily: 'var(--font-display)',
+                              fontFamily: 'var(--font-display)', fontStretch: '75%',
                               fontSize: '15px',
                               fontWeight: 700,
                               letterSpacing: '-0.015em',

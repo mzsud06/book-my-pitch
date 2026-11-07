@@ -79,7 +79,7 @@ export default function ResetPasswordPage() {
           <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <span
               style={{
-                fontFamily: 'var(--font-display)',
+                fontFamily: 'var(--font-display)', fontStretch: '75%',
                 fontSize: '20px',
                 letterSpacing: '-0.03em',
                 color: 'var(--text)',
@@ -111,13 +111,13 @@ export default function ResetPasswordPage() {
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--radius-xl)',
             padding: 'clamp(1.5rem, 4vw, 2rem)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+            boxShadow: '0 24px 64px rgba(16,20,24,0.10), 0 0 0 1px rgba(16,20,24,0.05)',
           }}
         >
           <h1
             className="anim-fade-up"
             style={{
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-display)', fontStretch: '75%',
               fontSize: '28px',
               fontWeight: 700,
               letterSpacing: '-0.03em',
@@ -204,7 +204,7 @@ export default function ResetPasswordPage() {
                 cursor: loading ? 'not-allowed' : 'pointer',
                 background: loading ? 'var(--surface3)' : 'var(--green)',
                 color: loading ? 'var(--text-tertiary)' : 'var(--black)',
-                fontFamily: 'var(--font-display)',
+                fontFamily: 'var(--font-display)', fontStretch: '75%',
                 fontWeight: 700,
                 letterSpacing: '-0.015em',
                 marginTop: '8px',

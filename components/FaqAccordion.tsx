@@ -96,7 +96,7 @@ function FaqItem({ q, a, index, isLast }: { q: string; a: string; index: number;
       >
         <span
           style={{
-            fontFamily: 'var(--font-display)',
+            fontFamily: 'var(--font-display)', fontStretch: '75%',
             fontSize: 'clamp(14px, 2vw, 16px)',
             fontWeight: 600,
             color: open ? 'var(--text)' : 'var(--text)',
@@ -119,7 +119,7 @@ function FaqItem({ q, a, index, isLast }: { q: string; a: string; index: number;
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: '50%',
-            background: open ? 'rgba(198,241,53,0.10)' : 'rgba(255,255,255,0.04)',
+            background: open ? 'rgba(255,79,26,0.10)' : 'rgba(16,20,24,0.04)',
             color: open ? 'var(--green)' : 'var(--text-tertiary)',
             transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
             transition: 'transform 300ms var(--ease-out), color 200ms ease, background 200ms ease',

@@ -154,13 +154,13 @@ function CardForm({
         style={{
           display: 'flex',
           gap: '10px',
-          background: 'rgba(198,241,53,0.05)',
-          border: '1px solid rgba(198,241,53,0.15)',
+          background: 'rgba(255,79,26,0.05)',
+          border: '1px solid rgba(255,79,26,0.15)',
           borderRadius: '12px',
           padding: '1rem 1.1rem',
           marginBottom: '1.25rem',
           fontSize: '14px',
-          color: 'rgba(198,241,53,0.7)',
+          color: 'rgba(255,79,26,0.7)',
           lineHeight: 1.6,
           alignItems: 'flex-start',
         }}
@@ -174,8 +174,8 @@ function CardForm({
 
       <div
         style={{
-          background: 'linear-gradient(145deg, rgba(198,241,53,0.04) 0%, #0f0f0f 100%)',
-          border: '1px solid rgba(198,241,53,0.12)',
+          background: 'var(--surface2)',
+          border: '1px solid rgba(255,79,26,0.12)',
           borderRadius: '16px',
           padding: '1.4rem 1.5rem',
           marginBottom: '1.25rem',
@@ -211,13 +211,13 @@ function CardForm({
             fontSize: '14px',
             marginTop: '12px',
             paddingTop: '12px',
-            borderTop: '1px solid rgba(198,241,53,0.12)',
+            borderTop: '1px solid rgba(255,79,26,0.12)',
           }}
         >
           <span style={{ fontWeight: 600, color: 'var(--muted)' }}>Total if confirmed</span>
           <span
             style={{
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-display)', fontStretch: '75%',
               fontSize: '28px',
               color: 'var(--green)',
               letterSpacing: '-0.04em',
@@ -283,7 +283,7 @@ function CardForm({
           cursor: isDisabled ? 'not-allowed' : 'pointer',
           background: isDisabled ? 'var(--surface2)' : 'var(--green)',
           color: isDisabled ? 'var(--muted)' : 'var(--black)',
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-display)', fontStretch: '75%',
           fontWeight: 900,
           letterSpacing: '-0.025em',
           transition: 'background 0.15s ease, color 0.15s ease, transform 0.18s var(--ease-out), box-shadow 0.18s ease',
@@ -427,12 +427,12 @@ export default function PlayerPaymentForm({ sessionId, slot, hasRival, isLoggedI
   }
 
   const appearance = {
-    theme: 'night' as const,
+    theme: 'stripe' as const,
     variables: {
-      colorPrimary: '#C6F135',
-      colorBackground: '#161616',
-      colorText: '#F7F4EE',
-      colorDanger: '#FF4444',
+      colorPrimary: '#FF4F1A',
+      colorBackground: '#FFFFFF',
+      colorText: '#101418',
+      colorDanger: '#E5322D',
       fontFamily: 'var(--font-sans)',
       borderRadius: '10px',
     },
@@ -501,7 +501,7 @@ export default function PlayerPaymentForm({ sessionId, slot, hasRival, isLoggedI
       <div
         className="anim-fade-up"
         style={{
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-display)', fontStretch: '75%',
           fontSize: 'clamp(24px, 5vw, 30px)',
           letterSpacing: '-0.04em',
           marginBottom: '0.4rem',

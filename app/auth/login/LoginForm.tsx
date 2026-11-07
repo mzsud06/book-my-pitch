@@ -105,7 +105,7 @@ export default function LoginForm() {
     cursor: disabled ? 'not-allowed' : 'pointer',
     background: disabled ? 'var(--surface3)' : 'var(--green)',
     color: disabled ? 'var(--text-tertiary)' : 'var(--black)',
-    fontFamily: 'var(--font-display)',
+    fontFamily: 'var(--font-display)', fontStretch: '75%',
     fontWeight: 700,
     letterSpacing: '-0.015em',
     marginTop: '8px',
@@ -145,7 +145,7 @@ export default function LoginForm() {
           <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
             <span
               style={{
-                fontFamily: 'var(--font-display)',
+                fontFamily: 'var(--font-display)', fontStretch: '75%',
                 fontSize: '20px',
                 letterSpacing: '-0.03em',
                 color: 'var(--text)',
@@ -175,7 +175,7 @@ export default function LoginForm() {
           <div
             style={{
               background: 'rgba(22,48,31,0.6)',
-              border: '1px solid rgba(198,241,53,0.2)',
+              border: '1px solid rgba(255,79,26,0.2)',
               borderRadius: 'var(--radius-md)',
               padding: '0.875rem 1rem',
               marginBottom: '1rem',
@@ -197,7 +197,7 @@ export default function LoginForm() {
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--radius-xl)',
             padding: 'clamp(1.5rem, 4vw, 2rem)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+            boxShadow: '0 24px 64px rgba(16,20,24,0.10), 0 0 0 1px rgba(16,20,24,0.05)',
           }}
         >
 
@@ -207,7 +207,7 @@ export default function LoginForm() {
               <h1
                 className="anim-fade-up"
                 style={{
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: 'var(--font-display)', fontStretch: '75%',
                   fontSize: '28px',
                   fontWeight: 700,
                   letterSpacing: '-0.03em',
@@ -308,7 +308,7 @@ export default function LoginForm() {
               <h1
                 className="anim-fade-up"
                 style={{
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: 'var(--font-display)', fontStretch: '75%',
                   fontSize: '28px',
                   fontWeight: 700,
                   letterSpacing: '-0.03em',
@@ -396,7 +396,7 @@ export default function LoginForm() {
                   width: '64px',
                   height: '64px',
                   background: 'rgba(22,48,31,0.7)',
-                  border: '1px solid rgba(198,241,53,0.25)',
+                  border: '1px solid rgba(255,79,26,0.25)',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
@@ -410,7 +410,7 @@ export default function LoginForm() {
               </div>
               <h1
                 style={{
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: 'var(--font-display)', fontStretch: '75%',
                   fontSize: '24px',
                   fontWeight: 700,
                   letterSpacing: '-0.03em',

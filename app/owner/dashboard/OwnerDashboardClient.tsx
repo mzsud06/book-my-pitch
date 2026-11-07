@@ -184,8 +184,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           rowGap: '8px',
           borderBottom: '1px solid var(--border)',
           borderTop: '3px solid var(--green)',
-          background: 'rgba(8,8,8,0.97)',
-          backdropFilter: 'blur(28px)',
+          background: 'rgba(255,255,255,0.97)',
           position: 'sticky',
           top: 0,
           zIndex: 200,
@@ -195,7 +194,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           <Link href="/" style={{ textDecoration: 'none' }}>
             <span
               style={{
-                fontFamily: 'var(--font-display)',
+                fontFamily: 'var(--font-display)', fontStretch: '75%',
                 fontSize: '17px',
                 letterSpacing: '-0.04em',
                 color: 'var(--text)',
@@ -320,7 +319,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
           <div
             className="anim-fade-up"
             style={{
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-display)', fontStretch: '75%',
               fontSize: 'clamp(24px, 4vw, 34px)',
               letterSpacing: '-0.04em',
               lineHeight: 0.95,
@@ -352,7 +351,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             >
               <div
                 style={{
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: 'var(--font-display)', fontStretch: '75%',
                   fontSize: 'clamp(24px, 3vw, 32px)',
                   color: 'var(--green)',
                   letterSpacing: '-0.04em',
@@ -383,7 +382,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             >
               <div
                 style={{
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: 'var(--font-display)', fontStretch: '75%',
                   fontSize: '15px',
                   letterSpacing: '-0.025em',
                 }}
@@ -470,7 +469,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             >
               <div
                 style={{
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: 'var(--font-display)', fontStretch: '75%',
                   fontSize: '15px',
                   letterSpacing: '-0.025em',
                 }}
@@ -522,7 +521,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                     style={{
                       flex: 1,
                       height: '6px',
-                      background: 'rgba(255,255,255,0.06)',
+                      background: 'rgba(16,20,24,0.06)',
                       borderRadius: '100px',
                       overflow: 'hidden',
                     }}
@@ -534,7 +533,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                         background: fillPct >= 80 ? 'var(--green)' : fillPct >= 50 ? 'var(--amber)' : 'var(--muted)',
                         width: `${fillPct}%`,
                         transition: 'width 0.8s var(--ease-out)',
-                        boxShadow: fillPct >= 80 ? '0 0 8px rgba(198,241,53,0.4)' : 'none',
+                        boxShadow: fillPct >= 80 ? '0 0 8px rgba(255,79,26,0.4)' : 'none',
                       }}
                     />
                   </div>
@@ -569,7 +568,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
             >
               <div
                 style={{
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: 'var(--font-display)', fontStretch: '75%',
                   fontSize: '15px',
                   letterSpacing: '-0.025em',
                 }}
@@ -608,7 +607,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                         padding: '0.85rem 1rem',
                         background: 'var(--surface2)',
                         borderRadius: '10px',
-                        border: '1px solid rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(16,20,24,0.06)',
                       }}
                     >
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -633,7 +632,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                             style={{
                               flex: 1,
                               height: '4px',
-                              background: 'rgba(255,255,255,0.08)',
+                              background: 'rgba(16,20,24,0.08)',
                               borderRadius: '100px',
                               overflow: 'hidden',
                               maxWidth: '140px',
@@ -654,7 +653,7 @@ export default function OwnerDashboardClient({ venue, sessions: initialSessions,
                         </div>
                       </div>
                       <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '1rem' }}>
-                        <div style={{ fontSize: '17px', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--amber)', letterSpacing: '-0.03em' }}>
+                        <div style={{ fontSize: '17px', fontWeight: 700, fontFamily: 'var(--font-display)', fontStretch: '75%', color: 'var(--amber)', letterSpacing: '-0.03em' }}>
                           {count}/{s.slots.max_players}
                         </div>
                         <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 500 }}>players</div>

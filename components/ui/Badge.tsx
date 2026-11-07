@@ -10,29 +10,29 @@ interface BadgeProps {
 
 const styles: Record<BadgeVariant, React.CSSProperties> = {
   peak: {
-    background: 'rgba(255,184,0,0.12)',
-    border: '1px solid rgba(255,184,0,0.25)',
-    color: '#FFB800',
+    background: 'rgba(255,79,26,0.10)',
+    border: '1px solid rgba(255,79,26,0.22)',
+    color: '#B83208',
   },
   offpeak: {
-    background: 'rgba(22,48,31,0.8)',
-    border: '1px solid rgba(22,48,31,1)',
-    color: 'var(--green)',
+    background: 'var(--pitch-green)',
+    border: '1px solid rgba(198,244,50,0.6)',
+    color: '#3F5200',
   },
   weekend: {
-    background: 'rgba(94,168,255,0.12)',
-    border: '1px solid rgba(94,168,255,0.3)',
-    color: '#5EA8FF',
+    background: 'rgba(16,20,24,0.07)',
+    border: '1px solid rgba(16,20,24,0.14)',
+    color: 'var(--ink)',
   },
   neutral: {
-    background: 'rgba(255,255,255,0.06)',
+    background: 'rgba(16,20,24,0.06)',
     border: '1px solid var(--border)',
     color: 'var(--text-secondary)',
   },
   public: {
-    background: 'rgba(198,241,53,0.12)',
-    border: '1px solid rgba(198,241,53,0.3)',
-    color: 'var(--green)',
+    background: 'var(--ink)',
+    border: '1px solid var(--ink)',
+    color: '#FFFFFF',
   },
 }
 

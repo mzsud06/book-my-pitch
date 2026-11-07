@@ -233,10 +233,8 @@ export default function Nav() {
         position: 'sticky',
         top: 0,
         zIndex: 300,
-        background: 'rgba(8,8,8,0.96)',
-        backdropFilter: 'blur(32px)',
-        WebkitBackdropFilter: 'blur(32px)',
-        boxShadow: '0 1px 0 rgba(255,255,255,0.03)',
+        background: 'rgba(255,255,255,0.96)',
+        boxShadow: '0 1px 0 rgba(16,20,24,0.03)',
       }}
     >
         {/* Wordmark */}
@@ -250,11 +248,11 @@ export default function Nav() {
             minHeight: '44px',
           }}
         >
-          <img src="/logo.png" alt="BookMyPitch" style={{ height: '48px', width: 'auto', display: 'block' }} />
+          <img src="/logo-mark.png" alt="BookMyPitch" style={{ height: '30px', width: 'auto', display: 'block' }} />
           <span
             className="nav-wordmark-text"
             style={{
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-display)', fontStretch: '75%',
               fontSize: 'clamp(15px, 3.5vw, 18px)',
               fontWeight: 700,
               letterSpacing: '-0.02em',
@@ -263,7 +261,7 @@ export default function Nav() {
               userSelect: 'none',
             }}
           >
-            Book<span style={{ color: '#C6F135' }}>My</span>Pitch
+            Book<span style={{ color: 'var(--brand)' }}>My</span>Pitch
             <span
               style={{
                 color: 'var(--text-secondary)',
@@ -356,7 +354,7 @@ export default function Nav() {
                         justifyContent: 'center',
                         fontFamily: 'var(--font-sans)',
                         lineHeight: 1,
-                        border: '2px solid rgba(8,8,8,0.96)',
+                        border: '2px solid #fff',
                       }}
                     >
                       {unreadCount > 9 ? '9+' : unreadCount}
@@ -378,7 +376,7 @@ export default function Nav() {
                       maxHeight: '360px',
                       overflowY: 'auto',
                       zIndex: 400,
-                      boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+                      boxShadow: '0 16px 48px rgba(16,20,24,0.10), 0 0 0 1px rgba(16,20,24,0.04)',
                     }}
                   >
                     <div
@@ -417,7 +415,7 @@ export default function Nav() {
                             borderRadius: '10px',
                             cursor: 'pointer',
                             marginBottom: '2px',
-                            background: n.read ? 'transparent' : 'rgba(198,241,53,0.06)',
+                            background: n.read ? 'transparent' : 'rgba(255,79,26,0.06)',
                           }}
                         >
                           <div
@@ -483,7 +481,7 @@ export default function Nav() {
                     justifyContent: 'center',
                     fontSize: '12px',
                     fontWeight: 700,
-                    fontFamily: 'var(--font-display)',
+                    fontFamily: 'var(--font-display)', fontStretch: '75%',
                     flexShrink: 0,
                   }}
                 >
@@ -507,7 +505,7 @@ export default function Nav() {
                     padding: '6px',
                     minWidth: '236px',
                     zIndex: 400,
-                    boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+                    boxShadow: '0 16px 48px rgba(16,20,24,0.10), 0 0 0 1px rgba(16,20,24,0.04)',
                   }}
                 >
                   {/* Profile header */}
@@ -534,7 +532,7 @@ export default function Nav() {
                         justifyContent: 'center',
                         fontSize: '17px',
                         fontWeight: 700,
-                        fontFamily: 'var(--font-display)',
+                        fontFamily: 'var(--font-display)', fontStretch: '75%',
                       }}
                     >
                       {initial}
@@ -549,7 +547,7 @@ export default function Nav() {
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           letterSpacing: '-0.01em',
-                          fontFamily: 'var(--font-display)',
+                          fontFamily: 'var(--font-display)', fontStretch: '75%',
                         }}
                       >
                         {user.name || firstName}
@@ -726,10 +724,10 @@ export default function Nav() {
             gap: '5px',
           }}
         >
-          <img src="/logo.png" alt="BookMyPitch" style={{ height: '48px', width: 'auto', display: 'block' }} />
+          <img src="/logo-mark.png" alt="BookMyPitch" style={{ height: '30px', width: 'auto', display: 'block' }} />
           <span
             style={{
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-display)', fontStretch: '75%',
               fontSize: '18px',
               fontWeight: 700,
               letterSpacing: '-0.02em',
@@ -737,7 +735,7 @@ export default function Nav() {
               lineHeight: 1,
             }}
           >
-            Book<span style={{ color: '#C6F135' }}>My</span>Pitch
+            Book<span style={{ color: 'var(--brand)' }}>My</span>Pitch
             <span style={{ color: 'var(--text-secondary)', opacity: 0.75, fontSize: '0.72em', fontWeight: 600, marginLeft: '1px' }}>
               .uk
             </span>
@@ -760,7 +758,7 @@ export default function Nav() {
                     alignItems: 'center',
                     padding: '10px 28px',
                     borderRadius: 'var(--radius-full)',
-                    fontFamily: 'var(--font-display)',
+                    fontFamily: 'var(--font-display)', fontStretch: '75%',
                     fontWeight: 600,
                     fontSize: '22px',
                     letterSpacing: '-0.01em',

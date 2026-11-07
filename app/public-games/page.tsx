@@ -3,6 +3,7 @@ import Nav from '@/components/Nav'
 import { Container } from '@/components/ui/Container'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { GameCard } from '@/components/GameCard'
 import { Button } from '@/components/ui/Button'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -21,35 +22,6 @@ function fmtSlotDate(dateStr: string): string {
 
 function typeLabelFromVariant(variant: 'peak' | 'offpeak' | 'weekend'): string {
   return variant === 'peak' ? 'Peak' : variant === 'offpeak' ? 'Off-peak' : 'Weekend'
-}
-
-function PeopleIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="6" cy="5" r="2.2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M2 13c0-2.2 1.8-3.6 4-3.6s4 1.4 4 3.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="11.5" cy="5.5" r="1.7" stroke="currentColor" strokeWidth="1.3" opacity="0.75" />
-      <path d="M9.8 9.6c1.8.2 3.2 1.5 3.2 3.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.75" />
-    </svg>
-  )
-}
-
-function ClockIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="6.2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M8 4.6V8l2.6 1.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function PinIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M8 14.5s5-4.2 5-8.2A5 5 0 0 0 3 6.3c0 4 5 8.2 5 8.2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-      <circle cx="8" cy="6.3" r="1.8" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  )
 }
 
 type GameVenue = Partial<VenueSchedule> & { name: string; address: string }
@@ -133,8 +105,8 @@ export default async function PublicGamesPage() {
             {/* Page header */}
             <div className="anim-fade-up" style={{ marginBottom: '2.5rem', maxWidth: '640px' }}>
               <SectionHeading
-                eyebrow="Live now"
-                heading="Public games"
+                eyebrow="Open games"
+                heading="Squads filling now"
                 sub="Join a game that's already filling up, no organising needed."
               />
             </div>
@@ -149,8 +121,8 @@ export default async function PublicGamesPage() {
                   style={{
                     width: '72px',
                     height: '72px',
-                    background: 'rgba(198,241,53,0.08)',
-                    border: '1px solid rgba(198,241,53,0.15)',
+                    background: 'rgba(255,79,26,0.08)',
+                    border: '1px solid rgba(255,79,26,0.15)',
                     borderRadius: '50%',
                     display: 'flex',
                     alignItems: 'center',
@@ -163,7 +135,7 @@ export default async function PublicGamesPage() {
                 </div>
                 <div
                   style={{
-                    fontFamily: 'var(--font-display)',
+                    fontFamily: 'var(--font-display)', fontStretch: '75%',
                     fontSize: '22px',
                     letterSpacing: '-0.03em',
                     marginBottom: '0.6rem',
@@ -180,106 +152,26 @@ export default async function PublicGamesPage() {
                 </Link>
               </Card>
             ) : (
-              /* Game cards — same visual treatment as the homepage's "Live now" preview */
-              <div className="public-games-grid">
-                {games.map((game, idx) => {
-                  const cardInner = (
-                    <Card
-                      hover={!game.isFull}
-                      style={{
-                        padding: 0,
-                        overflow: 'hidden',
-                        height: '100%',
-                        borderRadius: '16px',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        opacity: game.isFull ? 0.6 : 1,
-                      }}
-                    >
-                      {/* Top half — pitch photo */}
-                      <div
-                        style={{
-                          position: 'relative', height: '180px',
-                          backgroundImage: 'url(/example-pitch.jpg)',
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                        }}
-                      >
-                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,8,0.4)' }} />
-                        <div
-                          style={{
-                            position: 'absolute', top: '10px', left: '10px',
-                            display: 'inline-flex', alignItems: 'center', gap: '5px',
-                            padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                            background: game.isFull ? 'var(--red)' : '#C6F135',
-                            color: game.isFull ? '#fff' : '#080808',
-                            fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 700,
-                            letterSpacing: '0.02em',
-                          }}
-                        >
-                          <PeopleIcon /> {game.playerCount}/{game.maxPlayers} players
-                        </div>
-                      </div>
-
-                      {/* Bottom half — game details */}
-                      <div style={{ background: '#0e0e0e', padding: '1rem 1.2rem' }}>
-                        <div style={{
-                          fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700,
-                          letterSpacing: '-0.01em', color: '#fff', lineHeight: 1.2, marginBottom: '6px',
-                        }}>
-                          {game.organiserName ? `${game.organiserName}'s game` : "Public game"}
-                        </div>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: '6px',
-                          fontFamily: 'var(--font-sans)', fontSize: '12px',
-                          color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '4px',
-                        }}>
-                          <ClockIcon /> {game.date} · {game.time}
-                        </div>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: '6px',
-                          fontFamily: 'var(--font-sans)', fontSize: '12px',
-                          color: 'var(--text-secondary)', fontWeight: 500, marginBottom: '0.9rem',
-                        }}>
-                          <PinIcon /> {game.venueName}{game.venueAddress ? ` · ${game.venueAddress}` : ''}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                          <Badge variant={game.badgeVariant}>{typeLabelFromVariant(game.badgeVariant)}</Badge>
-                          <div style={{
-                            display: 'inline-flex', alignItems: 'baseline', gap: '4px',
-                            padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)',
-                          }}>
-                            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '13px', fontWeight: 700, color: 'var(--green)' }}>
-                              {game.price}
-                            </span>
-                            <span style={{ fontFamily: 'var(--font-sans)', fontSize: '11px', fontWeight: 600, color: 'var(--green)', opacity: 0.85 }}>
-                              per player
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  )
-
-                  return game.isFull ? (
-                    <div
-                      key={game.id}
-                      className="anim-fade-up"
-                      style={{ animationDelay: `${idx * 60}ms`, cursor: 'default' }}
-                    >
-                      {cardInner}
-                    </div>
-                  ) : (
-                    <Link
-                      key={game.id}
+              <div className="public-games-grid public-games-grid--3">
+                {games.map((game, idx) => (
+                  <div key={game.id} className="anim-fade-up" style={{ animationDelay: `${Math.min(idx, 8) * 60}ms` }}>
+                    <GameCard
                       href={`/session/${game.id}`}
-                      className="anim-fade-up"
-                      style={{ animationDelay: `${idx * 60}ms`, textDecoration: 'none', display: 'block' }}
-                    >
-                      {cardInner}
-                    </Link>
-                  )
-                })}
+                      photo={idx % 2 === 0 ? '/example-pitch.jpg' : '/game-card.jpg'}
+                      title={game.organiserName ? `${game.organiserName}'s game` : 'Public game'}
+                      venue={game.venueName}
+                      area={game.venueAddress}
+                      date={game.date}
+                      time={game.time.split(' – ')[0]}
+                      price={game.price}
+                      filled={game.playerCount}
+                      total={game.maxPlayers}
+                      format={`${game.maxPlayers / 2}-a-side`}
+                      isFull={game.isFull}
+                      badge={<Badge variant={game.badgeVariant}>{typeLabelFromVariant(game.badgeVariant)}</Badge>}
+                    />
+                  </div>
+                ))}
               </div>
             )}
 

@@ -58,7 +58,7 @@ export default function AdminVenuesClient({ venues: initial, ownerEmails }: Prop
   const row = (v: AdminVenue) => (
     <Card key={v.id} style={{ padding: '1.1rem 1.4rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: '16px', letterSpacing: '-0.02em', marginBottom: '2px' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '16px', letterSpacing: '-0.02em', marginBottom: '2px' }}>
           {v.name}
         </div>
         <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
@@ -92,7 +92,7 @@ export default function AdminVenuesClient({ venues: initial, ownerEmails }: Prop
 
   return (
     <div style={{ maxWidth: '860px', margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', letterSpacing: '-0.03em', marginBottom: '0.4rem' }}>
+      <div style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '26px', letterSpacing: '-0.03em', marginBottom: '0.4rem' }}>
         Venue approvals
       </div>
       <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '2rem' }}>

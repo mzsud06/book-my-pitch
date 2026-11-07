@@ -36,7 +36,7 @@ export function Footer() {
             style={{
               display: 'inline-flex',
               alignItems: 'baseline',
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-display)', fontStretch: '75%',
               fontSize: '17px',
               fontWeight: 700,
               letterSpacing: '-0.03em',

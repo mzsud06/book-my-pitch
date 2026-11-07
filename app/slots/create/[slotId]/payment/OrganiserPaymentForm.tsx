@@ -220,7 +220,7 @@ function CardStep({
             fontWeight: 800,
             color: 'var(--text)',
             paddingTop: '8px',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
+            borderTop: '1px solid rgba(16,20,24,0.06)',
             marginTop: '2px',
           }}
         >
@@ -233,14 +233,14 @@ function CardStep({
       <div
         style={{
           background: 'rgba(22,48,31,0.6)',
-          border: '1px solid rgba(198,241,53,0.25)',
+          border: '1px solid rgba(255,79,26,0.25)',
           borderRadius: 'var(--radius-lg)',
           padding: '1rem 1.2rem',
         }}
       >
         <div
           style={{
-            fontFamily: 'var(--font-display)',
+            fontFamily: 'var(--font-display)', fontStretch: '75%',
             fontSize: '15px',
             fontWeight: 700,
             letterSpacing: '-0.02em',
@@ -293,7 +293,7 @@ function CardStep({
             cursor: isDisabled ? 'not-allowed' : 'pointer',
             background: isDisabled ? 'var(--surface2)' : 'var(--green)',
             color: isDisabled ? 'var(--text-secondary)' : 'var(--black)',
-            fontFamily: 'var(--font-display)',
+            fontFamily: 'var(--font-display)', fontStretch: '75%',
             fontWeight: 700,
             fontSize: '15px',
             letterSpacing: '-0.015em',
@@ -407,12 +407,12 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
   }, [clientSecret])
 
   const appearance = {
-    theme: 'night' as const,
+    theme: 'stripe' as const,
     variables: {
-      colorPrimary: '#C6F135',
-      colorBackground: '#161616',
-      colorText: '#F7F4EE',
-      colorDanger: '#FF4444',
+      colorPrimary: '#FF4F1A',
+      colorBackground: '#FFFFFF',
+      colorText: '#101418',
+      colorDanger: '#E5322D',
       fontFamily: 'var(--font-sans)',
       borderRadius: '10px',
     },
@@ -481,7 +481,7 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
             cursor: 'pointer',
             background: 'var(--green)',
             color: 'var(--black)',
-            fontFamily: 'var(--font-display)',
+            fontFamily: 'var(--font-display)', fontStretch: '75%',
             fontWeight: 700,
             fontSize: '15px',
             letterSpacing: '-0.015em',
@@ -536,7 +536,7 @@ export default function OrganiserPaymentForm({ slot, slotIds }: Props) {
       <div
         className="anim-fade-up d-80"
         style={{
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-display)', fontStretch: '75%',
           fontSize: 'clamp(24px, 5vw, 34px)',
           letterSpacing: '-0.04em',
           lineHeight: 0.95,

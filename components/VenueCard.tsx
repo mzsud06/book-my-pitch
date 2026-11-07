@@ -50,7 +50,7 @@ export function VenueCard({ venue, index = 0 }: { venue: VenueCardData; index?: 
         <div style={{ padding: '1.1rem 1.25rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
           <h3
             style={{
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-display)', fontStretch: '75%',
               fontSize: '18px',
               fontWeight: 700,
               letterSpacing: '-0.015em',
@@ -88,7 +88,7 @@ export function VenueCard({ venue, index = 0 }: { venue: VenueCardData; index?: 
               <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: '2px' }}>
                 Starts from
               </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 700, color: 'var(--green)' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '20px', fontWeight: 700, color: 'var(--green)' }}>
                 {formatPerPlayer(cheapestPitch.offpeak_price, cheapestPitch.max_players)}{' '}
                 <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>per player</span>
               </div>

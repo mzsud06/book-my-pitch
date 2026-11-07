@@ -464,7 +464,7 @@ export default function OwnerSignupPage() {
           transform: 'translateX(-50%)',
           width: '600px',
           height: '400px',
-          background: 'radial-gradient(ellipse at center, rgba(198,241,53,0.04) 0%, transparent 70%)',
+          background: 'transparent',
           pointerEvents: 'none',
           zIndex: 0,
         }}
@@ -473,7 +473,7 @@ export default function OwnerSignupPage() {
       <div style={{ width: '100%', maxWidth: '540px', position: 'relative', zIndex: 1 }}>
         <div className="anim-fade-up" style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <Link href="/" style={{ textDecoration: 'none', display: 'inline-block' }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: '20px', letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1 }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '20px', letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1 }}>
               Book<span style={{ color: 'var(--green)' }}>My</span>Pitch
               <span style={{ color: 'var(--green)', fontSize: '13px', verticalAlign: 'super', marginLeft: '1px' }}>.uk</span>
             </span>
@@ -483,10 +483,10 @@ export default function OwnerSignupPage() {
         <Card
           className="anim-fade-up d-80"
           style={{
-            border: '1px solid rgba(255,255,255,0.09)',
+            border: '1px solid rgba(16,20,24,0.09)',
             borderTop: '2px solid var(--green)',
             padding: '2rem',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)',
+            boxShadow: '0 8px 40px rgba(16,20,24,0.10), inset 0 1px 0 rgba(16,20,24,0.04)',
           }}
         >
           {stripeSetupPending ? (
@@ -494,14 +494,14 @@ export default function OwnerSignupPage() {
               <div
                 style={{
                   width: '64px', height: '64px', background: 'rgba(22,48,31,0.7)',
-                  border: '1px solid rgba(198,241,53,0.25)', borderRadius: '50%',
+                  border: '1px solid rgba(255,79,26,0.25)', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '26px', margin: '0 auto 1.5rem', color: 'var(--green)',
                 }}
               >
                 ✓
               </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', letterSpacing: '-0.03em', marginBottom: '0.75rem', color: 'var(--text)' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '24px', letterSpacing: '-0.03em', marginBottom: '0.75rem', color: 'var(--text)' }}>
                 Your venue is set up
               </div>
               <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.65, marginBottom: '2rem' }}>
@@ -517,14 +517,14 @@ export default function OwnerSignupPage() {
               <div
                 style={{
                   width: '64px', height: '64px', background: 'rgba(22,48,31,0.7)',
-                  border: '1px solid rgba(198,241,53,0.25)', borderRadius: '50%',
+                  border: '1px solid rgba(255,79,26,0.25)', borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '26px', margin: '0 auto 1.5rem', color: 'var(--green)',
                 }}
               >
                 ✉
               </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', letterSpacing: '-0.03em', marginBottom: '0.75rem', color: 'var(--text)' }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '24px', letterSpacing: '-0.03em', marginBottom: '0.75rem', color: 'var(--text)' }}>
                 Check your email
               </div>
               <div style={{ fontSize: '15px', color: 'var(--muted)', lineHeight: 1.65, marginBottom: '2rem' }}>
@@ -541,7 +541,7 @@ export default function OwnerSignupPage() {
                 <div
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '6px',
-                    background: 'rgba(198,241,53,0.08)', border: '1px solid rgba(198,241,53,0.16)',
+                    background: 'rgba(255,79,26,0.08)', border: '1px solid rgba(255,79,26,0.16)',
                     borderRadius: '6px', padding: '3px 10px', marginBottom: '1rem',
                   }}
                 >
@@ -550,7 +550,7 @@ export default function OwnerSignupPage() {
                     List your venue
                   </span>
                 </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '26px', letterSpacing: '-0.04em', lineHeight: 0.95, marginBottom: '0.9rem' }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontStretch: '75%', fontSize: '26px', letterSpacing: '-0.04em', lineHeight: 0.95, marginBottom: '0.9rem' }}>
                   Set up your pitch
                 </div>
 
@@ -764,7 +764,7 @@ export default function OwnerSignupPage() {
                           fontSize: '12px', fontWeight: 600, cursor: 'pointer',
                           padding: '0.5rem 0.85rem', borderRadius: 'var(--radius-full)',
                           border: active ? '1px solid var(--green)' : '1px solid var(--border)',
-                          background: active ? 'rgba(198,241,53,0.1)' : 'var(--surface2)',
+                          background: active ? 'rgba(255,79,26,0.1)' : 'var(--surface2)',
                           color: active ? 'var(--green)' : 'var(--muted)',
                         }}
                       >
@@ -885,7 +885,7 @@ export default function OwnerSignupPage() {
                     cursor: loading ? 'not-allowed' : 'pointer',
                     background: loading ? 'var(--surface2)' : 'var(--green)',
                     color: loading ? 'var(--muted)' : 'var(--black)',
-                    fontFamily: 'var(--font-display)', fontWeight: 900, letterSpacing: '-0.025em',
+                    fontFamily: 'var(--font-display)', fontStretch: '75%', fontWeight: 900, letterSpacing: '-0.025em',
                     marginTop: '4px', lineHeight: 1,
                   }}
                 >

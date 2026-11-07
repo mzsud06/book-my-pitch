@@ -1,17 +1,23 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from 'geist/font/sans';
+import localFont from 'next/font/local';
 import CookieNotice from '@/components/CookieNotice';
 import "./globals.css";
+
+// Display face: Archivo (SIL OFL, bundled in /app/fonts) with its width axis,
+// so headlines can run condensed (kit-number / scoreboard feel). Body stays Geist.
+const archivo = localFont({
+  src: './fonts/Archivo-wdth.woff2',
+  variable: '--font-archivo',
+  weight: '100 900',
+  display: 'swap',
+  declarations: [{ prop: 'font-stretch', value: '62% 125%' }],
+});
 
 export const metadata: Metadata = {
   title: "BookMyPitch: Play football tonight in London",
   description: "Find a game near you or start one in under a minute. No bank transfers, everyone pays automatically when the team is full.",
   icons: {
-    // favicon.png/.ico have a solid black background (matching --black) —
-    // logo.png itself stays transparent since it's also used inline on the
-    // nav bar, where transparency blends correctly; a transparent favicon
-    // instead composites to white in most browsers/search results, making
-    // the ball nearly invisible at small sizes.
     icon: [
       { url: '/favicon.ico' },
       { url: '/favicon.png', type: 'image/png' },
@@ -45,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={GeistSans.variable}>
+    <html lang="en" className={`${GeistSans.variable} ${archivo.variable}`}>
       <body>
         {children}
         <CookieNotice />
