@@ -35,9 +35,8 @@ function formatNotifTime(iso: string): string {
 
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/slots', label: 'Book a pitch' },
-  { href: '/public-games', label: 'Public games' },
-  { href: '/list-your-venue', label: 'List your venue' },
+  { href: '/create', label: 'Create a game' },
+  { href: '/my-games', label: 'My games' },
 ]
 
 const SOCIALS = [
@@ -73,7 +72,6 @@ const SOCIALS = [
 export default function Nav() {
   const pathname = usePathname()
   const router = useRouter()
-  const isOwnerArea = pathname?.startsWith('/owner')
   const [user, setUser] = useState<AuthUser | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -199,7 +197,7 @@ export default function Nav() {
       setUnreadCount(c => Math.max(0, c - 1))
     }
     if (n.session_id) {
-      router.push(`/session/${n.session_id}`)
+      router.push(`/game/${n.session_id}`)
     }
   }
 
@@ -215,7 +213,6 @@ export default function Nav() {
   const firstName = user?.name?.split(' ')[0] || user?.email?.split('@')[0] || ''
   const initial = firstName[0]?.toUpperCase() ?? '?'
 
-  if (isOwnerArea) return null
 
   return (
     <>
@@ -571,7 +568,7 @@ export default function Nav() {
                   </div>
 
                   <Link
-                    href="/my-bookings"
+                    href="/my-games"
                     style={{ textDecoration: 'none' }}
                     onClick={() => setDropdownOpen(false)}
                   >

@@ -48,23 +48,16 @@ export function Footer() {
             <span style={{ color: 'var(--text-secondary)', fontSize: '11px', verticalAlign: 'super', marginLeft: '1px', opacity: 0.75, fontWeight: 600 }}>.uk</span>
           </div>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '0.6rem', lineHeight: 1.5 }}>
-            Football booking for London.
+            Stop chasing players for money.
           </p>
         </div>
 
         {/* Middle — explore links */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
           <div style={columnLabelStyle}>Explore</div>
-          <Link href="/public-games" style={linkStyle}>Find a game</Link>
-          <Link href="/slots" style={linkStyle}>Browse slots</Link>
+          <Link href="/create" style={linkStyle}>Create a game</Link>
+          <Link href="/my-games" style={linkStyle}>My games</Link>
           <Link href="/#faq" style={linkStyle}>FAQ</Link>
-        </div>
-
-        {/* Venue owners */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-          <div style={columnLabelStyle}>Venue owners</div>
-          <Link href="/list-your-venue" style={linkStyle}>List your venue</Link>
-          <Link href="/owner/login" style={linkStyle}>Owner login</Link>
         </div>
 
         {/* Right — support links */}

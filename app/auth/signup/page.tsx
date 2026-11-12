@@ -16,7 +16,7 @@ export default function SignupPage() {
 function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') ?? '/slots'
+  const redirectTo = searchParams.get('redirect') ?? '/create'
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -233,7 +233,7 @@ function SignupForm() {
                 {' '}Click the link to activate your account, then come back to log in.
               </div>
               <Link
-                href={`/auth/login${redirectTo !== '/slots' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+                href={`/auth/login${redirectTo !== '/create' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
                 style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 600, textDecoration: 'none', letterSpacing: '-0.01em', fontFamily: 'var(--font-sans)' }}
               >
                 Go to login →
@@ -269,7 +269,7 @@ function SignupForm() {
               >
                 Already have an account?{' '}
                 <Link
-                  href={`/auth/login${redirectTo !== '/slots' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+                  href={`/auth/login${redirectTo !== '/create' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
                   style={{ color: 'var(--green)', textDecoration: 'none', fontWeight: 600 }}
                 >
                   Log in

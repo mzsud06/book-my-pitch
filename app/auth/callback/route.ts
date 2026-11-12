@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/my-bookings'
+  const next = searchParams.get('next') ?? '/my-games'
 
   // Prevent open-redirect: only allow relative paths that start with a single /
   // Reject //evil.com (protocol-relative) and anything containing ://
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     !next.startsWith('//') &&
     !next.includes('://')
       ? next
-      : '/my-bookings'
+      : '/my-games'
 
   if (code) {
     const supabase = await createClient()

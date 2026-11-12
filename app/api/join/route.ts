@@ -2,307 +2,152 @@ import * as Sentry from '@sentry/nextjs'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-import { stripe } from '@/lib/stripe'
+import { stripe, PLAYER_FEE_PENCE } from '@/lib/stripe'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
-import { triggerPayments, SlotForPayment } from '@/lib/triggerPayments'
-import { expireIfStale } from '@/lib/expireSessions'
+import { GAME_COLS, GameRow, formatGameDate, formatTime, isValidUUID, paidSpots, CONFIRM_WINDOW_HOURS } from '@/lib/games'
+import { expireIfNeeded, releaseHold } from '@/lib/gameLifecycle'
+import { emailOrganiserGameFull } from '@/lib/gameEmail'
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-function isValidUUID(val: unknown): val is string {
-  return typeof val === 'string' && UUID_RE.test(val)
-}
-
-function redactPhone(phone: unknown): string {
-  if (typeof phone !== 'string' || phone.length === 0) return '(none)'
-  return `${phone.slice(0, 3)}****`
-}
-
-function redactStripeId(id: unknown): string {
-  if (typeof id !== 'string' || id.length === 0) return '(none)'
-  return `${id.slice(0, 6)}...`
-}
-
-const RATE_LIMIT_MAX = 50
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
-
+// Step 2 of joining: the card hold succeeded in the browser. Verify it with
+// Stripe, add the player, and if that was the last paid spot flip the game to
+// 'full' and tell the organiser to book the pitch. Nobody is charged yet.
 export async function POST(req: NextRequest) {
-  if (!checkRateLimit(`join:${getClientIp(req)}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS)) {
+  if (!checkRateLimit(`join:${getClientIp(req)}`, 50, 60 * 60 * 1000)) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
   }
 
+  let paymentIntentId: string | null = null
   try {
     const body = await req.json()
-    const { slotId, sessionId, isOrganiser, name, phone, paymentMethodId, customerId } = body
+    const { sessionId, name, phone } = body
+    paymentIntentId = typeof body.paymentIntentId === 'string' ? body.paymentIntentId : null
 
-    console.log('[join] POST body received:', JSON.stringify({
-      slotId,
-      sessionId,
-      isOrganiser,
-      name: typeof name === 'string' ? `${name.slice(0, 1)}***` : name,
-      phone: redactPhone(phone),
-      paymentMethodId: redactStripeId(paymentMethodId),
-      customerId: redactStripeId(customerId),
-    }))
-
-    // Validate UUIDs
-    if (!isValidUUID(slotId) || !isValidUUID(sessionId)) {
-      console.warn('[join] 400 uuid-check: slotId valid=', isValidUUID(slotId), 'sessionId valid=', isValidUUID(sessionId))
+    if (!isValidUUID(sessionId) || !paymentIntentId || !paymentIntentId.startsWith('pi_')) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
-
-    // Validate Stripe IDs — must start with expected prefixes
-    if (typeof paymentMethodId !== 'string' || !paymentMethodId.startsWith('pm_')) {
-      console.warn('[join] 400 paymentMethodId failed: type=', typeof paymentMethodId, 'value=', redactStripeId(paymentMethodId))
-      return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 })
-    }
-    if (typeof customerId !== 'string' || !customerId.startsWith('cus_')) {
-      console.warn('[join] 400 customerId failed: type=', typeof customerId, 'value=', redactStripeId(customerId))
-      return NextResponse.json({ error: 'Invalid customer' }, { status: 400 })
-    }
-
-    // Server-side input validation (client also validates, but always re-validate server-side)
     const trimmedName = typeof name === 'string' ? name.trim() : ''
     if (!trimmedName || trimmedName.length > 100 || !/^[A-Za-z\s'-]+$/.test(trimmedName)) {
-      console.warn('[join] 400 name failed: length=', trimmedName.length)
       return NextResponse.json({ error: 'Invalid name' }, { status: 400 })
     }
-    const trimmedPhone = typeof phone === 'string' ? phone.trim() : null
-    if (trimmedPhone && !/^\+[0-9]{7,15}$/.test(trimmedPhone)) {
-      console.warn('[join] 400 phone failed: trimmedPhone=', redactPhone(trimmedPhone))
+    const trimmedPhone = typeof phone === 'string' ? phone.trim() : ''
+    if (!/^\+[0-9]{7,15}$/.test(trimmedPhone)) {
       return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
     }
 
     const supabase = await createClient()
-    const serviceSupabase = createServiceClient()
-
-    // Get authenticated user (optional — guests allowed)
     const { data: { user } } = await supabase.auth.getUser()
+    const svc = createServiceClient()
 
-    // Verify from Stripe that the payment method belongs to the claimed customer.
-    // This prevents a client substituting another user's customerId in the request body.
-    const pm = await stripe.paymentMethods.retrieve(paymentMethodId)
-    const pmCustomer = typeof pm.customer === 'string' ? pm.customer : pm.customer?.id
-    if (!pmCustomer || pmCustomer !== customerId) {
-      console.warn('[join] 400 stripe-ownership: pm.customer=', redactStripeId(pmCustomer), 'claimed customerId=', redactStripeId(customerId))
-      return NextResponse.json({ error: 'Invalid payment details' }, { status: 400 })
+    const { data: gameData } = await svc.from('sessions').select(GAME_COLS).eq('id', sessionId).maybeSingle()
+    const game = gameData as GameRow | null
+    if (!game || game.game_kind !== 'organiser') {
+      await releaseHold(paymentIntentId)
+      return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    // Get slot info — use anon client so RLS applies (slot must be publicly readable)
-    const { data: slot, error: slotError } = await supabase
-      .from('slots')
-      .select('*, pitches(*)')
-      .eq('id', slotId)
-      .single()
-
-    if (slotError || !slot) {
-      return NextResponse.json({ error: 'Slot not found' }, { status: 404 })
+    // Trust Stripe, not the browser: the hold must be live, for this game, at the right price.
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId)
+    if (
+      pi.status !== 'requires_capture' ||
+      pi.metadata?.session_id !== sessionId ||
+      pi.amount !== (game.share_pence ?? 0) + PLAYER_FEE_PENCE
+    ) {
+      return NextResponse.json({ error: 'Your card hold could not be verified. Please try again.' }, { status: 400 })
     }
 
-    // Reject joining once the slot's start time has passed, regardless of the
-    // session's stored status. Also flips the session to 'expired' so it
-    // stops showing up as 'filling' anywhere else in the app.
-    const { date: slotDate, start_time: slotStartTime } = slot as unknown as { date: string; start_time: string }
-    if (await expireIfStale(sessionId, slotDate, slotStartTime)) {
-      return NextResponse.json({ error: "This game's time has already passed" }, { status: 400 })
+    const { data: reused } = await svc.from('players').select('id').eq('payment_intent_id', paymentIntentId).maybeSingle()
+    if (reused) return NextResponse.json({ error: 'This payment was already used' }, { status: 409 })
+
+    const status = await expireIfNeeded(svc, game)
+    if (status !== 'filling') {
+      await releaseHold(paymentIntentId)
+      return NextResponse.json({ error: 'This game is no longer taking players. Your card was not charged.' }, { status: 409 })
     }
 
-    // Verify session exists and is still filling — use service client to avoid RLS timing issues
-    const { data: existingSession } = await serviceSupabase
-      .from('sessions')
-      .select('id, status, organiser_id, game_type, slot_ids')
-      .eq('id', sessionId)
-      .single()
-
-    if (!existingSession) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
-    if (existingSession.status !== 'filling') {
-      console.warn('[join] 400 session-status: sessionId=', sessionId, 'status=', existingSession.status)
-      return NextResponse.json({ error: 'Session is no longer accepting players' }, { status: 400 })
+    // Duplicate-join guard.
+    const dupQuery = svc.from('players').select('id').eq('session_id', sessionId)
+    const { data: dup } = user?.id
+      ? await dupQuery.eq('user_id', user.id).maybeSingle()
+      : await dupQuery.eq('phone', trimmedPhone).maybeSingle()
+    if (dup) {
+      await releaseHold(paymentIntentId)
+      return NextResponse.json({ error: "You're already in this game" }, { status: 409 })
     }
 
-    // Duplicate-join guard — run before touching any Stripe resources.
-    if (user?.id) {
-      const { data: alreadyIn } = await serviceSupabase
-        .from('players')
-        .select('id')
-        .eq('session_id', sessionId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-      if (alreadyIn) {
-        return NextResponse.json({ error: "You're already in this game" }, { status: 409 })
-      }
-    } else if (trimmedPhone) {
-      const { data: alreadyIn } = await serviceSupabase
-        .from('players')
-        .select('id')
-        .eq('session_id', sessionId)
-        .eq('phone', trimmedPhone)
-        .maybeSingle()
-      if (alreadyIn) {
-        return NextResponse.json({ error: "You're already in this game" }, { status: 409 })
-      }
-    }
-
-    // Check the session hasn't already hit capacity before inserting
-    const { count: currentCount } = await serviceSupabase
-      .from('players')
-      .select('*', { count: 'exact', head: true })
-      .eq('session_id', sessionId)
-
-    const capacity: number = (slot as unknown as { pitches: { max_players: number } }).pitches.max_players
-    const sessionGameType = (existingSession as unknown as { game_type: string | null }).game_type
-    const organiserId = (existingSession as unknown as { organiser_id: string | null }).organiser_id
-
-    // Open games require an authenticated user — block guests at the API level too.
-    if (sessionGameType === 'open' && !user) {
-      return NextResponse.json({ error: 'You must be logged in to join an open game.' }, { status: 401 })
-    }
-
-    let joinCap = capacity
-
-    // Reserve one slot for the organiser if they haven't paid yet so they can't
-    // be locked out by non-organisers filling all 10 spots first.
-    if (organiserId && user?.id !== organiserId) {
-      const { count: organiserRowCount } = await serviceSupabase
-        .from('players')
-        .select('*', { count: 'exact', head: true })
-        .eq('session_id', sessionId)
-        .eq('user_id', organiserId)
-      if ((organiserRowCount ?? 0) === 0) {
-        joinCap = capacity - 1
-      }
-    }
-
-    if ((currentCount ?? 0) >= joinCap) {
-      console.warn('[join] 409 capacity: currentCount=', currentCount, 'joinCap=', joinCap)
-      return NextResponse.json({ error: 'Session is full' }, { status: 409 })
-    }
-
-    // Use service-role client for the player insert — removes the requirement for
-    // an overly permissive RLS INSERT policy on the players table.
-    const { data: insertedPlayer, error: playerError } = await serviceSupabase
+    const cap = paidSpots(game)
+    const { data: inserted, error: insertError } = await svc
       .from('players')
       .insert({
         session_id: sessionId,
         user_id: user?.id ?? null,
         name: trimmedName,
-        phone: trimmedPhone ?? null,
-        stripe_payment_method_id: paymentMethodId,
-        stripe_customer_id: customerId,
+        phone: trimmedPhone,
+        payment_intent_id: paymentIntentId,
       })
       .select('id')
       .single()
-
-    if (playerError || !insertedPlayer) {
-      Sentry.captureException(new Error(playerError?.message ?? 'Player insert returned no data'), {
+    if (insertError || !inserted) {
+      Sentry.captureException(new Error(insertError?.message ?? 'Player insert returned nothing'), {
         tags: { route: 'POST /api/join', step: 'player_insert' },
-        extra: { session_id: sessionId, slot_id: slotId },
       })
-      console.error('Player insert error:', playerError?.message)
-      return NextResponse.json({ error: 'Failed to add player' }, { status: 500 })
+      await releaseHold(paymentIntentId)
+      return NextResponse.json({ error: 'Could not add you to the game. Your card was not charged.' }, { status: 500 })
     }
 
-    // Count players who have provided payment details.
-    const { count: payingCount } = await serviceSupabase
+    // Two people can race for the last spot. Rank everyone by join order and
+    // drop whoever ended up beyond the cap (deterministic, so exactly the
+    // latest joiner loses).
+    const { data: all } = await svc
       .from('players')
-      .select('*', { count: 'exact', head: true })
+      .select('id')
       .eq('session_id', sessionId)
-      .not('stripe_payment_method_id', 'is', null)
-      .not('stripe_customer_id', 'is', null)
-
-    const playerCount = payingCount ?? 0
-
-    // Notify everyone else already in the session (excluding the player who
-    // just joined) that a new player has arrived.
-    const { data: sessionPlayers } = await serviceSupabase
-      .from('players')
-      .select('user_id')
-      .eq('session_id', sessionId)
-      .not('user_id', 'is', null)
-    const otherUserIds = (sessionPlayers as unknown as { user_id: string }[] ?? [])
-      .map(p => p.user_id)
-      .filter(uid => uid !== (user?.id ?? null))
-    if (otherUserIds.length > 0) {
-      await serviceSupabase.from('notifications').insert(
-        otherUserIds.map(uid => ({
-          user_id: uid,
-          session_id: sessionId,
-          message: `${trimmedName} just joined your game, ${playerCount}/${capacity} players now.`,
-        }))
-      )
+      .order('joined_at', { ascending: true })
+      .order('id', { ascending: true })
+    const ids = (all ?? []).map(p => p.id as string)
+    if (ids.indexOf(inserted.id) >= cap) {
+      await svc.from('players').delete().eq('id', inserted.id)
+      await releaseHold(paymentIntentId)
+      return NextResponse.json({ error: 'Someone just took the last spot. Your card was not charged.' }, { status: 409 })
     }
 
-    // One-off nudge to the organiser once the session is one player away from full.
-    if (organiserId && playerCount === capacity - 1) {
-      await serviceSupabase.from('notifications').insert({
-        user_id: organiserId,
+    const count = ids.length
+    if (game.organiser_id && count < cap) {
+      await svc.from('notifications').insert({
+        user_id: game.organiser_id,
         session_id: sessionId,
-        message: 'Your game is almost full, one more player needed to confirm!',
+        message: `${trimmedName} joined, ${count}/${cap} paid spots filled.`,
       })
     }
 
-    // Multi-hour (60/120/180 min) bookings store the full consecutive slot list here.
-    const existingSessionSlotIds = (existingSession as unknown as { slot_ids: string[] | null }).slot_ids
-    const sessionSlotIds: string[] = existingSessionSlotIds && existingSessionSlotIds.length > 0 ? existingSessionSlotIds : [slot.id]
-
-    // Set when the triggered payment batch below fails for one or more players.
-    // ownPaymentFailed distinguishes "your own card was declined" from "you're
-    // in fine, but someone else's card failed" — the joining player only sees
-    // an error for the former; the latter still returns success so they land
-    // on the session page instead of a misleading failure screen.
-    let paymentFailure = false
-    let ownPaymentFailed = false
-
-    if (playerCount >= capacity) {
-      // Session just reached capacity — trigger payment collection.
-      let organiserReady = true
-      if (organiserId) {
-        const { count: organiserPaidCount } = await serviceSupabase
-          .from('players')
-          .select('*', { count: 'exact', head: true })
-          .eq('session_id', sessionId)
-          .eq('user_id', organiserId)
-          .not('stripe_payment_method_id', 'is', null)
-        organiserReady = (organiserPaidCount ?? 0) > 0
-      }
-      if (organiserReady) {
-        const r = await triggerPayments(sessionId, slot as unknown as SlotForPayment, sessionSlotIds)
-        if (!r.ok) {
-          paymentFailure = true
-          ownPaymentFailed = r.failedPlayerIds?.includes(insertedPlayer.id) ?? false
-        }
+    if (count >= cap) {
+      const { data: flipped } = await svc
+        .from('sessions')
+        .update({ status: 'full', full_at: new Date().toISOString() })
+        .eq('id', sessionId)
+        .eq('status', 'filling')
+        .select('id')
+      if (flipped && flipped.length > 0 && game.organiser_id) {
+        await svc.from('notifications').insert({
+          user_id: game.organiser_id,
+          session_id: sessionId,
+          message: 'Your game is full. Book the pitch now, then confirm it.',
+        })
+        await emailOrganiserGameFull({
+          organiserId: game.organiser_id,
+          gameId: sessionId,
+          title: game.title ?? 'Football',
+          venueName: game.venue_name ?? '',
+          when: `${formatGameDate(game.game_date!)} ${formatTime(game.start_time!)}`,
+          hours: CONFIRM_WINDOW_HOURS,
+        })
       }
     }
 
-    if (paymentFailure && ownPaymentFailed) {
-      return NextResponse.json({
-        error: 'Your card was declined, so you have not been charged. Please try a different card to secure your spot.',
-      }, { status: 402 })
-    }
-
-    if (paymentFailure && !ownPaymentFailed) {
-      // This player's own payment succeeded and their row is still in the
-      // session — only another player's card failed. Report the real,
-      // post-rollback count rather than the stale `playerCount` computed
-      // before the failed player's row was deleted.
-      const { count: currentCount } = await serviceSupabase
-        .from('players')
-        .select('*', { count: 'exact', head: true })
-        .eq('session_id', sessionId)
-        .not('stripe_payment_method_id', 'is', null)
-        .not('stripe_customer_id', 'is', null)
-      return NextResponse.json({
-        sessionId,
-        playerCount: currentCount ?? playerCount - 1,
-        note: "You're in! Another player's card didn't go through, so the game isn't confirmed yet, you'll be charged automatically once it fills back up.",
-      })
-    }
-
-    return NextResponse.json({ sessionId, playerCount })
+    return NextResponse.json({ sessionId, playerCount: count })
   } catch (err) {
-    Sentry.captureException(err, {
-      tags: { route: 'POST /api/join' },
-    })
+    Sentry.captureException(err, { tags: { route: 'POST /api/join' } })
     console.error('join error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    if (paymentIntentId) await releaseHold(paymentIntentId)
+    return NextResponse.json({ error: 'Internal server error. Your card was not charged.' }, { status: 500 })
   }
 }

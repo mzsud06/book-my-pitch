@@ -31,7 +31,7 @@ export default function ResetPasswordPage() {
       return
     }
 
-    router.push('/my-bookings')
+    router.push('/my-games')
   }
 
   const inputStyle: React.CSSProperties = {

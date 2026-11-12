@@ -4,8 +4,8 @@ import CookieNotice from '@/components/CookieNotice';
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BookMyPitch: Play football tonight in London",
-  description: "Find a game near you or start one in under a minute. No bank transfers, everyone pays automatically when the team is full.",
+  title: "BookMyPitch: Stop chasing football money",
+  description: "Organise football without chasing payments. Share one link, players hold their card, and you collect the pitch cost once it is booked.",
   icons: {
     // favicon.png/.ico have a solid black background (matching --black) —
     // logo.png itself stays transparent since it's also used inline on the
@@ -19,8 +19,8 @@ export const metadata: Metadata = {
     apple: '/favicon.png',
   },
   openGraph: {
-    title: "BookMyPitch: Play football tonight",
-    description: "Find a game near you or start one in under a minute. No bank transfers, everyone pays automatically when the team is full.",
+    title: "BookMyPitch: Stop chasing football money",
+    description: "Organise football without chasing payments. Share one link, players hold their card, and you collect the pitch cost once it is booked.",
     url: "https://bookmypitch.uk",
     type: "website",
     images: [
