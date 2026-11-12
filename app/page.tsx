@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import Nav from '@/components/Nav'
+import PageReveal from '@/components/PageReveal'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -56,13 +58,19 @@ export default function HomePage() {
   return (
     <>
       <Nav />
+      <PageReveal>
       <main>
-        <section style={{ paddingTop: 'clamp(4rem, 12vh, 8rem)', paddingBottom: 'clamp(3rem, 8vh, 5rem)' }}>
+        <section style={{ position: 'relative', overflow: 'hidden', minHeight: 'min(88vh, 820px)', display: 'flex', alignItems: 'flex-end', paddingTop: 'clamp(6rem, 16vh, 10rem)', paddingBottom: 'clamp(3rem, 8vh, 5rem)' }}>
+          <Image src="/hero-pitch-web.jpg" alt="" fill priority sizes="100vw" style={{ objectFit: 'cover', objectPosition: 'center 40%', zIndex: 0 }} />
+          {/* Navy fade: keeps the floodlit sky at the top, sinks into the page colour at the bottom so white type stays readable */}
+          <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'linear-gradient(180deg, rgba(11,26,46,0.15) 0%, rgba(11,26,46,0.45) 45%, rgba(11,26,46,0.92) 80%, var(--black) 100%)' }} />
+          <div style={{ position: 'relative', zIndex: 2, width: '100%' }}>
           <Container>
-            <h1 style={{ fontSize: 'var(--text-hero)', letterSpacing: '-0.04em', lineHeight: 0.98, maxWidth: '14ch', marginBottom: '1.5rem' }}>
-              Stop chasing people for football money.
+            <div>
+            <h1 style={{ fontSize: 'var(--text-hero)', letterSpacing: '-0.04em', lineHeight: 0.98, maxWidth: '15ch', marginBottom: '1.5rem', fontWeight: 600 }}>
+              Stop chasing people for <span style={{ color: 'var(--green)' }}>football money.</span>
             </h1>
-            <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: '36rem', marginBottom: '2rem' }}>
+            <p style={{ fontSize: '1.2rem', color: 'var(--text)', opacity: 0.85, lineHeight: 1.6, maxWidth: '36rem', marginBottom: '2rem' }}>
               Share one link. Players put their card on hold, you book the pitch once it&apos;s full, and everyone pays automatically. No bank transfers, no screenshots, no reminders.
             </p>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -73,7 +81,9 @@ export default function HomePage() {
                 <Button size="lg" variant="secondary">How it works</Button>
               </Link>
             </div>
+            </div>
           </Container>
+          </div>
         </section>
 
         <section id="how" style={{ paddingTop: 'clamp(3rem, 6vh, 5rem)', paddingBottom: 'clamp(3rem, 6vh, 5rem)' }}>
@@ -104,6 +114,7 @@ export default function HomePage() {
 
         <FaqAccordion items={FAQS} />
       </main>
+      </PageReveal>
       <Footer />
     </>
   )

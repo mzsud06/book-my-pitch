@@ -1,5 +1,7 @@
 # BookMyPitch Design Tokens
 
+Palette: midnight navy and cloud white as the foundation, electric lime as the single accent. CSS variable names `--black` and `--green` are kept for compatibility (they now hold navy and lime).
+
 Design system reference for all visual parts. Later parts of the redesign should read this file and use only these values.
 
 ---
@@ -8,15 +10,15 @@ Design system reference for all visual parts. Later parts of the redesign should
 
 | Token | CSS Variable | Value | Usage |
 |---|---|---|---|
-| Acid green | `--green` | `#C6F135` | THE single action colour. CTAs, prices, live states, selected states. One colour only. |
-| Green dim | `--green-dim` | `#AACE2C` | Hover state of acid green. |
-| Green faint | `--green-faint` | `rgba(198,241,53,0.08)` | Subtle green-tinted fills. |
-| Background | `--black` | `#080808` | Base page background. Near-black with no tint. |
-| Surface | `--surface` | `#111111` | Card background. |
-| Surface 2 | `--surface2` | `#161616` | Elevated cards, dropdown backgrounds. |
-| Surface 3 | `--surface3` | `#1e1e1e` | Hover state of surface 2, inputs. |
-| Surface 4 | `--surface4` | `#232323` | Deeply elevated elements. |
-| Pitch green | `--pitch-green` | `#16301F` | Off-peak badge background, surface tints. |
+| Electric lime | `--green` | `#E4FF3A` | THE single action colour. CTAs, prices, live states, selected states. One colour only. |
+| Green dim | `--green-dim` | `#CDE62F` | Hover state of electric lime. |
+| Green faint | `--green-faint` | `rgba(228,255,58,0.08)` | Subtle green-tinted fills. |
+| Background | `--black` | `#0B1A2E` | Base page background. Midnight navy. |
+| Surface | `--surface` | `#10223B` | Card background. |
+| Surface 2 | `--surface2` | `#14294A` | Elevated cards, dropdown backgrounds. |
+| Surface 3 | `--surface3` | `#1A3156` | Hover state of surface 2, inputs. |
+| Surface 4 | `--surface4` | `#203A62` | Deeply elevated elements. |
+| Navy tint | `--pitch-green` | `#173257` | Off-peak badge background, surface tints. |
 | PEAK/urgency | `--amber` | `#FFB800` | Peak time urgency colour. Warm amber. |
 | Error/danger | `--red` | `#FF4444` | Destructive actions, error states. |
 
@@ -24,9 +26,9 @@ Design system reference for all visual parts. Later parts of the redesign should
 
 | Token | CSS Variable | Value | Notes |
 |---|---|---|---|
-| Primary text | `--text` | `#F7F4EE` | Body copy, headings |
-| Secondary text | `--text-secondary` | `#9BA39A` | Supporting copy, muted labels |
-| Tertiary text | `--text-tertiary` | `#5E655D` | Timestamps, helper text, placeholder labels |
+| Primary text | `--text` | `#F4F7FB` | Body copy, headings |
+| Secondary text | `--text-secondary` | `#A7B4C8` | Supporting copy, muted labels |
+| Tertiary text | `--text-tertiary` | `#6A7B95` | Timestamps, helper text, placeholder labels |
 | Muted | `--muted` | `#686868` | Legacy alias; prefer `--text-secondary` |
 
 ### Borders
@@ -36,7 +38,7 @@ Design system reference for all visual parts. Later parts of the redesign should
 | Hairline | `--border` | `rgba(255,255,255,0.07)` |
 | Subtle | `--border-subtle` | `rgba(255,255,255,0.04)` |
 | Strong | `--border-strong` | `rgba(255,255,255,0.12)` |
-| Active/selected | `--border-active` | `rgba(198,241,53,0.35)` |
+| Active/selected | `--border-active` | `rgba(228,255,58,0.35)` |
 
 ---
 
@@ -90,10 +92,10 @@ All prices and times use `font-variant-numeric: tabular-nums` (utility class: `.
 | Token | CSS Variable | Value |
 |---|---|---|
 | Card (rest) | `--shadow-card` | `0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px var(--border)` |
-| Card (hover) | `--shadow-card-hover` | `0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(198,241,53,0.18)` |
-| Green glow | `--shadow-glow` | `0 0 0 1px rgba(198,241,53,0.30), 0 0 24px -4px rgba(198,241,53,0.25)` |
-| Green glow SM | `--green-glow-sm` | `0 0 20px rgba(198,241,53,0.18)` |
-| Green glow MD | `--green-glow-md` | `0 0 40px rgba(198,241,53,0.22)` |
+| Card (hover) | `--shadow-card-hover` | `0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(228,255,58,0.18)` |
+| Green glow | `--shadow-glow` | `0 0 0 1px rgba(228,255,58,0.30), 0 0 24px -4px rgba(228,255,58,0.25)` |
+| Green glow SM | `--green-glow-sm` | `0 0 20px rgba(228,255,58,0.18)` |
+| Green glow MD | `--green-glow-md` | `0 0 40px rgba(228,255,58,0.22)` |
 
 ---
 

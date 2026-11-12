@@ -230,7 +230,7 @@ export default function Nav() {
         position: 'sticky',
         top: 0,
         zIndex: 300,
-        background: 'rgba(8,8,8,0.96)',
+        background: 'rgba(11,26,46,0.96)',
         backdropFilter: 'blur(32px)',
         WebkitBackdropFilter: 'blur(32px)',
         boxShadow: '0 1px 0 rgba(255,255,255,0.03)',
@@ -260,7 +260,7 @@ export default function Nav() {
               userSelect: 'none',
             }}
           >
-            Book<span style={{ color: '#C6F135' }}>My</span>Pitch
+            Book<span style={{ color: '#E4FF3A' }}>My</span>Pitch
             <span
               style={{
                 color: 'var(--text-secondary)',
@@ -353,7 +353,7 @@ export default function Nav() {
                         justifyContent: 'center',
                         fontFamily: 'var(--font-sans)',
                         lineHeight: 1,
-                        border: '2px solid rgba(8,8,8,0.96)',
+                        border: '2px solid rgba(11,26,46,0.96)',
                       }}
                     >
                       {unreadCount > 9 ? '9+' : unreadCount}
@@ -375,7 +375,7 @@ export default function Nav() {
                       maxHeight: '360px',
                       overflowY: 'auto',
                       zIndex: 400,
-                      boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+                      boxShadow: '0 16px 48px rgba(3,10,24,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
                     }}
                   >
                     <div
@@ -414,7 +414,7 @@ export default function Nav() {
                             borderRadius: '10px',
                             cursor: 'pointer',
                             marginBottom: '2px',
-                            background: n.read ? 'transparent' : 'rgba(198,241,53,0.06)',
+                            background: n.read ? 'transparent' : 'rgba(228,255,58,0.06)',
                           }}
                         >
                           <div
@@ -504,7 +504,7 @@ export default function Nav() {
                     padding: '6px',
                     minWidth: '236px',
                     zIndex: 400,
-                    boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+                    boxShadow: '0 16px 48px rgba(3,10,24,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
                   }}
                 >
                   {/* Profile header */}
@@ -734,7 +734,7 @@ export default function Nav() {
               lineHeight: 1,
             }}
           >
-            Book<span style={{ color: '#C6F135' }}>My</span>Pitch
+            Book<span style={{ color: '#E4FF3A' }}>My</span>Pitch
             <span style={{ color: 'var(--text-secondary)', opacity: 0.75, fontSize: '0.72em', fontWeight: 600, marginLeft: '1px' }}>
               .uk
             </span>

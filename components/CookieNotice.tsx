@@ -38,7 +38,7 @@ export default function CookieNotice() {
         border: '1px solid var(--border)',
         borderRadius: '14px',
         padding: '1rem 1.25rem',
-        boxShadow: '0 16px 48px rgba(0,0,0,0.5)',
+        boxShadow: '0 16px 48px rgba(3,10,24,0.5)',
         display: 'flex',
         alignItems: 'center',
         gap: '1rem',

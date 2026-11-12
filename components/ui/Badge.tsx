@@ -15,8 +15,8 @@ const styles: Record<BadgeVariant, React.CSSProperties> = {
     color: '#FFB800',
   },
   offpeak: {
-    background: 'rgba(22,48,31,0.8)',
-    border: '1px solid rgba(22,48,31,1)',
+    background: 'rgba(23,50,87,0.8)',
+    border: '1px solid rgba(23,50,87,1)',
     color: 'var(--green)',
   },
   weekend: {
@@ -30,8 +30,8 @@ const styles: Record<BadgeVariant, React.CSSProperties> = {
     color: 'var(--text-secondary)',
   },
   public: {
-    background: 'rgba(198,241,53,0.12)',
-    border: '1px solid rgba(198,241,53,0.3)',
+    background: 'rgba(228,255,58,0.12)',
+    border: '1px solid rgba(228,255,58,0.3)',
     color: 'var(--green)',
   },
 }

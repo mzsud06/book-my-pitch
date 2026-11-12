@@ -111,7 +111,7 @@ export default function ResetPasswordPage() {
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--radius-xl)',
             padding: 'clamp(1.5rem, 4vw, 2rem)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+            boxShadow: '0 24px 64px rgba(3,10,24,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
           }}
         >
           <h1

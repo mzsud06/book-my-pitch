@@ -180,7 +180,7 @@ function SignupForm() {
             border: '1px solid var(--border-strong)',
             borderRadius: 'var(--radius-xl)',
             padding: 'clamp(1.5rem, 4vw, 2rem)',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
+            boxShadow: '0 24px 64px rgba(3,10,24,0.5), 0 0 0 1px rgba(255,255,255,0.05)',
           }}
         >
 
@@ -192,8 +192,8 @@ function SignupForm() {
                 style={{
                   width: '64px',
                   height: '64px',
-                  background: 'rgba(22,48,31,0.7)',
-                  border: '1px solid rgba(198,241,53,0.25)',
+                  background: 'rgba(23,50,87,0.7)',
+                  border: '1px solid rgba(228,255,58,0.25)',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',

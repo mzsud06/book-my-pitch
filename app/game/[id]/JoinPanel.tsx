@@ -196,7 +196,7 @@ export default function JoinPanel({
           clientSecret,
           appearance: {
             theme: 'night',
-            variables: { colorPrimary: '#C6F135', colorBackground: '#161616', colorText: '#F7F4EE', colorDanger: '#FF4444', borderRadius: '10px' },
+            variables: { colorPrimary: '#E4FF3A', colorBackground: '#14294A', colorText: '#F4F7FB', colorTextSecondary: '#A7B4C8', colorDanger: '#FF4444', borderRadius: '10px' },
           },
         }}
       >
