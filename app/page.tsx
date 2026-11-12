@@ -9,6 +9,9 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 import { FaqAccordion, FaqItemData } from '@/components/FaqAccordion'
 import { Footer } from '@/components/Footer'
 
+// Photo by Riccardo Bernucci on Unsplash (free under the Unsplash License).
+const HERO_PHOTO = 'https://images.unsplash.com/photo-1772707690200-98f100c61c04?w=2400&q=80&auto=format&fit=crop'
+
 const STEPS = [
   {
     n: '1',
@@ -61,13 +64,13 @@ export default function HomePage() {
       <PageReveal>
       <main>
         <section style={{ position: 'relative', overflow: 'hidden', minHeight: 'min(88vh, 820px)', display: 'flex', alignItems: 'flex-end', paddingTop: 'clamp(6rem, 16vh, 10rem)', paddingBottom: 'clamp(3rem, 8vh, 5rem)' }}>
-          <Image src="/hero-pitch-web.jpg" alt="" fill priority sizes="100vw" style={{ objectFit: 'cover', objectPosition: 'center 40%', zIndex: 0 }} />
+          <Image src={HERO_PHOTO} alt="" fill priority sizes="100vw" quality={75} style={{ objectFit: 'cover', objectPosition: '70% 35%', zIndex: 0 }} />
           {/* Navy fade: keeps the floodlit sky at the top, sinks into the page colour at the bottom so white type stays readable */}
-          <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'linear-gradient(180deg, rgba(11,26,46,0.15) 0%, rgba(11,26,46,0.45) 45%, rgba(11,26,46,0.92) 80%, var(--black) 100%)' }} />
+          <div aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 1, background: 'linear-gradient(90deg, rgba(11,26,46,0.92) 0%, rgba(11,26,46,0.6) 45%, rgba(11,26,46,0.15) 75%), linear-gradient(180deg, rgba(11,26,46,0.2) 0%, transparent 40%, rgba(11,26,46,0.85) 85%, var(--black) 100%)' }} />
           <div style={{ position: 'relative', zIndex: 2, width: '100%' }}>
           <Container>
             <div>
-            <h1 style={{ fontSize: 'var(--text-hero)', letterSpacing: '-0.04em', lineHeight: 0.98, maxWidth: '15ch', marginBottom: '1.5rem', fontWeight: 600 }}>
+            <h1 style={{ fontSize: 'clamp(2.75rem, 8vw, 5.75rem)', letterSpacing: '-0.03em', lineHeight: 0.98, maxWidth: '14ch', marginBottom: '1.5rem', fontWeight: 700 }}>
               Stop chasing people for <span style={{ color: 'var(--green)' }}>football money.</span>
             </h1>
             <p style={{ fontSize: '1.2rem', color: 'var(--text)', opacity: 0.85, lineHeight: 1.6, maxWidth: '36rem', marginBottom: '2rem' }}>
@@ -84,6 +87,9 @@ export default function HomePage() {
             </div>
           </Container>
           </div>
+          <a href="https://unsplash.com/@new_ra?utm_source=bookmypitch&utm_medium=referral" target="_blank" rel="noreferrer" style={{ position: 'absolute', right: '1rem', bottom: '0.75rem', zIndex: 2, fontSize: '11px', color: 'var(--text-tertiary)', textDecoration: 'none' }}>
+            Photo: Riccardo Bernucci / Unsplash
+          </a>
         </section>
 
         <section id="how" style={{ paddingTop: 'clamp(3rem, 6vh, 5rem)', paddingBottom: 'clamp(3rem, 6vh, 5rem)' }}>
@@ -92,7 +98,7 @@ export default function HomePage() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginTop: '2.5rem' }}>
               {STEPS.map(s => (
                 <Card key={s.n} style={{ padding: '1.5rem' }}>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: 'var(--green)', marginBottom: '0.75rem' }}>{s.n}</div>
+                  <div style={{ fontFamily: 'var(--font-condensed)', fontWeight: 700, fontSize: '3rem', lineHeight: 1, color: 'var(--green)', marginBottom: '0.75rem' }}>0{s.n}</div>
                   <div style={{ fontWeight: 700, fontSize: '18px', marginBottom: '0.5rem' }}>{s.title}</div>
                   <p style={{ color: 'var(--text-secondary)', lineHeight: 1.65, fontSize: '15px' }}>{s.body}</p>
                 </Card>

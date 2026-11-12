@@ -33,8 +33,8 @@ export function SectionHeading({
           fontFamily: 'var(--font-display)',
           fontSize: 'var(--text-h2)',
           fontWeight: 700,
-          lineHeight: 1.1,
-          letterSpacing: '-0.015em',
+          lineHeight: 1.02,
+          letterSpacing: '-0.025em',
           color: 'var(--text)',
           margin: 0,
         }}

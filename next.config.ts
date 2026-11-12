@@ -33,6 +33,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   images: {
     qualities: [75, 85],
+    // Homepage hero photo is served from Unsplash (free licence, hotlinking is their preferred use).
+    remotePatterns: [{ protocol: 'https', hostname: 'images.unsplash.com' }],
   },
   async headers() {
     return [

@@ -15,8 +15,10 @@ const base: React.CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   gap: '6px',
-  fontFamily: 'var(--font-display)',
-  fontWeight: 600,
+  fontFamily: 'var(--font-condensed)',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
   lineHeight: 1,
   whiteSpace: 'nowrap',
   cursor: 'pointer',
@@ -44,9 +46,9 @@ const variants: Record<Variant, React.CSSProperties> = {
 }
 
 const sizes: Record<Size, React.CSSProperties> = {
-  sm: { fontSize: '13px', padding: '0.5rem 1rem' },
-  md: { fontSize: '14px', padding: '0.625rem 1.25rem' },
-  lg: { fontSize: '15px', padding: '0.75rem 1.5rem' },
+  sm: { fontSize: '15px', padding: '0.5rem 1rem' },
+  md: { fontSize: '17px', padding: '0.65rem 1.3rem' },
+  lg: { fontSize: '19px', padding: '0.8rem 1.6rem' },
 }
 
 export function Button({

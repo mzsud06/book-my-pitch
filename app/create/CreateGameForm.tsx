@@ -124,7 +124,7 @@ export default function CreateGameForm({
           onClick={startPayouts}
           disabled={busy}
           className="bmp-btn bmp-btn-primary"
-          style={{ width: '100%', padding: '1rem', fontSize: '16px', fontFamily: 'var(--font-display)', fontWeight: 700, background: 'var(--green)', color: 'var(--black)', border: 'none', borderRadius: 'var(--radius-lg)', cursor: busy ? 'wait' : 'pointer' }}
+          style={{ width: '100%', padding: '1rem', fontSize: '19px', fontFamily: 'var(--font-condensed)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', background: 'var(--green)', color: 'var(--black)', border: 'none', borderRadius: 'var(--radius-lg)', cursor: busy ? 'wait' : 'pointer' }}
         >
           {busy ? 'Opening Stripe…' : hasAccount ? 'Continue payout setup' : 'Set up payouts'}
         </button>
@@ -189,7 +189,7 @@ export default function CreateGameForm({
         type="submit"
         disabled={busy}
         className="bmp-btn bmp-btn-primary"
-        style={{ width: '100%', padding: '1rem', fontSize: '16px', fontFamily: 'var(--font-display)', fontWeight: 700, background: 'var(--green)', color: 'var(--black)', border: 'none', borderRadius: 'var(--radius-lg)', cursor: busy ? 'wait' : 'pointer' }}
+        style={{ width: '100%', padding: '1rem', fontSize: '19px', fontFamily: 'var(--font-condensed)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', background: 'var(--green)', color: 'var(--black)', border: 'none', borderRadius: 'var(--radius-lg)', cursor: busy ? 'wait' : 'pointer' }}
       >
         {busy ? 'Creating…' : 'Create game and get link'}
       </button>

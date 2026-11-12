@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from 'geist/font/sans';
 import CookieNotice from '@/components/CookieNotice';
+import '@fontsource-variable/inter-tight';
+import '@fontsource/barlow-condensed/600.css';
+import '@fontsource/barlow-condensed/700.css';
 import "./globals.css";
 
 export const metadata: Metadata = {

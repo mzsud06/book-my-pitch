@@ -1,5 +1,5 @@
-/* Clash Display — Fontshare CDN (self-hosted by Fontshare, no Google dependency) */
-@import url('https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap');
+/* Fonts are self-hosted via @fontsource (imported in app/layout.tsx):
+   Inter Tight = headlines, Barlow Condensed = labels and buttons, Geist = body. */
 
 @import "tailwindcss";
 
@@ -23,7 +23,8 @@
   --color-text-tertiary:    #6A7B95;
 
   /* Typography */
-  --font-display:           'Clash Display', system-ui, sans-serif;
+  --font-display:           'Inter Tight Variable', 'Inter Tight', system-ui, sans-serif;
+  --font-condensed:         'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
   --font-sans:              var(--font-geist-sans, 'Inter', system-ui, sans-serif);
 
   /* Border radius */
@@ -96,7 +97,8 @@
   --text-label:  0.75rem;
 
   /* Fonts */
-  --font-display: 'Clash Display', system-ui, sans-serif;
+  --font-display: 'Inter Tight Variable', 'Inter Tight', system-ui, sans-serif;
+  --font-condensed: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
   --font-sans: var(--font-geist-sans, 'Inter', system-ui, sans-serif);
 }
 
@@ -142,7 +144,7 @@ input::placeholder { color: rgba(125,140,165,0.5); }
 input:focus { outline: none; }
 /* Tabular nums for prices and times */
 .tabular { font-variant-numeric: tabular-nums; }
-h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.025em; }
 
 /* Long-form legal content (terms/privacy) — the rest of the app is
    component-driven and has no prose system of its own. */

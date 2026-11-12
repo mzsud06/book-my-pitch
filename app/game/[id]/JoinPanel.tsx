@@ -22,7 +22,7 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--text)', fontSize: '16px', fontFamily: 'var(--font-sans)',
 }
 const primaryBtn: React.CSSProperties = {
-  width: '100%', padding: '1rem', fontSize: '16px', fontFamily: 'var(--font-display)', fontWeight: 700,
+  width: '100%', padding: '1rem', fontSize: '19px', fontFamily: 'var(--font-condensed)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
   border: 'none', borderRadius: 'var(--radius-lg)', cursor: 'pointer', background: 'var(--green)', color: 'var(--black)',
 }
 
