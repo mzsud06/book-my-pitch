@@ -114,7 +114,7 @@ export default function CreateGameForm({
       <div style={wrap}>
         <h1 style={{ fontSize: 'var(--text-h2)', letterSpacing: '-0.03em', marginBottom: '0.75rem' }}>Set up payouts first</h1>
         <p style={{ color: 'var(--text-secondary)', lineHeight: 1.65, marginBottom: '1.25rem' }}>
-          Players pay through BookMyPitch and the money goes straight to you. Stripe needs your details and bank account once, which takes about five minutes. You only do this the first time.
+          Players pay through BookMyPitch and the money goes straight to you. Stripe, the payments company, sets up a payout account in your name. It asks for your name, date of birth, address and bank details, a few minutes once. It is not a business registration, and you only do it the first time.
         </p>
         <p style={{ color: 'var(--text-secondary)', lineHeight: 1.65, marginBottom: '1.5rem' }}>
           {hasAccount ? 'You started this before but did not finish. Pick up where you left off.' : 'Payouts to your bank usually arrive a few days after you confirm a game.'}

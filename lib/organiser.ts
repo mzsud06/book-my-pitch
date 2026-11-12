@@ -60,6 +60,10 @@ export async function ensureOrganiserAccount(user: User): Promise<string> {
     email: user.email,
     business_type: 'individual',
     business_profile: {
+      // 7941 = sports promoters / athletic fields. Supplying mcc and url up front
+      // means Stripe doesn't ask organisers for an industry or website.
+      mcc: '7941',
+      url: 'https://bookmypitch.uk',
       product_description: 'Collecting football pitch costs from players via BookMyPitch',
     },
     capabilities: { transfers: { requested: true } },
